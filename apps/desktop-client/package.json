@@ -1,0 +1,110 @@
+{
+  "name": "aether-desktop-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev:vite": "vite --port 5174",
+    "dev:electron": "wait-on http://127.0.0.1:5174 && electron .",
+    "dev": "concurrently -k \"npm run dev:vite\" \"npm run dev:electron\"",
+    "build": "vite build",
+    "dist": "npm run build && electron-builder"
+  },
+  "build": {
+    "appId": "com.antigravity.aether-ide",
+    "productName": "Aether IDE",
+    "directories": {
+      "output": "release",
+      "buildResources": "build-assets"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../python-backend/dist/backend${ext}",
+        "to": "backend${ext}"
+      }
+    ],
+    "protocols": [
+      {
+        "name": "Aether IDE Auth",
+        "schemes": [
+          "aether"
+        ]
+      }
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_USERNAME",
+      "repo": "aether-ide"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development"
+    },
+    "npmRebuild": true,
+    "asarUnpack": [
+      "**/node_modules/node-pty/**"
+    ]
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/sortable": "^8.0.0",
+    "@monaco-editor/react": "^4.6.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/addon-search": "^0.16.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/xterm": "^6.0.0",
+    "d3": "^7.9.0",
+    "electron-updater": "^6.1.8",
+    "node-pty": "^1.1.0",
+    "pyright": "^1.1.408",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-markdown": "^9.0.1",
+    "vscode-jsonrpc": "^8.2.0",
+    "vscode-languageserver-protocol": "^3.17.5",
+    "zustand": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-vite": "^2.0.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
+    "vite": "^5.3.0",
+    "wait-on": "^7.2.0"
+  }
+}

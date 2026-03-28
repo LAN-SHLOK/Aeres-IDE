@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --aether-bg: #05050a;
+  --aether-surface: #0a0a0f;
+  --aether-border: rgba(255, 255, 255, 0.05);
+  --aether-violet: #7c3aed;
+  --aether-blue: #3b82f6;
+  --aether-text: #ffffff;
+  --aether-muted: #a1a1aa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--aether-bg);
+  color: var(--aether-text);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Premium Noise Overlay */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.05;
+  z-index: 9999;
+  pointer-events: none;
+  background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+  filter: contrast(150%) brightness(100%);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--aether-bg);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--aether-violet);
+}
+
+/* High-End Glowing Grid (8bit.ai style) */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(rgba(124, 58, 237, 0.05) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.05) 1.5px, transparent 1.5px);
+  background-size: 80px 80px;
+  background-position: center center;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Intersection Glows */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.font-display {
+  font-family: 'Syne', sans-serif;
+  letter-spacing: -0.04em;
+}
+
+.magnetic-area {
+  padding: 40px;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.magnetic-content {
+  display: block;
+  transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* VS Code Docs Syntax Highlighting */
+.prose code {
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+.prose pre {
+  background: #0a0a0f !important;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 24px !important;
+}
+
+/* Clerk Global Overrides */
+.cl-socialButtonsBlockButtonText {
+  color: #ffffff !important;
+}
+.cl-socialButtonsBlockButton {
+  transition: all 0.2s ease !important;
+}
+.cl-internal-ph678l { /* Form field label */
+  color: rgba(255, 255, 255, 0.5) !important;
+}

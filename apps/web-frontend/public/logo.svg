@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="orbit1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="orbit2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="orbit3" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <radialGradient id="core-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glow-intense">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer glow halo -->
+  <circle cx="100" cy="100" r="60" fill="url(#core-glow)" opacity="0.3"/>
+
+  <!-- Orbit 1: Horizontal ellipse (tilted -30deg) -->
+  <ellipse cx="100" cy="100" rx="75" ry="30" 
+    stroke="url(#orbit1)" stroke-width="3" fill="none"
+    transform="rotate(-30 100 100)" filter="url(#glow)" opacity="0.9"/>
+
+  <!-- Orbit 2: Tilted +30deg -->
+  <ellipse cx="100" cy="100" rx="75" ry="30"
+    stroke="url(#orbit2)" stroke-width="3" fill="none"
+    transform="rotate(30 100 100)" filter="url(#glow)" opacity="0.9"/>
+
+  <!-- Orbit 3: Vertical ellipse (90deg) -->
+  <ellipse cx="100" cy="100" rx="75" ry="30"
+    stroke="url(#orbit3)" stroke-width="3" fill="none"
+    transform="rotate(90 100 100)" filter="url(#glow)" opacity="0.9"/>
+
+  <!-- Central "A" letterform (Aether) -->
+  <g filter="url(#glow-intense)">
+    <!-- Triangle "A" shape -->
+    <path d="M100 55 L125 135 L75 135 Z" 
+      stroke="url(#orbit2)" stroke-width="3.5" fill="none"
+      stroke-linejoin="round"/>
+    <!-- Crossbar -->
+    <line x1="85" y1="115" x2="115" y2="115" 
+      stroke="url(#orbit1)" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Core nucleus -->
+  <circle cx="100" cy="100" r="8" fill="#a78bfa" filter="url(#glow-intense)" opacity="0.9"/>
+  <circle cx="100" cy="100" r="4" fill="#ffffff" opacity="0.95"/>
+
+  <!-- Orbital electrons -->
+  <circle cx="140" cy="72" r="4" fill="#22d3ee" filter="url(#glow)" opacity="0.9"/>
+  <circle cx="60" cy="128" r="3.5" fill="#34d399" filter="url(#glow)" opacity="0.85"/>
+  <circle cx="100" cy="32" r="3" fill="#a78bfa" filter="url(#glow)" opacity="0.8"/>
+</svg>

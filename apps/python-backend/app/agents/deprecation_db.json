@@ -1,0 +1,84 @@
+{
+  "javascript": {
+    "componentWillMount": {
+      "replacement": "componentDidMount or useEffect",
+      "docs_query": "react componentWillMount migration to useEffect",
+      "severity": "high",
+      "since_version": "React 16.3"
+    },
+    "ReactDOM.render": {
+      "replacement": "createRoot().render()",
+      "docs_query": "react 18 createRoot migration from ReactDOM.render",
+      "severity": "high",
+      "since_version": "React 18"
+    },
+    "findDOMNode": {
+      "replacement": "React.createRef or useRef",
+      "docs_query": "react findDOMNode deprecated use ref instead",
+      "severity": "medium",
+      "since_version": "React 16.3"
+    },
+    "componentWillReceiveProps": {
+      "replacement": "getDerivedStateFromProps or useEffect",
+      "docs_query": "react componentWillReceiveProps migration",
+      "severity": "high",
+      "since_version": "React 16.3"
+    },
+    "componentWillUpdate": {
+      "replacement": "getSnapshotBeforeUpdate or useEffect",
+      "docs_query": "react componentWillUpdate migration",
+      "severity": "high",
+      "since_version": "React 16.3"
+    },
+    "moment(": {
+      "replacement": "dayjs or date-fns",
+      "docs_query": "migrate from moment.js to dayjs",
+      "severity": "medium",
+      "since_version": "moment.js deprecated 2020"
+    },
+    "request(": {
+      "replacement": "axios or node-fetch",
+      "docs_query": "migrate from request npm package to axios",
+      "severity": "medium",
+      "since_version": "request deprecated 2020"
+    }
+  },
+  "python": {
+    "asyncio.coroutine": {
+      "replacement": "async def",
+      "docs_query": "python asyncio.coroutine deprecated use async def",
+      "severity": "high",
+      "since_version": "Python 3.8"
+    },
+    "collections.Mapping": {
+      "replacement": "collections.abc.Mapping",
+      "docs_query": "python collections.Mapping moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
+    "imp.load_module": {
+      "replacement": "importlib.import_module",
+      "docs_query": "python imp module deprecated use importlib",
+      "severity": "high",
+      "since_version": "Python 3.4"
+    },
+    "os.popen": {
+      "replacement": "subprocess.run or subprocess.Popen",
+      "docs_query": "python os.popen deprecated use subprocess",
+      "severity": "medium",
+      "since_version": "Python 3.0"
+    },
+    "threading.currentThread": {
+      "replacement": "threading.current_thread",
+      "docs_query": "python threading.currentThread deprecated",
+      "severity": "info",
+      "since_version": "Python 3.10"
+    },
+    "json.loads(s.decode())": {
+      "replacement": "json.loads(s)",
+      "docs_query": "python 3.6+ json.loads supports bytes",
+      "severity": "info",
+      "since_version": "Python 3.6"
+    }
+  }
+}

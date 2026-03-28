@@ -1,0 +1,10 @@
+node_modules/
+.env
+__pycache__/
+*.pyc
+/data/chroma_db/
+/apps/python-backend/data/
+dist/
+build/
+.DS_Store
+.vscode/

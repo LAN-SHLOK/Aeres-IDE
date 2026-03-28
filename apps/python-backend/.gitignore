@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/chroma_db/*.sqlite3
+dist/
+build/
+*.spec
+.env
