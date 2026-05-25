@@ -4,7 +4,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        aether: {
+        aeres: {
           bg: '#0a0a0f',
           surface: '#12121a',
           border: '#1e1e2e',

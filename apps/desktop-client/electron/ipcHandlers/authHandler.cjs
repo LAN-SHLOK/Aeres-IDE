@@ -1,7 +1,10 @@
 const { shell, safeStorage } = require('electron')
+const fs = require('fs')
+const path = require('path')
 
 let __encryptedJWT = null
-global.__aetherEmail = null
+global.__aeresEmail = null
+global.__aeresJWT = null
 
 let refreshTimer = null
 
@@ -27,33 +30,70 @@ function scheduleRefresh(token, mainWindow) {
   }, refreshIn)
 }
 
-function register(ipcMain) {
+function getAuthFile(app) {
+    return path.join(app.getPath('userData'), 'aeres_auth.json')
+}
+
+function saveAuth(app, token, email) {
+  try {
+    const encrypted = safeStorage.isEncryptionAvailable() 
+      ? safeStorage.encryptString(token).toString('base64')
+      : Buffer.from(token).toString('base64')
+    fs.writeFileSync(getAuthFile(app), JSON.stringify({ jwt: encrypted, email }))
+  } catch (err) {
+    console.error('[Auth] Save error:', err)
+  }
+}
+
+function loadAuth(app) {
+  try {
+    const file = getAuthFile(app)
+    if (fs.existsSync(file)) {
+      const data = JSON.parse(fs.readFileSync(file, 'utf-8'))
+      const buf = Buffer.from(data.jwt, 'base64')
+      const token = safeStorage.isEncryptionAvailable()
+        ? safeStorage.decryptString(buf)
+        : buf.toString('utf-8')
+      
+      global.__aeresJWT = token
+      global.__aeresEmail = data.email
+      __encryptedJWT = buf
+      return true
+    }
+  } catch (err) {
+    console.error('[Auth] Load error:', err)
+  }
+  return false
+}
+
+function register(ipcMain, app, getMainWindow) {
+  loadAuth(app)
+
   ipcMain.handle('auth:getStatus', () => {
-    if (!__encryptedJWT) return { authenticated: false, email: null }
+    if (!global.__aeresJWT) return { authenticated: false, email: null }
     try {
-      const token = safeStorage.decryptString(__encryptedJWT)
-      const payload = decodePayload(token)
+      const payload = decodePayload(global.__aeresJWT)
       if (payload?.exp && payload.exp * 1000 < Date.now()) {
         return { authenticated: false, email: null, expired: true }
       }
-      return { authenticated: true, email: global.__aetherEmail }
+      return { authenticated: true, email: global.__aeresEmail }
     } catch {
       return { authenticated: false, email: null }
     }
   })
 
   ipcMain.handle('auth:getToken', () => {
-    if (!__encryptedJWT) return null
-    try {
-      return safeStorage.decryptString(__encryptedJWT)
-    } catch {
-      return null
-    }
+    return global.__aeresJWT
   })
 
   ipcMain.handle('auth:logout', () => {
     __encryptedJWT = null
-    global.__aetherEmail = null
+    global.__aeresEmail = null
+    global.__aeresJWT = null
+    try {
+        const file = getAuthFile(app)
+        if (fs.existsSync(file)) fs.unlinkSync(file)
+    } catch {}
     clearTimeout(refreshTimer)
     refreshTimer = null
     return true
@@ -65,10 +105,10 @@ function register(ipcMain) {
   })
 }
 
-function handleDeepLink(url, mainWindow) {
+function handleDeepLink(url, mainWindow, app) {
   try {
     const parsed = new URL(url)
-    if (parsed.protocol !== 'aether:') return
+    if (parsed.protocol !== 'aeres:') return
     if (parsed.hostname !== 'auth') return
     const token = parsed.searchParams.get('token')
     const email = parsed.searchParams.get('email') || ''
@@ -77,11 +117,12 @@ function handleDeepLink(url, mainWindow) {
     if (safeStorage.isEncryptionAvailable()) {
       __encryptedJWT = safeStorage.encryptString(token)
     } else {
-      // Fallback for environments where encryption is not available (rare in Electron desktop)
       __encryptedJWT = Buffer.from(token) 
     }
     
-    global.__aetherEmail = email
+    global.__aeresEmail = email
+    global.__aeresJWT = token
+    saveAuth(app, token, email)
     scheduleRefresh(token, mainWindow)
 
     mainWindow?.webContents.send('auth:success', { email })

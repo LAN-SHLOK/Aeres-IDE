@@ -1,5 +1,5 @@
 """
-Aether IDE Backend - Core Package
+Aeres IDE Backend - Core Package
 This file initializes the core module.
 """
 

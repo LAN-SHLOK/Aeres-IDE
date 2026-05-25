@@ -103,3 +103,13 @@ class CausalChainRequest(BaseModel):
     file_path: str
     function_name: str
     error_message: str = ""
+
+
+class AgentStreamRequest(BaseModel):
+    instruction: str
+    context: str = ""
+    file_path: str = ""
+    root_path: str = ""
+    conversation: List[dict] = []
+    images: List[str] = []
+

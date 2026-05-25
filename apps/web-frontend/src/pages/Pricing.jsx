@@ -4,20 +4,21 @@ import Footer from '../components/Footer.jsx'
 
 const PLANS = [
   {
-    name: 'Standard',
+    name: 'Standard Package',
     price: '0',
     description: 'Perfect for individual developers and open source contributors.',
     features: [
-      'Basic Aether AI assistance',
+      'Basic Aeres AI assistance',
       'Local static analysis',
       'Git UI integration',
       'Community support'
     ],
     buttonText: 'Get Started',
-    premium: false
+    premium: false,
+    barColor: 'bg-[#ff8ba7]' // Pink titlebar
   },
   {
-    name: 'Pro',
+    name: 'Pro Package',
     price: '20',
     description: 'Advanced productivity for professionals and high-velocity teams.',
     features: [
@@ -28,10 +29,11 @@ const PLANS = [
       'Priority email support'
     ],
     buttonText: 'Upgrade to Pro',
-    premium: true
+    premium: true,
+    barColor: 'bg-[#fef08a]' // Yellow titlebar
   },
   {
-    name: 'Enterprise',
+    name: 'Enterprise Package',
     price: '100',
     description: 'Scale intelligence across your entire organization.',
     features: [
@@ -42,72 +44,101 @@ const PLANS = [
       'Custom SLAs'
     ],
     buttonText: 'Contact Sales',
-    premium: false
+    premium: false,
+    barColor: 'bg-[#2dd4bf]' // Teal titlebar
   }
 ]
 
 export default function Pricing() {
   return (
-    <div className="min-h-screen bg-[#05050a] font-body text-white selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#09090e] font-body text-[#fffdf9] selection:bg-purple-500/20 selection:text-purple-300">
       <Navbar />
       
-      <section className="relative pt-40 pb-32 px-6 md:px-10 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-[#7c3aed] opacity-[0.05] blur-[120px] pointer-events-none rounded-[100%]"></div>
+      <section className="relative pt-40 pb-32 px-6 md:px-10 overflow-hidden max-w-[1400px] mx-auto">
         
-        <div className="max-w-[1200px] mx-auto text-center mb-24 relative z-10">
+        {/* Floating developer star and bracket stickers */}
+        <div className="absolute top-[20%] left-10 w-12 h-12 text-[#ff8ba7] sticker-float hidden md:block" style={{ animationDelay: '0.2s' }}>
+          {/* Code Bracket SVG */}
+          <svg fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 3L1.5 12 8 21h3l-6.5-9L11 3H8zm8 0l6.5 9-6.5 9h-3l6.5-9-6.5-9h3z" />
+          </svg>
+        </div>
+        <div className="absolute top-[15%] right-16 w-10 h-10 text-[#c084fc] sticker-float hidden md:block" style={{ animationDelay: '0.7s' }}>
+          {/* Floppy Disk SVG */}
+          <svg fill="currentColor" viewBox="0 0 24 24">
+            <path d="M19 12v7H5v-7h14zm2-5.586v13.586a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10.586a2 2 0 011.414.586l4 4zM17 12H7v6h10v-6zM15 4H5v4h10V4z" />
+          </svg>
+        </div>
+        
+        <div className="text-center mb-24 relative z-10 font-display">
+          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-8 font-mono">
+            menu_pricing.json
+          </span>
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="font-display text-[clamp(2.5rem,6vw,5.5rem)] font-extrabold tracking-tighter leading-[0.9] mb-8"
+            className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold tracking-tight leading-[0.9] text-white"
           >
-            Predictable <br/><span className="text-white/20 italic font-medium">intelligence.</span>
+            Predictable <br/><span className="text-black bg-[#ff8ba7] border-4 border-black px-6 py-2.5 inline-block shadow-[5px_5px_0px_#000000] rounded-[2.5rem] italic font-bold mt-2">intelligence.</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-white/40 text-[1.25rem] max-w-[600px] mx-auto leading-relaxed"
+            className="text-[#fffdf9]/70 text-base max-w-[540px] mx-auto leading-relaxed font-sans font-semibold mt-6"
           >
-            Transparent pricing for teams that crave speed and precision. No hidden fees, just pure logic.
+            Transparent pricing for teams that crave speed and precision. No hidden fees, just pure, self-correcting logic.
           </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1240px] mx-auto relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-[1200px] mx-auto relative z-10">
           {PLANS.map((plan, i) => (
             <motion.div
               key={plan.name}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + i * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-              className={`group relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-[#0a0a0f]/40 backdrop-blur-3xl p-10 flex flex-col justify-between ${plan.premium ? 'border-white/20 shadow-[0_0_50px_rgba(124,58,237,0.15)] ring-1 ring-white/10' : ''}`}
+              transition={{ delay: 0.1 + i * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+              className="h-full"
             >
-              {plan.premium && (
-                <div className="absolute top-6 right-6 inline-flex rounded-full bg-[#7c3aed] px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-white">
-                  Most Popular
-                </div>
-              )}
-              
-              <div>
-                <h3 className="font-display text-2xl font-bold mb-2">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-[3.5rem] font-bold tracking-tighter">${plan.price}</span>
-                  <span className="text-white/30 text-sm">/mo</span>
-                </div>
-                <p className="text-white/40 text-sm leading-relaxed mb-8">{plan.description}</p>
+              {/* Cozy Dialog card */}
+              <div className="kawaii-card h-full flex flex-col justify-between bg-[#13141f] border-3 border-black">
                 
-                <div className="space-y-4 mb-10">
-                  {plan.features.map(feature => (
-                    <div key={feature} className="flex items-center gap-3 text-sm text-white/70">
-                      <svg className="h-4 w-4 text-[#7c3aed]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
-                      {feature}
-                    </div>
-                  ))}
+                {/* Windows 95 Style Title Bar */}
+                <div className={`${plan.barColor} border-b-4 border-black px-5 py-3 flex justify-between items-center font-display`}>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black uppercase text-black tracking-wide">{plan.name}</span>
+                  </div>
+                  {/* Cozy controls removed */}
                 </div>
-              </div>
 
-              <button className={`w-full rounded-2xl py-4 font-bold text-sm transition-all duration-300 ${plan.premium ? 'bg-white text-black hover:scale-[1.02]' : 'bg-white/5 text-white border border-white/10 hover:bg-white/10'}`}>
-                {plan.buttonText}
-              </button>
+                {/* Main Card Content */}
+                <div className="p-8 flex-1 flex flex-col justify-between bg-[#13141f]">
+                  <div>
+                    <div className="flex items-baseline gap-1 mb-6 font-display">
+                      <span className="text-[3.5rem] font-bold tracking-tight text-white leading-none">${plan.price}</span>
+                      <span className="text-white/40 text-sm font-bold">/mo</span>
+                    </div>
+                    <p className="text-white/50 text-xs leading-relaxed mb-8 font-sans font-bold">{plan.description}</p>
+                    
+                    <div className="space-y-4 mb-10">
+                      {plan.features.map(feature => (
+                        <div key={feature} className="flex items-center gap-3 text-xs text-white/80 font-sans font-bold">
+                          {/* Retro check indicator */}
+                          <div className="w-5 h-5 rounded-xl border-3 border-black bg-[#1b1c2b] flex items-center justify-center shadow-[2px_2px_0px_#000000] text-[#ff8ba7] font-black shrink-0 text-[10px]">
+                            ✓
+                          </div>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button className={`w-full py-4 text-xs font-black uppercase tracking-wider ${plan.premium ? 'kawaii-btn-pink' : 'kawaii-btn-cream bg-[#1b1c2b] text-white hover:bg-[#2c2d3e]'}`}>
+                    {plan.buttonText}
+                  </button>
+                </div>
+
+              </div>
             </motion.div>
           ))}
         </div>

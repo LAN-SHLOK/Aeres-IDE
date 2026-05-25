@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useStore } from '../../store.js'
+import { detectLanguage } from '../../utils/langDetect.js'
 
 const SEVERITY_ICON = {
   error: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>,
@@ -32,17 +33,17 @@ export default function ProblemsPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex h-8 shrink-0 items-center gap-2 border-b border-aether-border px-3">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-aether-muted">Problems</span>
-        <div className="ml-auto flex gap-1">
+    <div className="flex h-full flex-col bg-aeres-bg">
+      <div className="flex h-7 shrink-0 items-center gap-2 border-b border-aeres-border/30 px-3 bg-aeres-surface/20">
+        <span className="text-[9px] font-bold uppercase tracking-wider text-aeres-muted">Filters:</span>
+        <div className="flex gap-1">
           {['all', 'error', 'warning'].map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
               className={`rounded px-2 py-0.5 text-[10px] capitalize transition ${
-                filter === f ? 'bg-aether-violet/20 text-aether-violet' : 'text-aether-muted hover:text-aether-text'
+                filter === f ? 'bg-aeres-violet/20 text-aeres-violet' : 'text-aeres-muted hover:text-aeres-text'
               }`}
             >
               {f === 'all' ? `All (${allEntries.length})` : f === 'error' ? `Errors (${errors})` : `Warnings (${warnings})`}
@@ -52,32 +53,46 @@ export default function ProblemsPanel() {
       </div>
       <div className="flex-1 overflow-y-auto">
         {Object.keys(grouped).length === 0 ? (
-          <div className="flex h-full items-center justify-center text-xs text-aether-muted">
+          <div className="flex h-full items-center justify-center text-xs text-aeres-muted">
             No problems detected
           </div>
         ) : (
           Object.entries(grouped).map(([filePath, entries]) => (
             <div key={filePath}>
-              <div className="sticky top-0 bg-aether-surface px-3 py-1 text-[10px] font-medium text-aether-text">
+              <div className="sticky top-0 bg-aeres-surface px-3 py-1 text-[10px] font-medium text-aeres-text">
                 {filePath.split(/[/\\]/).pop()}
-                <span className="ml-1 text-aether-muted">({entries.length})</span>
+                <span className="ml-1 text-aeres-muted">({entries.length})</span>
               </div>
               {entries.map((entry, i) => {
                 const sev = (entry.severity || 'warning').toLowerCase()
                 return (
                   <div
                     key={i}
-                    onClick={() => {
-                      // open file at line
-                      openTab({ path: entry.filePath, name: entry.filePath.split(/[/\\]/).pop(), language: 'plaintext', content: '' })
+                    onClick={async () => {
+                      const e = window.electron
+                      if (!e) return
+                      try {
+                        const content = await e.fs.readFile(entry.filePath)
+                        const name = entry.filePath.split(/[/\\]/).pop()
+                        const lang = detectLanguage(name)
+                        openTab({
+                          path: entry.filePath,
+                          name,
+                          language: lang,
+                          content,
+                          line: entry.line
+                        })
+                      } catch (err) {
+                        console.error('[ProblemsPanel] read error:', err)
+                      }
                     }}
                     className="flex cursor-pointer items-start gap-2 px-3 py-1 text-xs transition hover:bg-white/5"
                   >
-                    <span className={`mt-0.5 shrink-0 ${SEVERITY_COLOR[sev] || 'text-aether-muted'}`}>
+                    <span className={`mt-0.5 shrink-0 ${SEVERITY_COLOR[sev] || 'text-aeres-muted'}`}>
                       {SEVERITY_ICON[sev] || '·'}
                     </span>
-                    <span className="min-w-0 flex-1 text-aether-text">{entry.message}</span>
-                    <span className="shrink-0 text-aether-muted">{entry.line || ''}</span>
+                    <span className="min-w-0 flex-1 text-aeres-text">{entry.message}</span>
+                    <span className="shrink-0 text-aeres-muted">{entry.line || ''}</span>
                   </div>
                 )
               })}

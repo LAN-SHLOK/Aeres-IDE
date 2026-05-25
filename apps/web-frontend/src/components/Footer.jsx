@@ -1,11 +1,62 @@
 export default function Footer() {
   const year = new Date().getFullYear()
   return (
-    <footer className="flex flex-col items-center justify-between gap-4 border-t border-aether-border px-6 py-8 font-body text-sm text-aether-muted md:flex-row md:px-10">
-       <span>© {year} Aether IDE. All rights reserved.</span>
-      <span className="text-center text-xs text-aether-border md:text-right">
-        Aether IDE — Code at the speed of thought.
-      </span>
+    <footer className="bg-[#13141f] border-t-4 border-black font-display text-white px-6 py-8 md:px-12 relative overflow-hidden">
+      {/* Decorative grid background */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+      
+      <div className="max-w-[1200px] mx-auto relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+          {/* Brand Column */}
+          <div className="flex flex-col items-start col-span-1 md:col-span-1">
+            <span className="font-black text-2xl tracking-tighter mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-md bg-[#ff8ba7] border-2 border-black inline-block"></span>
+              Aeres
+            </span>
+            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6">
+              A high-fidelity development sandbox built for offline-first speed, intelligence, and seamless code orchestration.
+            </p>
+            <div className="flex gap-3">
+              {['Twitter', 'GitHub', 'Discord'].map((social, i) => (
+                <button key={i} className="px-3 py-1.5 rounded-lg border-2 border-black bg-[#1b1c2b] text-[10px] font-black uppercase hover:bg-[#ff8ba7] hover:text-black transition-colors shadow-[2px_2px_0px_#000000]">
+                  {social}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Links Column 1 */}
+          <div className="flex flex-col gap-3">
+            <h4 className="font-black text-[#2dd4bf] uppercase tracking-wider text-[11px] mb-2 font-mono">Product</h4>
+            {['Download', 'Pricing', 'Changelog', 'Extensions'].map((link, i) => (
+              <a key={i} href="#" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link}</a>
+            ))}
+          </div>
+
+          {/* Links Column 2 */}
+          <div className="flex flex-col gap-3">
+            <h4 className="font-black text-[#fef08a] uppercase tracking-wider text-[11px] mb-2 font-mono">Resources</h4>
+            {['Documentation', 'API Reference', 'Community', 'Blog'].map((link, i) => (
+              <a key={i} href="#" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link}</a>
+            ))}
+          </div>
+
+          {/* Links Column 3 */}
+          <div className="flex flex-col gap-3">
+            <h4 className="font-black text-[#c084fc] uppercase tracking-wider text-[11px] mb-2 font-mono">Legal</h4>
+            {['Privacy Policy', 'Terms of Service', 'Security', 'License'].map((link, i) => (
+              <a key={i} href="#" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link}</a>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-8 border-t-2 border-white/10 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] font-bold text-white/40">
+          <span>© {year} Aeres IDE. All rights reserved.</span>
+          <span className="uppercase tracking-widest font-black text-[#ff8ba7]">
+            Code at the speed of thought.
+          </span>
+        </div>
+      </div>
     </footer>
   )
 }

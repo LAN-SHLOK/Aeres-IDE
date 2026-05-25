@@ -1,4 +1,5 @@
 import time
+import os
 from typing import Annotated, Any, Dict, List, Optional
 
 import httpx
@@ -55,9 +56,21 @@ async def verify_clerk_jwt(token: str) -> dict:
 async def get_current_user(
     authorization: Annotated[Optional[str], Header()] = None,
 ) -> dict:
+    if os.environ.get("DEBUG_SKIP_AUTH") == "True":
+        return {"sub": "debug-user", "email": "debug@aeres.ide"}
+
     if not authorization or not authorization.startswith("Bearer "):
         if not settings.CLERK_JWT_ISSUER:
             return {"sub": "dev-user", "email": "dev@localhost"}
+        print("[Auth] Missing or invalid Authorization header")
         raise HTTPException(status_code=401, detail="Missing Bearer token")
+    
     token = authorization.split(" ", 1)[1].strip()
-    return await verify_clerk_jwt(token)
+    try:
+        return await verify_clerk_jwt(token)
+    except HTTPException as e:
+        print(f"[Auth] Verification failed: {e.detail}")
+        raise
+    except Exception as e:
+        print(f"[Auth] Unexpected auth error: {e}")
+        raise HTTPException(status_code=401, detail=str(e))

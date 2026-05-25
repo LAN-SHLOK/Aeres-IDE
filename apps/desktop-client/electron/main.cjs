@@ -16,38 +16,33 @@ try {
   terminalKillAll = require('./ipcHandlers/terminalHandler.cjs').killAll
 } catch { /* optional */ }
 
-const gotLock = app.requestSingleInstanceLock()
-if (!gotLock) {
-  app.quit()
-  process.exit(0)
-}
-
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('aether', process.execPath, [path.resolve(process.argv[1])])
+    app.setAsDefaultProtocolClient('aeres', process.execPath, [path.resolve(process.argv[1])])
   }
 } else {
-  app.setAsDefaultProtocolClient('aether')
+  app.setAsDefaultProtocolClient('aeres')
 }
 
 let mainWindow = null
+const allWindows = new Set()
 
 function getMainWindow() {
   return mainWindow
 }
 
 function findDeepLinkArg(argv) {
-  return argv.find((a) => typeof a === 'string' && a.startsWith('aether://'))
+  return argv.find((a) => typeof a === 'string' && a.startsWith('aeres://'))
 }
 
-async function createWindow() {
-  mainWindow = new BrowserWindow({
+async function createWindow(isNewWindow = false) {
+  const win = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1024,
     minHeight: 600,
     backgroundColor: '#0a0a0f',
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
     show: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -57,32 +52,43 @@ async function createWindow() {
     },
   })
 
+  allWindows.add(win)
+
+  // The first window becomes the main window
+  if (!mainWindow) {
+    mainWindow = win
+  }
+
   let sidecarPort = null
-  try {
-    sidecarPort = await startSidecar()
-  } catch (err) {
-    console.error('[Main] Sidecar failed to start:', err)
+  if (!isNewWindow) {
+    try {
+      sidecarPort = await startSidecar()
+    } catch (err) {
+      console.error('[Main] Sidecar failed to start:', err)
+    }
+  } else {
+    sidecarPort = getBackendPort()
   }
 
   const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
   if (isDev) {
-    await mainWindow.loadURL('http://127.0.0.1:5174')
+    await win.loadURL('http://127.0.0.1:5174')
   } else {
-    await mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
+    await win.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 
   // Execute startup logic immediately since we are showing window from the start
   if (sidecarPort) {
-    mainWindow.webContents.send('sidecar:ready', { port: sidecarPort })
+    win.webContents.send('sidecar:ready', { port: sidecarPort })
   } else {
-    mainWindow.webContents.send('sidecar:error', { message: 'Python backend failed to start' })
+    win.webContents.send('sidecar:error', { message: 'Python backend failed to start' })
   }
   const authStatus = {
-    authenticated: !!global.__aetherJWT,
-    email: global.__aetherEmail,
+    authenticated: !!global.__aeresJWT,
+    email: global.__aeresEmail,
   }
-  mainWindow.webContents.send('auth:startup', authStatus)
-  if (app.isPackaged && autoUpdater) {
+  win.webContents.send('auth:startup', authStatus)
+  if (!isNewWindow && app.isPackaged && autoUpdater) {
     try {
       autoUpdater.checkForUpdatesAndNotify()
     } catch (e) {
@@ -90,13 +96,19 @@ async function createWindow() {
     }
   }
 
-  mainWindow.on('closed', () => {
-    mainWindow = null
+  win.on('closed', () => {
+    allWindows.delete(win)
+    if (mainWindow === win) {
+      // Promote the next available window as main, or null
+      mainWindow = allWindows.size > 0 ? allWindows.values().next().value : null
+    }
   })
+
+  return win
 }
 
 app.whenReady().then(async () => {
-  authHandler.register(ipcMain)
+  authHandler.register(ipcMain, app, getMainWindow)
   ipcMain.handle('sidecar:getPort', () => getBackendPort())
 
   const handlersToLoad = [
@@ -109,6 +121,9 @@ app.whenReady().then(async () => {
     'formatterHandler',
     'temporalHandler',
     'sessionHandler',
+    'contractHandler',
+    'radarHandler',
+    'fsHandler',
   ]
   for (const h of handlersToLoad) {
     try {
@@ -129,22 +144,52 @@ app.whenReady().then(async () => {
     if (autoUpdater) autoUpdater.quitAndInstall()
   })
 
+  ipcMain.on('window:minimize', () => {
+    mainWindow?.minimize()
+  })
+
+  ipcMain.on('window:maximize', () => {
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize()
+      } else {
+        mainWindow.maximize()
+      }
+    }
+  })
+
+  ipcMain.on('window:close', () => {
+    const focusedWin = BrowserWindow.getFocusedWindow()
+    if (focusedWin) focusedWin.close()
+    else mainWindow?.close()
+  })
+
+  ipcMain.handle('window:newWindow', async () => {
+    try {
+      await createWindow(true)
+      return { success: true }
+    } catch (err) {
+      console.error('[Main] Failed to create new window:', err)
+      return { success: false, error: err.message }
+    }
+  })
+
   await createWindow()
 
   const deepLink = findDeepLinkArg(process.argv)
   if (deepLink) {
-    authHandler.handleDeepLink(deepLink, mainWindow)
+    authHandler.handleDeepLink(deepLink, mainWindow, app)
   }
 })
 
 app.on('open-url', (event, url) => {
   event.preventDefault()
-  authHandler.handleDeepLink(url, mainWindow)
+  authHandler.handleDeepLink(url, mainWindow, app)
 })
 
 app.on('second-instance', (event, commandLine) => {
   const url = findDeepLinkArg(commandLine)
-  if (url) authHandler.handleDeepLink(url, mainWindow)
+  if (url) authHandler.handleDeepLink(url, mainWindow, app)
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore()
     mainWindow.focus()
@@ -157,7 +202,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  if (mainWindow === null) {
+  if (allWindows.size === 0) {
     createWindow().catch((err) => console.error('[Main] activate createWindow:', err))
   }
 })

@@ -11,26 +11,26 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error(`[ErrorBoundary:${this.props.label || 'unknown'}]`, error, info)
+    console.error('[ErrorBoundary] Caught error:', error, info)
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-full flex-col items-center justify-center gap-3 bg-aether-bg p-4">
-          <div className="text-2xl text-amber-500">⚠</div>
-          <p className="font-display text-sm font-semibold text-white">
-            {this.props.label || 'Component'} encountered an error
-          </p>
-          <p className="max-w-md text-center font-mono text-xs text-aether-muted">
-            {this.state.error?.message || 'Unknown error'}
+        <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-950 text-slate-300 gap-4 p-8">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <h2 className="text-lg font-bold text-red-400">Something went wrong</h2>
+          <p className="text-sm text-slate-500 text-center max-w-md">
+            {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
           <button
-            type="button"
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="mt-2 rounded-md border border-aether-border bg-aether-surface px-4 py-1.5 font-body text-xs text-aether-text transition hover:border-aether-violet"
+            className="px-4 py-2 rounded bg-violet-600 text-white text-sm hover:bg-violet-500 transition"
           >
-            Retry
+            Try Again
           </button>
         </div>
       )

@@ -1,85 +1,43 @@
-const { dialog } = require('electron')
+const { dialog, shell } = require('electron')
 const fs = require('fs').promises
+const fsSync = require('fs')
 const path = require('path')
 const { exec } = require('child_process')
 const { promisify } = require('util')
 
 const execAsync = promisify(exec)
 
-const IGNORE = new Set(['node_modules', '.git', 'venv', '__pycache__', 'dist', 'release', '.aether'])
-
 function register(ipcMain, app, getMainWindow, getBackendPort) {
-  ipcMain.handle('fs:openFolder', async () => {
-    const result = await dialog.showOpenDialog({ properties: ['openDirectory'] })
-    if (!result.canceled) {
-      global.__activeRootPath = result.filePaths[0]
+  let currentAbortController = null
+
+  // ── Interrupt Active RAG/Agent Request ──────────────
+  ipcMain.handle('rag:interrupt', async () => {
+    if (currentAbortController) {
+      currentAbortController.abort()
+      currentAbortController = null
+      return { success: true }
     }
-    return result.canceled ? null : result.filePaths[0]
+    return { success: false, error: 'No active request to interrupt' }
   })
 
-  ipcMain.handle('fs:readFile', async (_, filePath) => fs.readFile(filePath, 'utf-8'))
-
-  ipcMain.handle('fs:writeFile', async (_, filePath, content) => {
-    await fs.writeFile(filePath, content, 'utf-8')
-    return { success: true }
-  })
-
-  ipcMain.handle('fs:exists', async (_, filePath) => {
+  ipcMain.handle('rag:openUrl', async (_, url) => {
     try {
-      await fs.access(filePath)
-      return true
-    } catch {
-      return false
+      await shell.openExternal(url)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message }
     }
   })
 
-  ipcMain.handle('fs:getTree', async (_, rootPath) => {
-    console.log(`[Main] fs:getTree called for: ${rootPath}`)
-    if (!rootPath) return []
-    
-    async function walk(dir, depth = 0) {
-      if (depth > 8) return []
-      try {
-        const entries = await fs.readdir(dir, { withFileTypes: true })
-        const items = []
-        for (const entry of entries) {
-          if (IGNORE.has(entry.name) || entry.name.startsWith('.')) continue
-          const fullPath = path.join(dir, entry.name)
-          if (entry.isDirectory()) {
-            try {
-              const children = await walk(fullPath, depth + 1)
-              items.push({
-                name: entry.name,
-                path: fullPath,
-                type: 'dir',
-                children,
-              })
-            } catch (e) {
-              console.warn(`[Main] Failed to walk subdir ${fullPath}:`, e.message)
-            }
-          } else {
-            const ext = path.extname(entry.name).slice(1)
-            items.push({ name: entry.name, path: fullPath, type: 'file', ext })
-          }
-        }
-        return items.sort((a, b) => {
-          if (a.type !== b.type) return a.type === 'dir' ? -1 : 1
-          return a.name.localeCompare(b.name)
-        })
-      } catch (err) {
-        console.error(`[Main] fs:getTree readdir error at ${dir}:`, err.message)
-        return []
-      }
-    }
-    const result = await walk(rootPath)
-    console.log(`[Main] fs:getTree returned ${result.length} top-level items`)
-    return result
-  })
-
+  // ── RAG Query (existing) ───────────────────────────
   ipcMain.handle('rag:query', async (_, question, context) => {
     const port = getBackendPort && getBackendPort()
     const base = port ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:8008'
-    const token = global.__aetherJWT || ''
+    const token = global.__aeresJWT || ''
+    
+    if (currentAbortController) currentAbortController.abort()
+    currentAbortController = new AbortController()
+
     try {
       const resp = await fetch(`${base}/api/rag/query`, {
         method: 'POST',
@@ -89,62 +47,244 @@ function register(ipcMain, app, getMainWindow, getBackendPort) {
           context: context || '', 
           root_path: global.__activeRootPath || '' 
         }),
+        signal: currentAbortController.signal
       })
       if (!resp.ok) throw new Error(`Backend returned ${resp.status}`)
-      return await resp.json()
+      const data = await resp.json()
+      currentAbortController = null
+      return data
     } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('[ragBridge] RAG Query aborted')
+        return { answer: 'Request interrupted.', interrupted: true }
+      }
       console.error('[ragBridge] RAG Query failed:', err.message)
+      currentAbortController = null
       return { answer: `I encountered an error connecting to the AI core: ${err.message}`, source_url: '' }
     }
   })
 
-  ipcMain.handle('search:inProject', async (_, { rootPath, query, caseSensitive }) => {
-    if (!query) return { results: [], count: 0 }
-    
-    // Redirect to backend search for deep insights and better performance
+  // ── RAG Ingest (existing) ──────────────────────────
+  ipcMain.handle('rag:ingest', async (_, url, name) => {
     const port = getBackendPort && getBackendPort()
     const base = port ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:8008'
-    const token = global.__aetherJWT || ''
-    
+    const token = global.__aeresJWT || ''
     try {
-      const rpath = rootPath || global.__activeRootPath || ''
-      const resp = await fetch(`${base}/api/search/?q=${encodeURIComponent(query)}&root_path=${encodeURIComponent(rpath)}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const resp = await fetch(`${base}/api/rag/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url, name }),
       })
-      const data = await resp.json()
-      // Map backend {results: [{file, line, content}]} to frontend expectation {results: [{file, line, text}]}
-      const mapped = (data.results || []).map(r => ({ ...r, text: r.content }))
-      return { results: mapped, count: mapped.length }
+      if (!resp.ok) throw new Error(`Backend returned ${resp.status}`)
+      return await resp.json()
     } catch (err) {
-      console.error('[ragBridge] Backend search failed, falling back to local grep:', err.message)
-      // Fallback to local grep if backend is down
-      const escaped = String(query).replace(/"/g, '\\"')
-      let cmd
-      if (process.platform === 'win32') {
-        cmd = `findstr /s /n ${caseSensitive ? '' : '/i'} "${escaped}" "${rootPath}\\*" 2>nul`
-      } else {
-        const flag = caseSensitive ? '' : '-i'
-        cmd = `grep -rn ${flag} --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --include="*.py" "${escaped}" "${rootPath}" 2>/dev/null | head -200`
+      console.error('[ragBridge] Ingest failed:', err.message)
+      return { error: err.message }
+    }
+  })
+
+  // ── Agent Edit (simple, existing) ──────────────────
+  ipcMain.handle('rag:agentEdit', async (_, { instruction, filePath, fileContent }) => {
+    const port = getBackendPort && getBackendPort()
+    const base = port ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:8008'
+    const token = global.__aeresJWT || ''
+    try {
+      const resp = await fetch(`${base}/api/rag/agent-edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ 
+          instruction,
+          file_path: filePath,
+          file_content: fileContent,
+          root_path: global.__activeRootPath || '' 
+        }),
+      })
+      if (!resp.ok) throw new Error(`Backend returned ${resp.status}`)
+      return await resp.json()
+    } catch (err) {
+      console.error('[ragBridge] Agent Edit failed:', err.message)
+      return { action: 'error', explanation: err.message }
+    }
+  })
+
+  // ── Agent Stream (NEW — Full Agentic System) ───────
+  ipcMain.handle('rag:agentStream', async (_, opts) => {
+    const port = getBackendPort && getBackendPort()
+    const base = port ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:8008'
+    const token = global.__aeresJWT || ''
+    const win = getMainWindow()
+
+    if (currentAbortController) currentAbortController.abort()
+    currentAbortController = new AbortController()
+
+    try {
+      const resp = await fetch(`${base}/api/rag/agent-stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          instruction: opts.instruction,
+          context: opts.context || '',
+          file_path: opts.filePath || '',
+          root_path: opts.rootPath || global.__activeRootPath || '',
+          conversation: opts.conversation || [],
+          images: opts.images || [],
+        }),
+        signal: currentAbortController.signal
+      })
+
+      if (!resp.ok) {
+        win?.webContents.send('rag:agent-step', {
+          type: 'error', content: `Backend returned ${resp.status}`
+        })
+        currentAbortController = null
+        return { error: `Backend returned ${resp.status}` }
       }
-      try {
-        const { stdout } = await execAsync(cmd, { maxBuffer: 1024 * 1024, shell: true })
-        const results = stdout
-          .split('\n')
-          .filter(Boolean)
-          .map((line) => {
-            const lastColon = line.lastIndexOf(':')
-            const secondLastColon = line.lastIndexOf(':', lastColon - 1)
-            if (lastColon === -1 || secondLastColon === -1) return null
-            const file = line.substring(0, secondLastColon)
-            const lineNum = line.substring(secondLastColon + 1, lastColon)
-            const text = line.substring(lastColon + 1).trim()
-            return { file, line: parseInt(lineNum, 10), text }
-          })
-          .filter(Boolean)
-        return { results, count: results.length }
-      } catch {
-        return { results: [], count: 0 }
+
+      // Parse SSE stream
+      const reader = resp.body
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      for await (const chunk of reader) {
+        buffer += decoder.decode(chunk, { stream: true })
+        
+        const lines = buffer.split('\n')
+        buffer = lines.pop() // keep incomplete line in buffer
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6).trim()
+            if (data === '[DONE]') {
+              win?.webContents.send('rag:agent-step', { type: 'done' })
+              currentAbortController = null
+              return { success: true }
+            }
+            try {
+              const step = JSON.parse(data)
+              
+              // Handle file write/edit tools — execute on Electron side
+              if (step.type === 'needs_confirm') {
+                // Send to frontend for user confirmation
+                win?.webContents.send('rag:agent-step', step)
+              } else {
+                win?.webContents.send('rag:agent-step', step)
+              }
+            } catch (e) {
+              console.warn('[ragBridge] SSE parse error:', e.message)
+            }
+          }
+        }
       }
+
+      currentAbortController = null
+      return { success: true }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        console.log('[ragBridge] Agent Stream aborted')
+        win?.webContents.send('rag:agent-step', {
+          type: 'error', content: 'Agent execution interrupted.'
+        })
+        return { success: false, interrupted: true }
+      }
+      console.error('[ragBridge] Agent Stream failed:', err.message)
+      win?.webContents.send('rag:agent-step', {
+        type: 'error', content: err.message
+      })
+      currentAbortController = null
+      return { error: err.message }
+    }
+  })
+
+  // ── Agent Tool Execution (file write/edit with user confirmation) ──
+  ipcMain.handle('rag:applyAgentEdit', async (_, { tool, args }) => {
+    try {
+      if (tool === 'write_file') {
+        const fp = args.file_path
+        const dir = path.dirname(fp)
+        // Ensure directory exists
+        await fs.mkdir(dir, { recursive: true })
+        await fs.writeFile(fp, args.content, 'utf-8')
+        return { success: true, path: fp }
+      }
+      
+      if (tool === 'edit_file') {
+        const fp = args.file_path
+        const content = await fs.readFile(fp, 'utf-8')
+        if (!content.includes(args.find)) {
+          return { success: false, error: 'Could not find the target text in file' }
+        }
+        const newContent = content.replace(args.find, args.replace)
+        await fs.writeFile(fp, newContent, 'utf-8')
+        return { success: true, path: fp }
+      }
+      
+      if (tool === 'multi_edit_file') {
+        const fp = args.file_path
+        let content = await fs.readFile(fp, 'utf-8')
+        let errors = []
+        for (const edit of args.edits) {
+          if (!content.includes(edit.find)) {
+            errors.push(`Could not find target text: ${edit.find.substring(0, 20)}...`)
+            continue
+          }
+          content = content.replace(edit.find, edit.replace)
+        }
+        if (errors.length === args.edits.length) {
+          return { success: false, error: 'All edits failed: ' + errors.join(', ') }
+        }
+        await fs.writeFile(fp, content, 'utf-8')
+        return { success: true, path: fp, error: errors.length ? `Partial success. Errors: ${errors.join(', ')}` : undefined }
+      }
+      
+      return { success: false, error: 'Unknown tool' }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
+  })
+
+  // ── Agent Terminal Execution ──
+  ipcMain.handle('rag:runCommand', async (_, { command, cwd }) => {
+    try {
+      const result = await execAsync(command, {
+        cwd: cwd || global.__activeRootPath || process.cwd(),
+        timeout: 30000,
+        encoding: 'utf-8',
+      })
+      return {
+        stdout: (result.stdout || '').slice(0, 5000),
+        stderr: (result.stderr || '').slice(0, 2000),
+        exitCode: 0
+      }
+    } catch (err) {
+      return {
+        stdout: (err.stdout || '').slice(0, 5000),
+        stderr: (err.stderr || '').slice(0, 2000),
+        exitCode: err.code || 1
+      }
+    }
+  })
+
+  // ── RAG Autocomplete (Ghost Text) ──
+  ipcMain.handle('rag:autocomplete', async (_, { prefix, suffix, language, filePath }) => {
+    const port = getBackendPort && getBackendPort()
+    const base = port ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:8008'
+    const token = global.__aeresJWT || ''
+    try {
+      const resp = await fetch(`${base}/api/rag/autocomplete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          prefix,
+          suffix,
+          language: language || 'javascript',
+          file_path: filePath || ''
+        }),
+      })
+      if (!resp.ok) throw new Error(`Backend returned ${resp.status}`)
+      return await resp.json()
+    } catch (err) {
+      console.error('[ragBridge] Autocomplete failed:', err.message)
+      return { suggestion: '' }
     }
   })
 }

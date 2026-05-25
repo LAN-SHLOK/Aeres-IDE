@@ -1,7 +1,7 @@
 /**
  * Post–sign-in path stored for SPA navigation after Clerk on /auth.
  */
-const STORAGE_KEY = 'aether_post_auth_redirect'
+const STORAGE_KEY = 'aeres_post_auth_redirect'
 
 export function redirectToAuth(redirectPath = '/dashboard') {
   try {
@@ -39,12 +39,12 @@ export function clearPostAuthRedirect() {
 }
 
 /**
- * Deep link into the Electron app — protocol handler registers aether://
+ * Deep link into the Electron app — protocol handler registers aeres://
  */
 export function redirectToIDE(token, email) {
   const params = new URLSearchParams({
     token: token ?? '',
     email: email ?? '',
   })
-  window.location.href = `aether://auth?${params.toString()}`
+  window.location.href = `aeres://auth?${params.toString()}`
 }

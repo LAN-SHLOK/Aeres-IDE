@@ -58,16 +58,23 @@ async function startSidecar() {
   }
   backendPort = await findFreePort()
   const sidecarPath = getSidecarPath()
-  const mainPy = path.join(__dirname, '../../python-backend/main.py')
+  const backendDir = path.join(__dirname, '../../python-backend')
+  const mainPy = path.join(backendDir, 'main.py')
   const args = app.isPackaged ? [] : [mainPy]
-  const env = {
-    ...process.env,
+  
+  // Create a clean env object that inherits from process.env
+  // but doesn't force empty strings for missing Aeres-specific keys
+  const env = { 
+    ...process.env, 
     BACKEND_PORT: String(backendPort),
-    CLERK_JWT_ISSUER: process.env.CLERK_JWT_ISSUER || '',
-    GROQ_API_KEY: process.env.GROQ_API_KEY || '',
+    DEBUG_SKIP_AUTH: 'True'
   }
 
-  backendProcess = spawn(sidecarPath, args, { env, stdio: ['ignore', 'pipe', 'pipe'] })
+  backendProcess = spawn(sidecarPath, args, { 
+    env, 
+    cwd: backendDir,
+    stdio: ['ignore', 'pipe', 'pipe'] 
+  })
 
   const logPath = path.join(app.getPath('userData'), 'backend.log')
   const logStream = fs.createWriteStream(logPath, { flags: 'a' })

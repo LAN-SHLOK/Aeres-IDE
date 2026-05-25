@@ -6,16 +6,16 @@ import { redirectToAuthForDownload } from '../utils/authRedirect.js'
 const BASE = (import.meta.env.VITE_DOWNLOAD_BASE_URL || '').replace(/\/$/, '')
 
 const ARTIFACTS = {
-  mac: 'Aether-IDE-mac-universal.dmg',
-  windows: 'Aether-IDE-Setup-win-x64.exe',
-  linux: 'Aether-IDE-linux-x86_64.AppImage',
+  mac: 'Aeres-IDE-mac-universal.dmg',
+  windows: 'Aeres-IDE-Setup-win-x64.exe',
+  linux: 'Aeres-IDE-linux-x86_64.AppImage',
 }
 
 const LABELS = {
   mac: 'Download for macOS',
   windows: 'Download for Windows',
   linux: 'Download for Linux',
-  unknown: 'Download Aether IDE',
+  unknown: 'Download Aeres IDE',
 }
 
 function urlFor(os) {
@@ -68,41 +68,58 @@ export default function SmartDownload({ className = '', large = false, autoStart
   }
 
   const label = LABELS[os] || LABELS.unknown
-  const btnBase =
-    'inline-flex items-center justify-center gap-2 rounded-lg border-none font-medium font-body transition focus:outline-none focus:ring-2 focus:ring-aether-violet focus:ring-offset-2 focus:ring-offset-aether-bg disabled:cursor-not-allowed disabled:opacity-70'
-  const sizeClass = large ? 'px-8 py-4 text-base' : 'px-5 py-2.5 text-sm'
 
+  // 1. Beautiful Isometric 3D coffee-block loader for loading states
   if (!isLoaded) {
-    return <p className={`text-sm text-aether-muted ${className}`}>Loading…</p>
+    return (
+      <div className="flex items-center gap-5.5 font-display text-xs font-black uppercase text-black py-4">
+        <div className="isometric-loader">
+          <div className="isometric-cube">
+            <div className="isometric-face face-top" />
+            <div className="isometric-face face-left" />
+            <div className="isometric-face face-right" />
+          </div>
+        </div>
+        <span>Provisioning Downloader...</span>
+      </div>
+    )
   }
 
+  // 2. Direct button rendering - resolving nested styling layout bug
   return (
-    <div className={className}>
+    <div className="flex flex-col items-center">
       <button
         type="button"
-        className={`${btnBase} ${sizeClass} ${
-          downloading ? 'bg-violet-800' : 'bg-aether-violet'
-        } text-white hover:opacity-95`}
+        className={`${className} ${
+          downloading ? 'opacity-85 translate-y-0.5 shadow-none' : ''
+        }`}
         onClick={handleClick}
         disabled={downloading}
       >
-        {downloading ? 'Starting download…' : label}
+        {downloading ? (
+          <span className="flex items-center gap-2">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-black" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Starting Download...
+          </span>
+        ) : label}
       </button>
 
       {done && isSignedIn && (
-        <p className="mt-3 text-sm text-aether-muted">
-          <span className="text-emerald-500">Download started.</span> After installing, click Login via
-          Browser inside Aether IDE.
+        <p className="mt-4 text-xs font-sans font-bold text-black/60">
+          <span className="text-emerald-600 font-extrabold">✓ Download started.</span> After installing, choose Login via Browser inside Aeres IDE.
         </p>
       )}
 
       {os === 'unknown' && BASE && (
-        <div className="mt-4 flex flex-wrap gap-4 text-sm">
+        <div className="mt-4 flex flex-wrap gap-4 text-xs font-display">
           {(['windows', 'mac', 'linux']).map((p) => (
             <a
               key={p}
               href={`${BASE}/${ARTIFACTS[p]}`}
-              className="text-aether-blue underline decoration-aether-blue/40 underline-offset-4 hover:text-aether-text"
+              className="bg-white border-2 border-black px-3.5 py-1.5 rounded-full text-black hover:bg-[#fae3d9] shadow-[1.5px_1.5px_0px_#000000] no-underline hover:-translate-y-0.5 transition"
               onClick={(e) => {
                 if (!isSignedIn) {
                   e.preventDefault()

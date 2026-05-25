@@ -3,7 +3,7 @@ const fs = require('fs').promises
 const path = require('path')
 
 function getSessionsDir() {
-  return path.join(app.getPath('userData'), 'aether-sessions')
+  return path.join(app.getPath('userData'), 'aeres-sessions')
 }
 
 async function ensureDir() {

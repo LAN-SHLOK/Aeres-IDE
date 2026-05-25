@@ -1,21 +1,31 @@
-import subprocess, ast, json, re
+import subprocess, ast, json, re, sys
 from pathlib import Path
 from typing import List, Dict, Optional
 
-def git(args: str, cwd: str) -> str:
+def git(args: List[str], cwd: str) -> str:
     try:
-        result = subprocess.run(f"git {args}", shell=True, cwd=cwd, capture_output=True, text=True)
+        # On Windows, shell=True is highly recommended to resolve git from PATH perfectly
+        use_shell = sys.platform == 'win32'
+        result = subprocess.run(["git"] + args, cwd=cwd, capture_output=True, text=True, check=False, shell=use_shell)
         return result.stdout.strip()
-    except Exception:
+    except Exception as e:
+        print(f"[CausalTracer] Git error: {e}")
         return ""
 
 def get_function_commits(repo_path: str, file_path: str, function_name: str, limit: int = 30) -> List[Dict]:
     """Get all commits that touched a specific function in a file."""
-    # Use git log -L to trace function changes
-    raw = git(f'log -L :{function_name}:{file_path} --format="%H|||%an|||%ae|||%at|||%s" -{limit}', repo_path)
+    # Use git log -L to trace function changes. 
+    # Note: :func:file syntax can be tricky on Windows with backslashes.
+    # Convert to forward slashes for git.
+    git_file_path = file_path.replace("\\", "/")
+    
+    args = ["log", f"-L:{function_name}:{git_file_path}", f'--format=%H|||%an|||%ae|||%at|||%s', f"-{limit}"]
+    raw = git(args, repo_path)
+    
     if not raw:
         # Fallback to general file history if -L fails
-        raw = git(f'log --format="%H|||%an|||%ae|||%at|||%s" -{limit} -- {file_path}', repo_path)
+        args = ["log", f'--format=%H|||%an|||%ae|||%at|||%s', f"-{limit}", "--", git_file_path]
+        raw = git(args, repo_path)
         
     commits = []
     for line in raw.split('\n'):
@@ -29,7 +39,7 @@ def get_function_commits(repo_path: str, file_path: str, function_name: str, lim
 
 def get_ast_changes(repo_path: str, commit_hash: str, file_path: str) -> List[str]:
     """Extract what AST-level structures changed in this commit for this file."""
-    diff = git(f'show {commit_hash} -- {file_path}', repo_path)
+    diff = git(['show', commit_hash, '--', file_path.replace("\\", "/")], repo_path)
     if not diff: return ["logic modified"]
     
     changes = []
@@ -60,13 +70,19 @@ def get_ast_changes(repo_path: str, commit_hash: str, file_path: str) -> List[st
 
 def build_causal_chain(repo_path: str, file_path: str, function_name: str, error_message: str = "") -> Dict:
     """Build the full causal chain for a function's current broken state."""
-    # Convert absolute path to relative if needed
-    p = Path(file_path)
-    if p.is_absolute():
-        try:
-            file_path = str(p.relative_to(repo_path))
-        except ValueError:
-            pass
+    # Convert absolute path to relative if needed, accounting for case & slash differences on Windows
+    repo_abs = Path(repo_path).resolve()
+    file_abs = Path(file_path).resolve()
+    try:
+        file_path = str(file_abs.relative_to(repo_abs))
+    except ValueError:
+        # Fallback manual relative resolution if drives or casing are slightly different
+        repo_str = str(repo_abs).lower().replace("\\", "/")
+        file_str = str(file_abs).lower().replace("\\", "/")
+        if file_str.startswith(repo_str):
+            file_path = str(file_abs)[len(str(repo_abs)):].lstrip("\\/")
+        else:
+            file_path = str(file_abs)
 
     commits = get_function_commits(repo_path, file_path, function_name)
     if not commits:

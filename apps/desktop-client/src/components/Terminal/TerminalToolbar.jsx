@@ -7,11 +7,11 @@ export default function TerminalToolbar({ terminalId, onKill }) {
   }
 
   return (
-    <div className="flex h-7 shrink-0 items-center gap-1 border-b border-aether-border bg-aether-surface px-2">
+    <div className="flex h-7 shrink-0 items-center gap-1 border-b border-aeres-border bg-aeres-surface px-2">
       <button
         type="button"
         onClick={handleClear}
-        className="rounded px-2 py-0.5 text-[10px] text-aether-muted transition hover:text-aether-text"
+        className="rounded px-2 py-0.5 text-[10px] text-aeres-muted transition hover:text-aeres-text"
         title="Clear"
       >
         Clear
@@ -19,7 +19,7 @@ export default function TerminalToolbar({ terminalId, onKill }) {
       <button
         type="button"
         onClick={onKill}
-        className="rounded px-2 py-0.5 text-[10px] text-aether-muted transition hover:text-red-400"
+        className="rounded px-2 py-0.5 text-[10px] text-aeres-muted transition hover:text-red-400"
         title="Kill"
       >
         Kill

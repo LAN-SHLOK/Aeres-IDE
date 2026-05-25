@@ -74,7 +74,7 @@ DESKTOP CLIENT package.json dependencies:
 - concurrently, wait-on
 
 DESKTOP CLIENT electron-builder config inside package.json:
-- appId: com.antigravity.aether-ide
+- appId: com.aeres.ide
 - productName: Aether IDE
 - extraResources: copy python-backend/dist/backend binary
 - protocols: register aether:// scheme
@@ -277,7 +277,7 @@ app/server.py:
 
 main.py:
   - Detect if frozen by PyInstaller (sys.frozen)
-  - If frozen: use platformdirs.user_data_dir("AetherIDE","Antigravity")
+  - If frozen: use platformdirs.user_data_dir("AetherIDE","Aether")
     for CHROMA_DB_PATH and model cache
   - Read BACKEND_PORT from env (default 8008)
   - Run uvicorn on 127.0.0.1:PORT, import app from app.server
@@ -434,7 +434,7 @@ pages/LandingPage.jsx:
 
   FEATURES SECTION:
   Show 7 cards for the unique features:
-  1. Antigravity AI Engine
+  1. Aether AI Engine
   2. Temporal Code Lens
   3. Causal Blame Map
   4. Contract Snapshot Tests

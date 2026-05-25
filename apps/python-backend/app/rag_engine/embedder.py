@@ -5,7 +5,7 @@ from app.core.config import settings
 
 _model = None
 
-def load_embedding_model() -> SentenceTransformer:
+def load_embedding_model() -> 'SentenceTransformer':
     global _model
     cache = os.environ.get("EMBEDDING_CACHE")
     if cache:

@@ -1,5 +1,5 @@
 """
-Aether IDE Backend - Api Package
+Aeres IDE Backend - Api Package
 This file initializes the api module.
 """
 

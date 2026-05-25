@@ -14,11 +14,14 @@ router = APIRouter()
 @router.post("/chat")
 async def codebase_chat(req: ExplainRequest, user: dict = Depends(get_current_user)):
     """General chat about the codebase."""
-    # Reusing ExplainRequest for simplicity since it has language/selection
-    # In a real app we'd use a dedicated ChatRequest
-    agent = CodebaseAgent(root_path=os.getcwd())
-    answer = await agent.answer_question(req.selection, file_context=req.selection)
-    return {"answer": answer}
+    try:
+        agent = CodebaseAgent(root_path=os.getcwd())
+        answer = await agent.answer_question(req.selection, file_context=req.selection)
+        return {"answer": answer}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"AI Agent Error: {str(e)}")
 
 @router.post("/complete")
 async def inline_complete(req: CompletionRequest, user: dict = Depends(get_current_user)):

@@ -13,11 +13,21 @@ _collection = None
 
 def init_local_chroma():
     global _client, _collection
-    path = settings.CHROMA_DB_PATH
-    os.makedirs(path, exist_ok=True)
-    _client = chromadb.PersistentClient(path=path)
-    _collection = _client.get_or_create_collection("migration_docs")
-    return _collection
+    try:
+        path = settings.CHROMA_DB_PATH
+        os.makedirs(path, exist_ok=True)
+        _client = chromadb.PersistentClient(path=path)
+        _collection = _client.get_or_create_collection("migration_docs")
+        return _collection
+    except Exception as e:
+        print(f"[Chroma] Failed to initialize: {e}")
+        # Create a mock collection to prevent crashing
+        class MockCollection:
+            def query(self, **kwargs): return {"documents": [[]], "metadatas": [[]]}
+            def upsert(self, **kwargs): pass
+            def get_or_create_collection(self, name): return self
+        _collection = MockCollection()
+        return _collection
 
 
 def get_collection():
@@ -45,21 +55,25 @@ def store_migration_context(chunks: list, source_url: str, function_name: str):
 
 
 def query_relevant_fix(flagged_function: str, n_results: int = 5) -> list:
-    col = get_collection()
-    embedding = generate_embeddings([flagged_function])[0]
-    results = col.query(query_embeddings=[embedding], n_results=n_results)
-    docs = results.get("documents") or [[]]
-    metas = results.get("metadatas") or [[]]
-    row_docs = docs[0] if docs else []
-    row_metas = metas[0] if metas else []
-    out = []
-    for d, m in zip(row_docs, row_metas):
-        meta = m or {}
-        out.append(
-            {
-                "document": d,
-                "source_url": meta.get("source_url", ""),
-                "function": meta.get("function", ""),
-            }
-        )
-    return out
+    try:
+        col = get_collection()
+        embedding = generate_embeddings([flagged_function])[0]
+        results = col.query(query_embeddings=[embedding], n_results=n_results)
+        docs = results.get("documents") or [[]]
+        metas = results.get("metadatas") or [[]]
+        row_docs = docs[0] if docs else []
+        row_metas = metas[0] if metas else []
+        out = []
+        for d, m in zip(row_docs, row_metas):
+            meta = m or {}
+            out.append(
+                {
+                    "document": d,
+                    "source_url": meta.get("source_url", ""),
+                    "function": meta.get("function", ""),
+                }
+            )
+        return out
+    except Exception as e:
+        print(f"[VectorDB] Query error: {e}")
+        return []

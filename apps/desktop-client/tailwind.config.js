@@ -4,19 +4,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        aether: {
-          bg: '#0a0a0f',
-          surface: '#12121a',
-          border: '#1e1e2e',
-          violet: '#7C3AED',
-          blue: '#4F8EF7',
-          text: '#e2e2f0',
-          muted: '#6b7280',
+        aeres: {
+          bg: 'var(--aeres-bg)',
+          surface: 'var(--aeres-surface)',
+          sidebar: 'var(--aeres-bg)',
+          activitybar: 'var(--aeres-bg)',
+          titlebar: 'var(--aeres-bg)',
+          border: 'var(--aeres-border)',
+          violet: 'var(--aeres-violet)',
+          text: 'var(--aeres-text)',
+          muted: 'var(--aeres-muted)',
         },
       },
+      borderRadius: {
+        'sm': '2px',
+        'md': '4px',
+      },
       fontFamily: {
-        display: ['Syne', 'sans-serif'],
-        body: ['DM Sans', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
     },

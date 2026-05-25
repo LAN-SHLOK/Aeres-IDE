@@ -4,12 +4,12 @@ import sys
 import shutil
 
 def build():
-    print("🚀 Starting Aether Backend Sidecar Build...")
+    print("Starting Aeres Backend Sidecar Build...")
     
     # Path to the main script
     main_script = "main.py"
     if not os.path.exists(main_script):
-        print(f"❌ Error: {main_script} not found!")
+        print(f"Error: {main_script} not found!")
         return
 
     # PyInstaller command
@@ -26,6 +26,12 @@ def build():
         "--name", "backend",
         "--add-data", f"app{os.pathsep}app",
         "--add-data", f".env{os.pathsep}.",
+        "--exclude-module", "PyQt5",
+        "--exclude-module", "PyQt6",
+        "--exclude-module", "PySide6",
+        "--exclude-module", "matplotlib",
+        "--exclude-module", "pandas",
+        "--exclude-module", "numpy",
         "--hidden-import", "uvicorn.logging",
         "--hidden-import", "uvicorn.loops",
         "--hidden-import", "uvicorn.loops.auto",
@@ -39,13 +45,13 @@ def build():
         main_script
     ]
 
-    print(f"🛠️ Running command: {' '.join(cmd)}")
+    print(f"Running command: {' '.join(cmd)}")
     
     try:
         subprocess.run(cmd, check=True)
-        print("✅ Build successful! Executable is in the 'dist' folder.")
+        print("Build successful! Executable is in the 'dist' folder.")
     except subprocess.CalledProcessError as e:
-        print(f"❌ Build failed with error: {e}")
+        print(f"Build failed with error: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

@@ -40,20 +40,27 @@ const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 if (!publishableKey || publishableKey === 'pk_test_placeholder' || publishableKey === 'pk_test_replace_me') {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
-      <div className="flex min-h-screen flex-col items-center justify-center bg-[#0a0a0f] text-white p-8 text-center font-sans">
-        <h1 className="text-2xl font-bold mb-4">Auth Configuration Required</h1>
-        <p className="text-gray-400 mb-6 max-w-md">
-          To run the Aether web portal, please add your Clerk Publishable Key to <code className="bg-white/10 px-2 py-1 rounded">.env.local</code> in the <code className="bg-white/10 px-2 py-1 rounded">apps/web-frontend</code> directory.
-        </p>
-        <pre className="bg-black/50 p-4 rounded border border-white/10 text-sm mb-6">
-          VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
-        </pre>
-        <button 
-          onClick={() => window.location.reload()}
-          className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white font-bold py-2 px-6 rounded transition"
-        >
-          Check Again
-        </button>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-[#fdf5ee] text-[#3b2314] p-8 text-center font-sans">
+        
+        <div className="kawaii-card max-w-md p-8 bg-white">
+          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
+            🖳 config_error
+          </span>
+          <h1 className="font-display text-2xl font-black mb-4">Auth Configuration Required</h1>
+          <p className="text-[#3b2314]/70 text-xs font-semibold mb-6 leading-relaxed">
+            To run the Aeres web portal, please add your Clerk Publishable Key to <code className="bg-white border-2 border-black px-1.5 py-0.5 rounded font-mono font-black text-black">.env.local</code> in the <code className="bg-white border-2 border-black px-1.5 py-0.5 rounded font-mono font-black text-black">apps/web-frontend</code> directory.
+          </p>
+          <pre className="bg-[#fffdf9] p-4 rounded-2xl border-3 border-black font-mono text-xs mb-6 text-left select-all font-extrabold shadow-[2px_2px_0px_#000000]">
+            VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+          </pre>
+          <button 
+            onClick={() => window.location.reload()}
+            className="kawaii-btn-pink text-xs uppercase tracking-wider font-display font-bold"
+          >
+            Check Again
+          </button>
+        </div>
+
       </div>
     </React.StrictMode>
   )

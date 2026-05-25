@@ -38,26 +38,59 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   fs: {
+    openFile: () => ipcRenderer.invoke('fs:openFile'),
     openFolder: () => ipcRenderer.invoke('fs:openFolder'),
     readFile: (p) => ipcRenderer.invoke('fs:readFile', p),
     writeFile: (p, content) => ipcRenderer.invoke('fs:writeFile', p, content),
+    createFolder: (p) => ipcRenderer.invoke('fs:createFolder', p),
     exists: (p) => ipcRenderer.invoke('fs:exists', p),
     getTree: (rootPath) => ipcRenderer.invoke('fs:getTree', rootPath),
     searchInProject: (opts) => ipcRenderer.invoke('search:inProject', opts),
+    reveal: (p) => ipcRenderer.invoke('fs:reveal', p),
+    delete: (p) => ipcRenderer.invoke('fs:delete', p),
+    rename: (oldPath, newPath) => ipcRenderer.invoke('fs:rename', oldPath, newPath),
+    openExternal: (url) => ipcRenderer.invoke('fs:openExternal', url),
+    onChanged: (cb) => {
+      const h = () => cb()
+      ipcRenderer.on('fs:changed', h)
+      return () => ipcRenderer.off('fs:changed', h)
+    },
   },
 
   analyze: {
     modernize: (content, p) => ipcRenderer.invoke('analyze:modernize', content, p),
     scanProject: (filePaths) => ipcRenderer.invoke('analyze:scanProject', filePaths),
-    onStream: (cb) => ipcRenderer.on('analyze:stream', (_, chunk) => cb(chunk)),
+    mutationResults: (filePath) => ipcRenderer.invoke('analyze:mutationResults', filePath),
+    runMutation: (opts) => ipcRenderer.invoke('analyze:runMutation', opts),
+    scanDeps: (rootPath) => ipcRenderer.invoke('analyze:scanDeps', rootPath),
+    contractSummary: (filePath) => ipcRenderer.invoke('analyze:contractSummary', filePath),
+    contractGenerate: (opts) => ipcRenderer.invoke('analyze:contractGenerate', opts),
+    onStream: (cb) => {
+      ipcRenderer.removeAllListeners('analyze:stream')
+      ipcRenderer.on('analyze:stream', (_, chunk) => cb(chunk))
+    },
     offStream: () => ipcRenderer.removeAllListeners('analyze:stream'),
   },
 
   rag: {
     query: (question, context) => ipcRenderer.invoke('rag:query', question, context),
+    ingest: (url, name) => ipcRenderer.invoke('rag:ingest', url, name),
+    agentEdit: (opts) => ipcRenderer.invoke('rag:agentEdit', opts),
+    agentStream: (opts) => ipcRenderer.invoke('rag:agentStream', opts),
+    applyAgentEdit: (opts) => ipcRenderer.invoke('rag:applyAgentEdit', opts),
+    runCommand: (opts) => ipcRenderer.invoke('rag:runCommand', opts),
+    onAgentStep: (cb) => {
+      const h = (_, d) => cb(d)
+      ipcRenderer.on('rag:agent-step', h)
+      return () => ipcRenderer.off('rag:agent-step', h)
+    },
+    interrupt: () => ipcRenderer.invoke('rag:interrupt'),
+    openUrl: (url) => ipcRenderer.invoke('rag:openUrl', url),
+    autocomplete: (opts) => ipcRenderer.invoke('rag:autocomplete', opts),
   },
 
   terminal: {
+    getAvailableShells: () => ipcRenderer.invoke('terminal:get-available-shells'),
     create: (opts) => ipcRenderer.invoke('terminal:create', opts),
     write: (id, data) => ipcRenderer.invoke('terminal:write', { id, data }),
     resize: (id, r, c) => ipcRenderer.invoke('terminal:resize', { id, rows: r, cols: c }),
@@ -84,6 +117,7 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   debug: {
+    launch: (filePath, breakOnStart) => ipcRenderer.invoke('debug:launch', { filePath, breakOnStart }),
     start: (opts) => ipcRenderer.invoke('debug:start', opts),
     stop: (sessionId) => ipcRenderer.invoke('debug:stop', { sessionId }),
     setBreakpoints: (sid, fp, bps) =>
@@ -112,6 +146,11 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.on('debug:output', h)
       return () => ipcRenderer.off('debug:output', h)
     },
+    onEvent: (cb) => {
+      const h = (_, d) => cb(d)
+      ipcRenderer.on('debug:event', h)
+      return () => ipcRenderer.off('debug:event', h)
+    },
     onTerminated: (cb) => {
       const h = (_, d) => cb(d)
       ipcRenderer.on('debug:terminated', h)
@@ -120,14 +159,15 @@ contextBridge.exposeInMainWorld('electron', {
   },
 
   git: {
+    init: (root) => ipcRenderer.invoke('git:init', { rootPath: root }),
     status: (root) => ipcRenderer.invoke('git:status', { rootPath: root }),
     diff: (root, fp, staged) => ipcRenderer.invoke('git:diff', { rootPath: root, filePath: fp, staged }),
     stage: (root, fps) => ipcRenderer.invoke('git:stage', { rootPath: root, filePaths: fps }),
     unstage: (root, fps) => ipcRenderer.invoke('git:unstage', { rootPath: root, filePaths: fps }),
     discard: (root, fp) => ipcRenderer.invoke('git:discardChanges', { rootPath: root, filePath: fp }),
     commit: (root, msg, amend) => ipcRenderer.invoke('git:commit', { rootPath: root, message: msg, amend }),
-    push: (root, force) => ipcRenderer.invoke('git:push', { rootPath: root, force }),
-    pull: (root) => ipcRenderer.invoke('git:pull', { rootPath: root }),
+    push: (root, force, auth) => ipcRenderer.invoke('git:push', { rootPath: root, force, auth }),
+    pull: (root, auth) => ipcRenderer.invoke('git:pull', { rootPath: root, auth }),
     fetch: (root) => ipcRenderer.invoke('git:fetch', { rootPath: root }),
     branches: (root) => ipcRenderer.invoke('git:branches', { rootPath: root }),
     createBranch: (root, name, co) => ipcRenderer.invoke('git:createBranch', { rootPath: root, name, checkout: co }),
@@ -137,6 +177,13 @@ contextBridge.exposeInMainWorld('electron', {
     blame: (root, fp) => ipcRenderer.invoke('git:blame', { rootPath: root, filePath: fp }),
     stash: (root, msg) => ipcRenderer.invoke('git:stash', { rootPath: root, message: msg }),
     stashPop: (root) => ipcRenderer.invoke('git:stashPop', { rootPath: root }),
+    causalChain: (opts) => ipcRenderer.invoke('git:causal-chain', opts),
+    generateCommit: (diff) => ipcRenderer.invoke('git:generate-commit', { diff }),
+  },
+
+  radar: {
+    scan: (opts) => ipcRenderer.invoke('radar:scan', opts),
+    getCached: (opts) => ipcRenderer.invoke('radar:getCached', opts),
   },
 
   format: {
@@ -173,6 +220,13 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.removeAllListeners('update:available')
       ipcRenderer.removeAllListeners('update:downloaded')
     },
+  },
+
+  window: {
+    minimize: () => ipcRenderer.send('window:minimize'),
+    maximize: () => ipcRenderer.send('window:maximize'),
+    close: () => ipcRenderer.send('window:close'),
+    newWindow: () => ipcRenderer.invoke('window:newWindow'),
   },
 
   platform: process.platform,

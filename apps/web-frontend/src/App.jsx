@@ -12,10 +12,16 @@ function ProtectedRoute({ children }) {
 
   if (!isLoaded) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-aether-bg font-body text-aether-violet">
-        <div className="text-center">
-          <div className="mb-2 h-8 w-8 animate-pulse rounded-full border-2 border-aether-border border-t-aether-violet mx-auto" />
-          <p className="text-sm text-aether-muted">Loading…</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#fdf5ee] font-body text-black">
+        <div className="text-center flex flex-col items-center gap-6">
+          <div className="isometric-loader">
+            <div className="isometric-cube">
+              <div className="isometric-face face-top" />
+              <div className="isometric-face face-left" />
+              <div className="isometric-face face-right" />
+            </div>
+          </div>
+          <p className="text-xs font-display font-black uppercase text-black tracking-widest animate-pulse">Initializing Aeres Workspace...</p>
         </div>
       </div>
     )

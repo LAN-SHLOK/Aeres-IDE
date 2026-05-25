@@ -22,10 +22,22 @@ export const useStore = create(
       setRootPath: (p) => set({ rootPath: p }),
       setFileTree: (t) => set({ fileTree: t }),
 
+      // ── OVERLAYS ──────────────────────────────────────
+      quickOpenOpen: false,
+      setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),
+      paletteOpen: false,
+      setPaletteOpen: (open) => set({ paletteOpen: open }),
+      keybindingsOpen: false,
+      setKeybindingsOpen: (open) => set({ keybindingsOpen: open }),
+
       // ── TABS ──────────────────────────────────────────
       tabs: [],
       activeTabId: null,
       recentlyClosedTabs: [],
+      cursorLine: 1,
+      cursorColumn: 1,
+      selectedCount: 0,
+      selectedLinesCount: 0,
 
       openTab: (file) => {
         const state = get()
@@ -56,6 +68,12 @@ export const useStore = create(
           nextActive = remaining.length > 0 ? remaining[remaining.length - 1].id : null
         }
         set({ tabs: remaining, activeTabId: nextActive, recentlyClosedTabs: closed })
+      },
+
+      closeAllTabs: () => {
+        const state = get()
+        const pinned = state.tabs.filter((t) => t.isPinned)
+        set({ tabs: pinned, activeTabId: pinned.length > 0 ? pinned[0].id : null })
       },
 
       setTabDirty: (id, dirty) =>
@@ -172,11 +190,25 @@ export const useStore = create(
 
       // ── GIT ───────────────────────────────────────────
       gitStatus: { branch: 'main', files: [], ahead: 0, behind: 0 },
+      gitTask: null,
       gitPanelOpen: false,
       gitPanelTab: 'changes', // changes | history | branches
       setGitStatus: (gs) => set({ gitStatus: gs }),
+      setGitTask: (task) => set({ gitTask: task }),
       setGitPanelOpen: (open) => set({ gitPanelOpen: open }),
       setGitPanelTab: (tab) => set({ gitPanelTab: tab }),
+      showBlame: false,
+      setShowBlame: (val) => set({ showBlame: val }),
+      showTemporal: true,
+      setShowTemporal: (val) => set({ showTemporal: val }),
+
+      // ── CAUSAL MAP ────────────────────────────────────
+      causalTarget: null,
+      setCausalTarget: (target) => set((s) => ({ 
+        causalTarget: target,
+        rightPanelOpen: !!target,
+        activeRightTab: target ? 'causemap' : s.activeRightTab
+      })),
 
       // ── DIAGNOSTICS ───────────────────────────────────
       diagnostics: {},
@@ -184,40 +216,173 @@ export const useStore = create(
         set((s) => ({
           diagnostics: { ...s.diagnostics, [filePath]: markers },
         })),
+      lspStatus: {},
+      setLspStatus: (lang, status) =>
+        set((s) => ({
+          lspStatus: { ...s.lspStatus, [lang]: status },
+        })),
+      mutationResults: {},
+      setMutationResults: (filePath, results) =>
+        set((s) => ({
+          mutationResults: { ...s.mutationResults, [filePath]: results },
+        })),
+      showMutations: true,
+      setShowMutations: (val) => set({ showMutations: val }),
 
       // ── LAYOUT ────────────────────────────────────────
       sidebarWidth: 260,
       rightPanelOpen: true,
       rightPanelWidth: 340,
       activeSidebarTab: 'files', // files | search | git | debug
-      activeRightTab: 'rag', // rag | problems
-      theme: 'dark',
+      activeRightTab: 'chat', // chat | problems
+      theme: 'cutie-dark',
+      installedExtensions: ['aeres-ai-core'], // Aeres AI Core is installed by default
+      disabledExtensions: [],
 
       setSidebarWidth: (w) => set({ sidebarWidth: w }),
       setRightPanelWidth: (w) => set({ rightPanelWidth: w }),
       setActiveSidebarTab: (tab) => set({ activeSidebarTab: tab }),
       setActiveRightTab: (tab) => set({ activeRightTab: tab }),
       toggleRightPanel: () => set((s) => ({ rightPanelOpen: !s.rightPanelOpen })),
-      toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      
+      zenMode: false,
+      toggleZenMode: () => set((s) => ({ zenMode: !s.zenMode, rightPanelOpen: s.zenMode, activeSidebarTab: s.zenMode ? 'files' : null })),
+      typewriterMode: false,
+      toggleTypewriterMode: () => set((s) => ({ typewriterMode: !s.typewriterMode })),
+
+      toggleTheme: () => set((s) => ({ theme: s.theme.includes('light') ? 'cutie-dark' : 'cutie-light' })),
+      setTheme: (theme) => set({ theme }),
+      serverUrl: null,
+      setServerUrl: (url) => set({ serverUrl: url }),
+      installExtension: (id) => set((s) => {
+        if (s.installedExtensions.includes(id)) return {}
+        return { installedExtensions: [...s.installedExtensions, id] }
+      }),
+      uninstallExtension: (id) => set((s) => ({
+        installedExtensions: s.installedExtensions.filter(x => x !== id),
+        disabledExtensions: s.disabledExtensions.filter(x => x !== id)
+      })),
+      toggleDisableExtension: (id) => set((s) => {
+        const isCurrentlyDisabled = s.disabledExtensions.includes(id)
+        return {
+          disabledExtensions: isCurrentlyDisabled
+            ? s.disabledExtensions.filter(x => x !== id)
+            : [...s.disabledExtensions, id]
+        }
+      }),
 
       // ── SESSIONS ──────────────────────────────────────
-      currentSessionName: null,
+      currentSessionName: 'No Session',
       setCurrentSessionName: (name) => set({ currentSessionName: name }),
+
+      saveSession: async (name) => {
+        if (!window.electron || !window.electron.sessions) {
+          console.warn('[Store] sessions API not available in this environment')
+          return { error: 'Sessions not available' }
+        }
+        const state = get()
+        const serializableState = {
+          tabs: state.tabs || [],
+          activeTabId: state.activeTabId,
+          rootPath: state.rootPath,
+          sidebarWidth: state.sidebarWidth || 260,
+          rightPanelWidth: state.rightPanelWidth || 340,
+          terminalPanelHeight: state.terminalPanelHeight || 250,
+          activeSidebarTab: state.activeSidebarTab || 'files',
+          activeRightTab: state.activeRightTab || 'chat',
+          gitStatus: { branch: state.gitStatus?.branch },
+          chatMessages: state.chatMessages || []
+        }
+        const res = await window.electron.sessions.save(name, serializableState)
+        if (res && res.id) set({ currentSessionName: name })
+        return res
+      },
+
+      restoreSession: async (id) => {
+        if (!window.electron || !window.electron.sessions) {
+          console.warn('[Store] sessions API not available in this environment')
+          return
+        }
+        const state = await window.electron.sessions.load({ id })
+        if (!state) return
+        
+        set({
+          tabs: state.tabs || [],
+          activeTabId: state.activeTabId,
+          sidebarWidth: state.sidebarWidth || 260,
+          rightPanelWidth: state.rightPanelWidth || 340,
+          terminalPanelHeight: state.terminalPanelHeight || 250,
+          activeSidebarTab: state.activeSidebarTab || 'files',
+          activeRightTab: state.activeRightTab || 'chat',
+          chatMessages: state.chatMessages || [],
+          currentSessionName: state.name || 'Restored Session'
+        })
+      },
 
       // ── CHAT ──────────────────────────────────────────
       chatMessages: [],
       appendChatMessage: (msg) =>
         set((s) => ({ chatMessages: [...s.chatMessages, msg] })),
-      clearChat: () => set({ chatMessages: [] }),
+      cycleTabs: (direction) => {
+        const state = get()
+        if (state.tabs.length <= 1) return
+        const currentIndex = state.tabs.findIndex((t) => t.id === state.activeTabId)
+        let nextIndex = (currentIndex + direction) % state.tabs.length
+        if (nextIndex < 0) nextIndex = state.tabs.length - 1
+        set({ activeTabId: state.tabs[nextIndex].id })
+      },
+
+      clearChat: () => set({ chatMessages: [], agentMessages: [], agentSteps: [], pendingConfirm: null, agentRunning: false }),
+
+      // ── AGENT ──────────────────────────────────────────
+      agentMode: 'chat',
+      agentRunning: false,
+      agentSteps: [],
+      agentMessages: [],
+      pendingConfirm: null,
+
+      setAgentMode: (mode) => set({ agentMode: mode }),
+      setAgentRunning: (running) => set({ agentRunning: running }),
+      clearAgentSteps: () => set({ agentSteps: [] }),
+      setPendingConfirm: (p) => set({ pendingConfirm: p }),
+      
+      appendAgentStep: (step) => set((s) => {
+        if (step.type === 'done' || step.type === 'error') {
+          return { agentRunning: false, agentSteps: [...s.agentSteps, step] }
+        }
+        if (step.type === 'needs_confirm') {
+          return { pendingConfirm: step, agentSteps: [...s.agentSteps, step] }
+        }
+        if (step.type === 'tool_result') {
+          const newSteps = s.agentSteps.map(st => 
+            (st.id === step.id || (st.tool === step.tool && st.status !== 'done')) 
+              ? { ...st, status: 'done', result: step.result } 
+              : st
+          )
+          // If the step wasn't found in the map (e.g. results arriving after a refresh), still append it?
+          // Usually we want to see the result.
+          const existing = s.agentSteps.find(st => st.id === step.id)
+          if (!existing) {
+            return { agentSteps: [...s.agentSteps, step] }
+          }
+          return { agentSteps: newSteps }
+        }
+        return { agentSteps: [...s.agentSteps, step] }
+      }),
+      
+      appendAgentMessage: (msg) => set((s) => ({ agentMessages: [...s.agentMessages, msg] })),
+      setAgentMessages: (msgs) => set({ agentMessages: msgs }),
+
     }),
     {
-      name: 'aether-ide-state',
+      name: 'aeres-ide-state',
       partialize: (state) => ({
         editorSettings: state.editorSettings,
         theme: state.theme,
         sidebarWidth: state.sidebarWidth,
         rightPanelWidth: state.rightPanelWidth,
         terminalPanelHeight: state.terminalPanelHeight,
+        installedExtensions: state.installedExtensions,
       }),
     }
   )

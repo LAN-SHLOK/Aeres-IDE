@@ -2,7 +2,7 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { useRef } from 'react'
 import SmartDownload from './SmartDownload.jsx'
 
-const IDE_SCREEN = "/C:/Users/shlok/.gemini/antigravity/brain/c6dbbcfc-1e92-40f9-bce0-2e550da0e151/aether_full_ide_showcase_1774456482224.png"
+import IDE_SCREEN from '../assets/aeres_full_ide_showcase.png'
 
 export default function HeroSection({ autoDownload = false }) {
   const headline = "Code at the speed of thought."
@@ -22,7 +22,7 @@ export default function HeroSection({ autoDownload = false }) {
           transition={{ duration: 1.5 }}
           className="mb-12 inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur-xl px-6 py-2.5 font-mono text-[9px] font-bold uppercase tracking-[0.4em] text-[#a78bfa] shadow-[0_0_30px_rgba(124,58,237,0.1)]"
         >
-          AETHER INTELLIGENCE ENGINE V1.0
+          AERES INTELLIGENCE ENGINE V1.0
         </motion.div>
 
         <h1 className="font-display text-[clamp(2.5rem,10vw,8rem)] font-extrabold leading-[0.85] tracking-[-0.06em] text-white mb-16">
@@ -48,7 +48,7 @@ export default function HeroSection({ autoDownload = false }) {
           {/* Main IDE Showcase */}
           <div className="absolute -inset-4 bg-[#7c3aed]/20 blur-[100px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
           <div className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-black shadow-2xl transition duration-700 group-hover:border-white/20 group-hover:scale-[1.01]">
-            <img src={IDE_SCREEN} alt="Aether IDE Interface" className="w-full h-auto opacity-90 group-hover:opacity-100 transition duration-700" />
+            <img src={IDE_SCREEN} alt="Aeres IDE Interface" className="w-full h-auto opacity-90 group-hover:opacity-100 transition duration-700" />
             
             {/* UI Decorative Overlays */}
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>

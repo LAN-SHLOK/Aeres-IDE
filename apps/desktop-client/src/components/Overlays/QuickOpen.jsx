@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store.js'
+import { detectLanguage } from '../../utils/langDetect.js'
 
 function flattenTree(nodes, prefix = '') {
   const result = []
@@ -26,14 +27,18 @@ export default function QuickOpen({ onClose }) {
 
   const filtered = useMemo(() => {
     if (!query.trim()) {
-      // Show recently opened files
-      return recentlyClosedTabs.slice(0, 10).map((t) => ({
-        name: t.name,
-        path: t.path,
-        relativePath: t.name,
-        ext: t.name.split('.').pop(),
-        type: 'file',
-      }))
+      if (recentlyClosedTabs.length > 0) {
+        // Show recently opened files
+        return recentlyClosedTabs.slice(0, 10).map((t) => ({
+          name: t.name,
+          path: t.path,
+          relativePath: t.name,
+          ext: t.name.split('.').pop(),
+          type: 'file',
+        }))
+      }
+      // Show first 10 workspace files as default recommendations
+      return allFiles.slice(0, 10)
     }
     const q = query.toLowerCase()
     return allFiles
@@ -56,9 +61,8 @@ export default function QuickOpen({ onClose }) {
       if (!e) return
       try {
         const content = await e.fs.readFile(file.path)
-        const ext = file.name.split('.').pop()?.toLowerCase() || ''
-        const langMap = { js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript', py: 'python', css: 'css', json: 'json', md: 'markdown', html: 'html' }
-        openTab({ path: file.path, name: file.name, language: langMap[ext] || 'plaintext', content })
+        const lang = detectLanguage(file.name)
+        openTab({ path: file.path, name: file.name, language: lang, content })
       } catch (err) {
         console.error('[QuickOpen] read error:', err)
       }
@@ -83,14 +87,14 @@ export default function QuickOpen({ onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[9000] flex items-start justify-center bg-black/50 pt-[15vh]"
+      className="fixed inset-0 z-[9000] flex items-start justify-center bg-black/40 pt-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-[600px] overflow-hidden rounded-xl border border-aether-border bg-aether-surface shadow-2xl"
+        className="w-full max-w-[600px] overflow-hidden rounded-md border border-aeres-border bg-aeres-surface shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="border-b border-aether-border p-2">
+        <div className="flex items-center border-b border-aeres-border bg-aeres-bg px-3">
           <input
             ref={inputRef}
             type="text"
@@ -98,24 +102,24 @@ export default function QuickOpen({ onClose }) {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search files by name…"
-            className="w-full bg-transparent px-2 py-1.5 text-sm text-aether-text placeholder:text-aether-muted focus:outline-none"
+            className="w-full bg-transparent py-2.5 text-[13px] text-aeres-text placeholder:text-aeres-muted focus:outline-none"
           />
         </div>
-        <div className="max-h-[300px] overflow-y-auto py-1">
+        <div className="max-h-[400px] overflow-y-auto py-1">
           {filtered.length === 0 && (
-            <div className="px-4 py-3 text-sm text-aether-muted">
-              {query ? 'No files found' : 'Open a folder first'}
+            <div className="px-4 py-3 text-sm text-aeres-muted italic">
+              {!fileTree ? 'Open a folder first' : query ? 'No files found' : 'Type to search files in project...'}
             </div>
           )}
           {filtered.map((file, i) => (
             <div
               key={file.path + i}
               onClick={() => openFile(file)}
-              className={`flex cursor-pointer items-center gap-2 px-4 py-1.5 text-sm transition ${
-                i === selected ? 'bg-aether-violet/20 text-white' : 'text-aether-text hover:bg-white/5'
+              className={`flex cursor-pointer items-center gap-3 px-4 py-1.5 text-[13px] transition-colors ${
+                i === selected ? 'bg-aeres-violet text-white' : 'text-aeres-text hover:bg-white/5'
               }`}
             >
-              <span className="rounded bg-aether-bg px-1 py-px text-[9px] font-bold uppercase text-aether-muted">
+              <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${i === selected ? 'bg-white/20 text-white' : 'bg-aeres-bg text-aeres-muted'}`}>
                 {file.ext || '?'}
               </span>
               <span className="min-w-0 truncate">{file.relativePath || file.name}</span>

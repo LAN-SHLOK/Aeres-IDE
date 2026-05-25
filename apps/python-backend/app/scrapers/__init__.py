@@ -1,5 +1,5 @@
 """
-Aether IDE Backend - Scrapers Package
+Aeres IDE Backend - Scrapers Package
 This file initializes the scrapers module.
 """
 

@@ -1,5 +1,5 @@
 """
-Aether IDE Backend - Rag_engine Package
+Aeres IDE Backend - Rag_engine Package
 This file initializes the rag_engine module.
 """
 

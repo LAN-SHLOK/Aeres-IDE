@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { useStore } from '../../store.js'
+import { detectLanguage } from '../../utils/langDetect.js'
 
 export default function SearchPanel() {
   const rootPath = useStore((s) => s.rootPath)
@@ -36,12 +37,11 @@ export default function SearchPanel() {
       try {
         const content = await e.fs.readFile(result.file)
         const name = result.file.split(/[/\\]/).pop()
-        const ext = name.split('.').pop()?.toLowerCase() || ''
-        const langMap = { js: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript', py: 'python', css: 'css', json: 'json', md: 'markdown', html: 'html' }
+        const lang = detectLanguage(name)
         openTab({
           path: result.file,
           name,
-          language: langMap[ext] || 'plaintext',
+          language: lang,
           content,
           line: result.line
         })
@@ -54,8 +54,8 @@ export default function SearchPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-8 shrink-0 items-center border-b border-aether-border px-3">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-aether-muted">Search</span>
+      <div className="flex h-8 shrink-0 items-center border-b border-aeres-border px-3">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-aeres-muted">Search</span>
       </div>
       <div className="p-2">
         <div className="flex gap-1">
@@ -65,12 +65,12 @@ export default function SearchPanel() {
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search in files…"
-            className="flex-1 rounded-md border border-aether-border bg-aether-bg px-2 py-1 text-xs text-aether-text placeholder:text-aether-muted focus:border-aether-violet focus:outline-none"
+            className="flex-1 rounded-md border border-aeres-border bg-aeres-bg px-2 py-1 text-xs text-aeres-text placeholder:text-aeres-muted focus:border-aeres-violet focus:outline-none"
           />
           <button
             type="button"
             onClick={() => setCaseSensitive(!caseSensitive)}
-            className={`rounded px-1.5 py-1 text-[10px] transition ${caseSensitive ? 'bg-aether-violet/20 text-aether-violet' : 'text-aether-muted hover:text-aether-text'}`}
+            className={`rounded px-1.5 py-1 text-[10px] transition ${caseSensitive ? 'bg-aeres-violet/20 text-aeres-violet' : 'text-aeres-muted hover:text-aeres-text'}`}
             title="Case Sensitive"
           >
             Aa
@@ -80,21 +80,28 @@ export default function SearchPanel() {
 
       <div className="flex-1 overflow-y-auto">
         {searching && (
-          <div className="px-3 py-2 text-xs text-aether-muted animate-pulse">Searching…</div>
+          <div className="flex flex-col gap-2 p-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="flex flex-col gap-1.5 opacity-50">
+                <div className="h-2 w-1/3 rounded bg-slate-700/50 animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+                <div className="h-3 w-3/4 rounded bg-slate-700/50 animate-pulse" style={{ animationDelay: `${i * 100}ms` }} />
+              </div>
+            ))}
+          </div>
         )}
         {!searching && results.length === 0 && query && (
-          <div className="px-3 py-2 text-xs text-aether-muted">No results</div>
+          <div className="px-3 py-2 text-xs text-aeres-muted">No results</div>
         )}
         {results.map((r, i) => (
           <div
             key={i}
             onClick={() => handleResultClick(r)}
-            className="cursor-pointer border-b border-aether-border/50 px-3 py-1.5 transition hover:bg-white/5"
+            className="cursor-pointer border-b border-aeres-border/50 px-3 py-1.5 transition hover:bg-white/5"
           >
-            <div className="truncate text-[10px] text-aether-muted">
+            <div className="truncate text-[10px] text-aeres-muted">
               {r.file.split(/[/\\]/).slice(-2).join('/')}:{r.line}
             </div>
-            <div className="truncate text-xs text-aether-text">{r.text}</div>
+            <div className="truncate text-xs text-aeres-text">{r.text}</div>
           </div>
         ))}
       </div>

@@ -50,7 +50,7 @@
     stroke="url(#orbit3)" stroke-width="3" fill="none"
     transform="rotate(90 100 100)" filter="url(#glow)" opacity="0.9"/>
 
-  <!-- Central "A" letterform (Aether) -->
+  <!-- Central "A" letterform (Aeres) -->
   <g filter="url(#glow-intense)">
     <!-- Triangle "A" shape -->
     <path d="M100 55 L125 135 L75 135 Z" 

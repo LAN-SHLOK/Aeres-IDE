@@ -28,12 +28,24 @@ async function runGit(args, cwd) {
     });
     return stdout;
   } catch (err) {
-    console.error(`[Git] Error:`, err.message);
+    if (!err.message.includes('not a git repository')) {
+      console.error(`[Git] Error:`, err.message);
+    }
     throw err;
   }
 }
 
-function register(ipcMain) {
+function register(ipcMain, app, getMainWindow, getBackendPort) {
+  ipcMain.handle('git:init', async (_, { rootPath }) => {
+    try {
+      await runGit('init', rootPath)
+      return { success: true }
+    } catch (err) {
+      console.error('[gitHandler] Init error:', err)
+      return { success: false, error: err.message }
+    }
+  })
+
   ipcMain.handle('git:status', async (_, { rootPath }) => {
     try {
       const output = await runGit('status --porcelain --branch', rootPath)
@@ -91,40 +103,120 @@ function register(ipcMain) {
   })
 
   ipcMain.handle('git:commit', async (_, { rootPath, message, amend }) => {
-    const amendFlag = amend ? '--amend' : ''
-    const msg = message.replace(/"/g, '\\"')
-    await runGit(`commit -m "${msg}" ${amendFlag}`, rootPath)
-    return { success: true }
+    try {
+      const amendFlag = amend ? '--amend' : ''
+      const msg = message.replace(/"/g, '\\"')
+      await runGit(`commit -m "${msg}" ${amendFlag}`, rootPath)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
   })
 
-  ipcMain.handle('git:push', async (_, { rootPath, force }) => {
-    const forceFlag = force ? '--force' : ''
-    await runGit(`push ${forceFlag}`, rootPath)
-    return { success: true }
+  ipcMain.handle('git:push', async (_, { rootPath, force, auth }) => {
+    try {
+      const forceFlag = force ? '--force' : ''
+      let remoteUrl = ''
+      if (auth && auth.username && auth.token) {
+        try {
+          const rawUrl = await runGit('remote get-url origin', rootPath)
+          const cleanUrl = rawUrl.trim()
+          if (cleanUrl.startsWith('https://')) {
+            remoteUrl = cleanUrl.replace('https://', `https://${encodeURIComponent(auth.username)}:${encodeURIComponent(auth.token)}@`)
+          }
+        } catch {}
+      }
+
+      if (remoteUrl) {
+        await runGit(`push ${forceFlag} "${remoteUrl}"`, rootPath)
+      } else {
+        await runGit(`push ${forceFlag}`, rootPath)
+      }
+      return { success: true }
+    } catch (err) {
+      if (err.message.includes('has no upstream branch') || err.message.includes('set-upstream') || err.message.includes('current branch')) {
+        try {
+          const branchOut = await runGit('branch --show-current', rootPath);
+          const currentBranch = branchOut.trim();
+          if (currentBranch) {
+            const forceFlag = force ? '--force' : '';
+            let remoteUrl = ''
+            if (auth && auth.username && auth.token) {
+              try {
+                const rawUrl = await runGit('remote get-url origin', rootPath)
+                const cleanUrl = rawUrl.trim()
+                if (cleanUrl.startsWith('https://')) {
+                  remoteUrl = cleanUrl.replace('https://', `https://${encodeURIComponent(auth.username)}:${encodeURIComponent(auth.token)}@`)
+                }
+              } catch {}
+            }
+            if (remoteUrl) {
+              await runGit(`push -u "${remoteUrl}" "${currentBranch}" ${forceFlag}`, rootPath);
+            } else {
+              await runGit(`push -u origin "${currentBranch}" ${forceFlag}`, rootPath);
+            }
+            return { success: true };
+          }
+        } catch (retryErr) {
+          return { success: false, error: retryErr.message };
+        }
+      }
+      return { success: false, error: err.message }
+    }
   })
 
-  ipcMain.handle('git:pull', async (_, { rootPath }) => {
-    await runGit('pull --rebase', rootPath)
-    return { success: true }
+  ipcMain.handle('git:pull', async (_, { rootPath, auth }) => {
+    try {
+      let remoteUrl = ''
+      if (auth && auth.username && auth.token) {
+        try {
+          const rawUrl = await runGit('remote get-url origin', rootPath)
+          const cleanUrl = rawUrl.trim()
+          if (cleanUrl.startsWith('https://')) {
+            remoteUrl = cleanUrl.replace('https://', `https://${encodeURIComponent(auth.username)}:${encodeURIComponent(auth.token)}@`)
+          }
+        } catch {}
+      }
+
+      if (remoteUrl) {
+        await runGit(`pull --rebase "${remoteUrl}"`, rootPath)
+      } else {
+        await runGit(`pull --rebase`, rootPath)
+      }
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
   })
 
   ipcMain.handle('git:fetch', async (_, { rootPath }) => {
-    await runGit('fetch --all', rootPath)
-    return { success: true }
+    try {
+      await runGit('fetch --all', rootPath)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: err.message }
+    }
   })
 
   ipcMain.handle('git:branches', async (_, { rootPath }) => {
     try {
-      const output = await runGit('branch', rootPath)
+      const output = await runGit('branch -a', rootPath)
       const lines = output.trim().split('\n').filter(Boolean)
       let current = ''
-      const local = []
+      const local = new Set()
       for (const line of lines) {
-        const name = line.replace(/^\*?\s*/, '').trim()
-        if (line.startsWith('*')) current = name
-        local.push(name)
+        let name = line.replace(/^\*?\s*/, '').trim()
+        if (line.startsWith('*')) {
+          current = name
+        }
+        if (name.startsWith('remotes/')) {
+          name = name.replace(/^remotes\/[^/]+\//, '')
+        }
+        if (name && !name.includes('HEAD')) {
+          local.add(name)
+        }
       }
-      return { current, local }
+      return { current, local: Array.from(local) }
     } catch {
       return { current: '', local: [] }
     }
@@ -203,6 +295,42 @@ function register(ipcMain) {
   ipcMain.handle('git:stashPop', async (_, { rootPath }) => {
     await runGit('stash pop', rootPath)
     return { success: true }
+  })
+
+  ipcMain.handle('git:causal-chain', async (_, { repoPath, filePath, functionName, errorMessage }) => {
+    const port = getBackendPort && getBackendPort()
+    const base = port ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:8008'
+    const token = global.__aeresJWT || ''
+    try {
+      const resp = await fetch(`${base}/api/git/causal-chain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ repo_path: repoPath, file_path: filePath, function_name: functionName, error_message: errorMessage }),
+      })
+      if (!resp.ok) throw new Error(`Backend returned ${resp.status}`)
+      return await resp.json()
+    } catch (err) {
+      console.error('[gitHandler] Causal chain failed:', err.message)
+      return { error: err.message }
+    }
+  })
+
+  ipcMain.handle('git:generate-commit', async (_, { diff }) => {
+    const port = getBackendPort && getBackendPort()
+    const base = port ? `http://127.0.0.1:${port}` : 'http://127.0.0.1:8008'
+    const token = global.__aeresJWT || ''
+    try {
+      const resp = await fetch(`${base}/api/git/generate-commit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ diff }),
+      })
+      if (!resp.ok) throw new Error(`Backend returned ${resp.status}`)
+      return await resp.json()
+    } catch (err) {
+      console.error('[gitHandler] Generate commit failed:', err.message)
+      return { error: err.message }
+    }
   })
 }
 

@@ -52,25 +52,25 @@ export default function DebugPanel() {
   }
 
   if (!activeTab) return (
-    <div className="p-8 text-center text-aether-muted text-sm">Open a file to start a debug session.</div>
+    <div className="p-8 text-center text-aeres-muted text-sm">Open a file to start a debug session.</div>
   )
 
   return (
-    <div className="flex flex-col h-full bg-aether-bg">
-      <div className="p-3 border-b border-aether-border flex justify-between items-center bg-aether-surface/40">
+    <div className="flex flex-col h-full bg-aeres-bg">
+      <div className="p-3 border-b border-aeres-border flex justify-between items-center bg-aeres-surface/40">
         <h3 className="text-xs font-bold text-white uppercase tracking-wider">Debugger ({activeTab.language})</h3>
         <div className="flex gap-1">
           {!isRunning ? (
             <button
                onClick={handleLaunch}
-               className="p-1 px-3 bg-aether-violet hover:bg-aether-violet/80 text-white rounded text-[10px] font-bold shadow-sm transition-all"
+               className="p-1 px-3 bg-aeres-violet hover:bg-aeres-violet/80 text-white rounded text-[10px] font-bold shadow-sm transition-all"
             >
               RUN / DEBUG
             </button>
           ) : (
             <button
                onClick={handleStop}
-               className="p-1 px-3 bg-aether-red hover:bg-aether-red/80 text-white rounded text-[10px] font-bold shadow-sm transition-all"
+               className="p-1 px-3 bg-aeres-red hover:bg-aeres-red/80 text-white rounded text-[10px] font-bold shadow-sm transition-all"
             >
               STOP
             </button>
@@ -78,33 +78,43 @@ export default function DebugPanel() {
         </div>
       </div>
 
-      <div ref={outputRef} className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed selection:bg-aether-violet/40 no-scrollbar relative min-h-[200px]">
+      <div ref={outputRef} className="flex-1 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed selection:bg-aeres-violet/40 no-scrollbar relative min-h-[200px]">
         {output.map((line, i) => (
-           <div key={i} className={line.type === 'stderr' ? 'text-aether-red' : line.type === 'system' ? 'text-aether-blue font-bold' : 'text-aether-text'}>
+           <div key={i} className={line.type === 'stderr' ? 'text-aeres-red' : line.type === 'system' ? 'text-aeres-blue font-bold' : 'text-aeres-text'}>
              {line.text}
            </div>
         ))}
         {output.length === 0 && (
-          <div className="text-center text-aether-muted opacity-30 mt-12">
+          <div className="text-center text-aeres-muted opacity-30 mt-12">
             <div className="flex justify-center mb-3">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-aether-violet/50"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" className="text-aeres-violet/50"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             READY TO ORCHESTRATE
           </div>
         )}
         
         {isRunning && (
-          <div className="sticky bottom-0 left-0 right-0 bg-aether-bg/80 backdrop-blur border-t border-white/5 p-1 mt-4">
+          <div className="sticky bottom-0 left-0 right-0 bg-aeres-bg/80 backdrop-blur border-t border-white/5 p-1 mt-4">
              <input 
                type="text" 
                placeholder="> Evaluate expression..." 
-               className="w-full bg-transparent border-none outline-none text-[10px] text-aether-violet placeholder:text-aether-muted"
-               onKeyDown={(e) => {
+               className="w-full bg-transparent border-none outline-none text-[10px] text-aeres-violet placeholder:text-aeres-muted"
+               onKeyDown={async (e) => {
                  if (e.key === 'Enter') {
-                   const cmd = e.target.value
+                   const cmd = e.target.value.trim()
+                   if (!cmd) return
                    setOutput(v => [...v, { type: 'system', text: `> ${cmd}` }])
-                   window.electron.debug.command({ command: 'evaluate', expression: cmd })
                    e.target.value = ''
+                   try {
+                     // Fixed: use debug.evaluate — debug.command is not exposed in preload
+                     const store = useStore.getState()
+                     const result = await window.electron.debug.evaluate(store.debugSession, cmd, null)
+                     if (result?.result) {
+                       setOutput(v => [...v, { type: 'stdout', text: result.result }])
+                     }
+                   } catch (err) {
+                     setOutput(v => [...v, { type: 'stderr', text: `Error: ${err.message}` }])
+                   }
                  }
                }}
              />
@@ -112,22 +122,22 @@ export default function DebugPanel() {
         )}
       </div>
 
-      <div className="p-3 bg-aether-surface/20 border-t border-aether-border space-y-4">
+      <div className="p-3 bg-aeres-surface/20 border-t border-aeres-border space-y-4">
         {/* Variables Section */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] uppercase text-aether-muted font-bold tracking-tight">Variables (Locals)</span>
+            <span className="text-[10px] uppercase text-aeres-muted font-bold tracking-tight">Variables (Locals)</span>
           </div>
-          <div className="max-h-40 overflow-y-auto bg-aether-bg/60 rounded border border-aether-border p-2 space-y-1 no-scrollbar">
+          <div className="max-h-40 overflow-y-auto bg-aeres-bg/60 rounded border border-aeres-border p-2 space-y-1 no-scrollbar">
             {variables.locals.length > 0 ? (
               variables.locals.map((v, i) => (
                 <div key={i} className="flex justify-between text-[10px] font-mono border-b border-white/5 pb-1">
-                  <span className="text-aether-violet">{v.name}</span>
-                  <span className="text-aether-text truncate ml-2">{v.value}</span>
+                  <span className="text-aeres-violet">{v.name}</span>
+                  <span className="text-aeres-text truncate ml-2">{v.value}</span>
                 </div>
               ))
             ) : (
-              <div className="text-[9px] text-aether-muted text-center py-2 italic">No variables available.</div>
+              <div className="text-[9px] text-aeres-muted text-center py-2 italic">No variables available.</div>
             )}
           </div>
         </div>
@@ -135,18 +145,18 @@ export default function DebugPanel() {
         {/* Call Stack Section */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] uppercase text-aether-muted font-bold tracking-tight">Call Stack</span>
+            <span className="text-[10px] uppercase text-aeres-muted font-bold tracking-tight">Call Stack</span>
           </div>
-          <div className="max-h-32 overflow-y-auto bg-aether-bg/60 rounded border border-aether-border p-1 space-y-1 no-scrollbar">
+          <div className="max-h-32 overflow-y-auto bg-aeres-bg/60 rounded border border-aeres-border p-1 space-y-1 no-scrollbar">
             {callStack.length > 0 ? (
               callStack.map((f, i) => (
-                <div key={i} className={`p-1.5 rounded text-[10px] cursor-pointer transition ${i === 0 ? 'bg-aether-violet/20 text-white' : 'hover:bg-white/5 text-aether-muted'}`}>
+                <div key={i} className={`p-1.5 rounded text-[10px] cursor-pointer transition ${i === 0 ? 'bg-aeres-violet/20 text-white' : 'hover:bg-white/5 text-aeres-muted'}`}>
                   <div className="font-bold truncate">{f.name}</div>
                   <div className="text-[8px] opacity-60 truncate">{f.file}:{f.line}</div>
                 </div>
               ))
             ) : (
-              <div className="text-[9px] text-aether-muted text-center py-2 italic">Stack trace unavailable.</div>
+              <div className="text-[9px] text-aeres-muted text-center py-2 italic">Stack trace unavailable.</div>
             )}
           </div>
         </div>

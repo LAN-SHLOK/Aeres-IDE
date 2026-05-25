@@ -23,7 +23,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      console.warn('[Aether API] 401 — token missing, expired, or invalid')
+      console.warn('[Aeres API] 401 — token missing, expired, or invalid')
     }
     return Promise.reject(error)
   },

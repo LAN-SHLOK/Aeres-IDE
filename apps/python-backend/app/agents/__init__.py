@@ -1,5 +1,5 @@
 """
-Aether IDE Backend - Agents Package
+Aeres IDE Backend - Agents Package
 This file initializes the agents module.
 """
 
