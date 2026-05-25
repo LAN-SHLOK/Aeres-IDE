@@ -1,4 +1,4 @@
-# AETHER IDE — WINDSURF TASK PACK (All 12 Tasks)
+# AERES IDE — WINDSURF TASK PACK (All 12 Tasks)
 # Instructions only. No pre-written code.
 # Windsurf reads the spec and writes all code itself.
 # Feed ONE task at a time. Run the acceptance test before the next task.
@@ -10,12 +10,12 @@ TASK 01 — Project Scaffold & Environment Setup
 ════════════════════════════════════════════════════════
 
 WHAT TO BUILD:
-Create the complete AETHER-IDE monorepo folder structure
+Create the complete AERES-IDE monorepo folder structure
 with all config files, package.json files, and environment
 templates. Do NOT write any application logic yet.
 
 MONOREPO LAYOUT:
-AETHER-IDE/
+AERES-IDE/
   apps/
     web-frontend/      ← React 18 + Vite + Tailwind + Clerk
     desktop-client/    ← Electron 28 + React 18 + Vite
@@ -37,14 +37,14 @@ WEB FRONTEND package.json dependencies:
 WEB FRONTEND config files to create:
 - vite.config.js (React plugin, port 5173)
 - tailwind.config.js (content: src/**/*.{js,jsx}, extend colors
-  for aether brand: bg #0a0a0f, surface #12121a, border #1e1e2e,
+  for aeres brand: bg #0a0a0f, surface #12121a, border #1e1e2e,
   violet #7C3AED, blue #4F8EF7)
 - postcss.config.js
 - index.html (import Syne, DM Sans, JetBrains Mono from Google Fonts)
 - .env.local template with these vars:
     VITE_CLERK_PUBLISHABLE_KEY=pk_test_replace_me
     VITE_API_URL=http://127.0.0.1:8008
-    VITE_DOWNLOAD_BASE_URL=https://github.com/YOUR_USERNAME/aether-ide/releases/latest/download
+    VITE_DOWNLOAD_BASE_URL=https://github.com/YOUR_USERNAME/aeres-ide/releases/latest/download
 
 WEB FRONTEND src/ empty files to create:
   assets/global.css (Tailwind directives + CSS variables)
@@ -75,9 +75,9 @@ DESKTOP CLIENT package.json dependencies:
 
 DESKTOP CLIENT electron-builder config inside package.json:
 - appId: com.aeres.ide
-- productName: Aether IDE
+- productName: Aeres IDE
 - extraResources: copy python-backend/dist/backend binary
-- protocols: register aether:// scheme
+- protocols: register aeres:// scheme
 - npmRebuild: true
 - asarUnpack: node_modules/node-pty
 - targets: nsis (Windows), dmg (macOS x64+arm64), AppImage (Linux)
@@ -268,7 +268,7 @@ app/rag_engine/groq_gateway.py:
 app/server.py:
   - create_app() factory that:
     - Creates FastAPI instance
-    - Adds CORS middleware allowing localhost:5173, localhost:5174, aether://
+    - Adds CORS middleware allowing localhost:5173, localhost:5174, aeres://
     - Registers startup event that calls init_local_chroma and
       load_embedding_model
     - Includes all routers from app/api/endpoints/
@@ -277,7 +277,7 @@ app/server.py:
 
 main.py:
   - Detect if frozen by PyInstaller (sys.frozen)
-  - If frozen: use platformdirs.user_data_dir("AetherIDE","Aether")
+  - If frozen: use platformdirs.user_data_dir("AeresIDE","Aeres")
     for CHROMA_DB_PATH and model cache
   - Read BACKEND_PORT from env (default 8008)
   - Run uvicorn on 127.0.0.1:PORT, import app from app.server
@@ -298,7 +298,7 @@ WHAT TO BUILD:
 The complete authentication and routing layer for the
 web frontend. This task contains the most critical
 connectivity piece: authRedirect.js must generate
-an aether:// deep link that Electron will catch.
+an aeres:// deep link that Electron will catch.
 
 BRAND CONTEXT:
 - Background: #0a0a0f  Surface: #12121a  Border: #1e1e2e
@@ -323,12 +323,12 @@ App.jsx:
 
 utils/authRedirect.js:
   redirectToAuth(redirectPath): store intended destination
-    in sessionStorage key 'aether_post_auth_redirect',
+    in sessionStorage key 'aeres_post_auth_redirect',
     then navigate to /auth
   getPostAuthRedirect(): read from sessionStorage, default '/dashboard'
   clearPostAuthRedirect(): remove the sessionStorage key
   redirectToIDE(token, email): construct
-    aether://auth?token={token}&email={email}
+    aeres://auth?token={token}&email={email}
     and set window.location.href to it.
     THIS IS THE BRIDGE BETWEEN WEB AND ELECTRON.
 
@@ -346,7 +346,7 @@ hooks/useOSDetection.js:
 
 pages/AuthPortal.jsx:
   Full page dark background matching brand.
-  Show Aether IDE logo at top.
+  Show Aeres IDE logo at top.
   Render Clerk <SignIn> with dark appearance variables
   matching the brand colors.
   After sign-in, read search params:
@@ -389,21 +389,21 @@ components/SmartDownload.jsx:
   Use useOSDetection to detect OS.
   Use useUser() from Clerk to check if signed in.
   Download URLs (construct from VITE_DOWNLOAD_BASE_URL env var):
-    mac:     {BASE}/Aether-IDE-mac-universal.dmg
-    windows: {BASE}/Aether-IDE-Setup-win-x64.exe
-    linux:   {BASE}/Aether-IDE-linux-x86_64.AppImage
+    mac:     {BASE}/Aeres-IDE-mac-universal.dmg
+    windows: {BASE}/Aeres-IDE-Setup-win-x64.exe
+    linux:   {BASE}/Aeres-IDE-linux-x86_64.AppImage
   Button label: "Download for macOS" / "Download for Windows" etc.
   If NOT signed in: clicking calls redirectToAuth with
     redirect=download stored in sessionStorage, then navigates to /auth.
   If signed in: trigger browser download, show success message
-    "After installing, click Login via Browser inside Aether IDE."
+    "After installing, click Login via Browser inside Aeres IDE."
   If OS unknown: show three platform links below the button.
   Accepts a 'large' prop for bigger button variant.
 
 components/Navbar.jsx:
   Fixed at top, transparent background initially.
   On scroll past 20px: semi-transparent dark background with blur.
-  Left: Aether IDE logo (Syne font, violet accent on IDE).
+  Left: Aeres IDE logo (Syne font, violet accent on IDE).
   Center: Features, Docs, Pricing links.
   Right: if signed in show Dashboard link + Sign Out.
          if not signed in show Login + Download CTA button.
@@ -425,7 +425,7 @@ pages/LandingPage.jsx:
   - Animated terminal mockup below the CTA showing the
     modernization flow. Use a ref and setTimeout to make
     lines appear one by one with delays:
-    "$ aether scan --project ./legacy-app"
+    "$ aeres scan --project ./legacy-app"
     "Scanning 847 files..."
     "⚠  componentWillMount found in UserDashboard.jsx:42"
     "⚠  ReactDOM.render found in index.js:8"
@@ -434,7 +434,7 @@ pages/LandingPage.jsx:
 
   FEATURES SECTION:
   Show 7 cards for the unique features:
-  1. Aether AI Engine
+  1. Aeres AI Engine
   2. Temporal Code Lens
   3. Causal Blame Map
   4. Contract Snapshot Tests
@@ -470,7 +470,7 @@ WHAT TO BUILD:
 The Electron main process, preload security bridge,
 Python sidecar manager, and auth handler.
 This is the most critical task — it wires all three
-apps together through the aether:// protocol.
+apps together through the aeres:// protocol.
 
 FILES TO IMPLEMENT:
 
@@ -489,19 +489,19 @@ electron/sidecar.cjs:
   getBackendPort(): returns current port.
 
 electron/ipcHandlers/authHandler.cjs:
-  Store JWT and email in global.__aetherJWT and
-  global.__aetherEmail (main process memory only,
+  Store JWT and email in global.__aeresJWT and
+  global.__aeresEmail (main process memory only,
   never sent to renderer directly).
   register(ipcMain, app, getMainWindow):
     auth:getStatus → return {authenticated, email}
       check if JWT exists and is not expired
-    auth:getToken → return global.__aetherJWT
+    auth:getToken → return global.__aeresJWT
     auth:logout → clear globals, cancel refresh timer
     auth:openBrowser(source) → shell.openExternal to
       web portal /auth?source={source}
       URL base from WEB_PORTAL_URL env or localhost:5173
   handleDeepLink(url, mainWindow):
-    Parse aether:// URL. Extract token and email params.
+    Parse aeres:// URL. Extract token and email params.
     Store in globals. Schedule JWT refresh timer
     (fire 60s before expiry to signal renderer).
     Send auth:success IPC event to mainWindow.
@@ -510,7 +510,7 @@ electron/ipcHandlers/authHandler.cjs:
 electron/main.cjs:
   Request single instance lock, quit if second instance
     (except pass deep link URL to first instance).
-  Register aether:// protocol with setAsDefaultProtocolClient.
+  Register aeres:// protocol with setAsDefaultProtocolClient.
   createWindow(): BrowserWindow 1440x900, min 1024x600,
     backgroundColor #0a0a0f, hiddenInset titleBar on mac,
     show:false, contextIsolation:true, nodeIntegration:false,
@@ -522,7 +522,7 @@ electron/main.cjs:
     check for updates if packaged.
   open-url event (macOS deep link): call handleDeepLink.
   second-instance event (Windows/Linux deep link):
-    find aether:// arg, call handleDeepLink, focus window.
+    find aeres:// arg, call handleDeepLink, focus window.
   window-all-closed: stop sidecar, quit (except macOS).
   before-quit: stop sidecar.
   autoUpdater events: forward update:available and
@@ -593,7 +593,7 @@ ACCEPTANCE TEST:
 - backend.log in userData folder shows sidecar started on a port
 - AuthModal is visible (no JWT yet)
 - Click "Login via Browser" → default browser opens localhost:5173/auth?source=ide
-- Sign in with Clerk → web page redirects to aether://auth?token=...&email=...
+- Sign in with Clerk → web page redirects to aeres://auth?token=...&email=...
 - Electron catches the URL → AuthModal disappears → IDE shell placeholder visible
 - No unhandled errors in Electron console
 
@@ -620,7 +620,7 @@ src/index.css:
 
 src/store.js:
   Zustand store with persist middleware.
-  Persist key 'aether-ide-state'. Persist only:
+  Persist key 'aeres-ide-state'. Persist only:
   editorSettings, theme, sidebarWidth, rightPanelWidth,
   terminalPanelHeight.
 
@@ -669,7 +669,7 @@ src/ErrorBoundary.jsx:
 
 src/AuthModal.jsx:
   Full-screen dark overlay covering everything (z-index 9999).
-  Shows Aether IDE logo/title in the center.
+  Shows Aeres IDE logo/title in the center.
   Two buttons:
   1. "Login via Browser" — calls window.electron.auth.openBrowser('ide')
   2. "Already logged in? Check again" — calls
@@ -688,7 +688,7 @@ src/App.jsx:
   If not authenticated: render AuthModal covering everything.
 
   Layout (when authenticated):
-    Title bar (36px): "Aether IDE" with violet accent.
+    Title bar (36px): "Aeres IDE" with violet accent.
       Show rootPath if open.
     Main body (flex row, fills remaining height):
       Activity bar (48px wide): icon buttons for
@@ -964,7 +964,7 @@ ACCEPTANCE TEST:
 - Ctrl+` opens the terminal panel
 - A real shell appears (bash/zsh on Mac/Linux, cmd on Windows)
 - Type: ls (or dir on Windows) → directory contents appear
-- Type: echo "hello aether" → response appears
+- Type: echo "hello aeres" → response appears
 - Type: python --version → Python version shows
 - + button creates a second terminal tab
 - × closes that terminal
@@ -1136,7 +1136,7 @@ electron/ipcHandlers/staticAnalyzer.cjs:
   register(ipcMain, app, getMainWindow, getBackendPort):
   analyze:modernize(content, filePath):
     Get backendPort from getBackendPort().
-    Get JWT from global.__aetherJWT (attach as Bearer token).
+    Get JWT from global.__aeresJWT (attach as Bearer token).
     POST to http://127.0.0.1:{port}/api/analyze/modernize.
     Read the response body as a stream using fetch + ReadableStream.
     For each SSE line starting with "data: ": extract the JSON,
@@ -1289,7 +1289,7 @@ CRITICAL AUTH POLISH in web-frontend:
   For the case where source === 'ide':
     Call getToken() to get the Clerk JWT.
     Get the user's primary email from the user object.
-    Build the URL: aether://auth?token={encodeURIComponent(token)}&email={encodeURIComponent(email)}
+    Build the URL: aeres://auth?token={encodeURIComponent(token)}&email={encodeURIComponent(email)}
     Set window.location.href to that URL.
     This triggers the Electron protocol handler from Task 05.
     This is the exact line that was missing before and caused
@@ -1302,7 +1302,7 @@ FINAL ACCEPTANCE TEST — all 16 steps must pass:
   4. Sign in → redirects to /dashboard with Download button
   5. Open Electron app → AuthModal appears
   6. Click "Login via Browser" → browser opens /auth?source=ide
-  7. Sign in → browser URL changes to aether://auth?token=...
+  7. Sign in → browser URL changes to aeres://auth?token=...
   8. Electron catches it → AuthModal disappears → IDE shell visible
   9. Click "Open" in FileTree → select a folder → files appear
   10. Click a JS file with componentWillMount → Monaco opens it
