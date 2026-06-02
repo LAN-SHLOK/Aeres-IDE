@@ -7,7 +7,7 @@ const BASE = (import.meta.env.VITE_DOWNLOAD_BASE_URL || 'https://github.com/LAN-
 
 const ARTIFACTS = {
   mac: 'aeres-ide_0.1.0_x64.dmg',
-  windows: 'aeres-ide_0.1.0_x64-setup.exe',
+  windows: 'Aeres-IDE-Setup-win-x64.exe.msi',
   linux: 'aeres-ide_0.1.0_amd64.AppImage',
 }
 
