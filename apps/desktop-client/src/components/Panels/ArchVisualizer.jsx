@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useStore } from '../../store.js'
 import { detectLanguage } from '../../utils/langDetect.js'
 import * as d3 from 'd3'
+import { Map, Zap } from 'lucide-react'
 
 export default function ArchVisualizer() {
   const rootPath = useStore((s) => s.rootPath)
@@ -11,11 +12,25 @@ export default function ArchVisualizer() {
   const diagnostics = useStore((s) => s.diagnostics)
   
   const svgRef = useRef(null)
+  const hoverTimeoutRef = useRef(null)
   const [scanning, setScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
   const [scanLogs, setScanLogs] = useState([])
   const [hoveredNode, setHoveredNode] = useState(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+
+  const handleMouseEnterNode = (node) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    setHoveredNode(node)
+  }
+
+  const handleMouseLeaveNode = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredNode(null)
+    }, 300)
+  }
+
   
   // Recursively flatten tree nodes into files
   const allFiles = useMemo(() => {
@@ -53,11 +68,11 @@ export default function ArchVisualizer() {
     setScanLogs([])
     
     const logs = [
-      '⚡ [Aeres Compiler] Spawning semantic workspace scanner...',
-      '🔍 [Directory Analyzer] Walking codebase file trees...',
-      '📁 [Module Grapher] Building node import relationship map...',
-      '🔴 [LSP Diagnostic Collector] Mapping live active warning models...',
-      '🌳 [Graph Complete] Rendering interactive architectural canvas!'
+      '[Aeres Compiler] Spawning semantic workspace scanner...',
+      '[Directory Analyzer] Walking codebase file trees...',
+      '[Module Grapher] Building node import relationship map...',
+      '[LSP Diagnostic Collector] Mapping live active warning models...',
+      '[Graph Complete] Rendering interactive architectural canvas!'
     ]
     
     let step = 0
@@ -182,7 +197,7 @@ export default function ArchVisualizer() {
   // Pre-populate AI Agent Prompt about a specific node
   const askAeresAboutNode = (node) => {
     // Focus active sidebar tab to AI Chat
-    useStore.setState({ activeSidebarTab: 'files' })
+    useStore.setState({ rightPanelOpen: true, activeRightTab: 'chat' })
     
     // Dispatch custom event to auto populate chat input field
     const ev = new CustomEvent('aeres:add-to-chat', { detail: { name: node.name } })
@@ -197,7 +212,7 @@ export default function ArchVisualizer() {
       <div className="flex h-full flex-col items-center justify-center p-6 text-center text-aeres-muted bg-aeres-bg">
         <div className="relative mb-4 rotate-[-6deg] hover:rotate-[6deg] transition-transform duration-300">
           <div className="absolute inset-0 bg-aeres-violet/10 blur-xl rounded-full" />
-          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl border-2 border-black bg-aeres-surface text-aeres-violet shadow-[3px_3px_0px_#000000]">
+          <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl border-2 border-black bg-aeres-surface text-aeres-violet shadow-[2px_2px_0px_#000]">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           </div>
         </div>
@@ -214,13 +229,13 @@ export default function ArchVisualizer() {
       {/* Title bar */}
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-aeres-border px-3 bg-aeres-surface/40">
         <span className="text-[9px] font-black uppercase tracking-widest text-aeres-muted flex items-center gap-1.5">
-          <span className="text-aeres-violet font-bold">🔍</span> Architecture Map
+          <Map size={14} className="text-aeres-violet font-bold" /> Architecture Map
           <span className="text-[8px] text-slate-500 font-mono ml-2">(Scroll to zoom, drag to pan)</span>
         </span>
         <button
           onClick={runScan}
           disabled={scanning}
-          className="rounded-full border-2 border-black bg-aeres-surface px-2.5 py-0.5 text-[8px] text-white hover:bg-aeres-violet hover:text-black font-extrabold uppercase transition shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] cursor-pointer"
+          className="rounded-full border-2 border-black bg-aeres-surface px-2.5 py-0.5 text-[8px] text-white hover:bg-aeres-violet hover:text-black font-extrabold uppercase transition shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
         >
           Rescan Workspace
         </button>
@@ -231,7 +246,7 @@ export default function ArchVisualizer() {
         {/* Scanning progress overlay */}
         {scanning && (
           <div className="absolute inset-0 bg-[#0c0d14]/90 z-50 flex flex-col items-center justify-center p-6 backdrop-blur-sm animate-in fade-in duration-150">
-            <div className="w-full max-w-[340px] bg-aeres-surface border-2 border-black p-4 rounded-2xl shadow-[4px_4px_0px_#000000] font-mono text-[9px] text-slate-300 space-y-2">
+            <div className="w-full max-w-[340px] bg-aeres-surface border-2 border-black p-4 rounded-2xl shadow-[2px_2px_0px_#000] font-mono text-[9px] text-slate-300 space-y-2">
               <div className="flex items-center justify-between border-b border-black/20 pb-2 mb-2">
                 <span className="font-bold text-aeres-violet uppercase tracking-wider">Aeres Architecture Scanner</span>
                 <span className="text-[8px] opacity-60">v1.2.0</span>
@@ -261,7 +276,7 @@ export default function ArchVisualizer() {
         <div className="w-[180px] shrink-0 border-r border-aeres-border bg-aeres-surface/20 p-3 flex flex-col justify-between overflow-y-auto">
           <div className="space-y-4">
             {/* Health Ring Meter */}
-            <div className="border-2 border-black bg-aeres-surface p-2.5 rounded-2xl shadow-[2.5px_2.5px_0px_#000000] text-center">
+            <div className="border-2 border-black bg-aeres-surface p-2.5 rounded-2xl shadow-[2px_2px_0px_#000] text-center">
               <span className="text-[8px] font-black uppercase tracking-wider text-aeres-muted block mb-1">System Health Map</span>
               <div className="relative inline-flex items-center justify-center">
                 <svg className="w-16 h-16 transform -rotate-90">
@@ -283,22 +298,22 @@ export default function ArchVisualizer() {
             <div className="space-y-2">
               <span className="text-[8px] font-black uppercase tracking-widest text-aeres-muted pl-1">Workspace Index</span>
               
-              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[1.5px_1.5px_0px_#000000]">
+              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[2px_2px_0px_#000]">
                 <span className="text-aeres-muted font-bold">Total Files</span>
                 <span className="font-extrabold text-white font-mono">{nodes.length}</span>
               </div>
 
-              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[1.5px_1.5px_0px_#000000]">
+              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[2px_2px_0px_#000]">
                 <span className="text-red-400 font-bold">Errors</span>
                 <span className="font-extrabold text-red-400 font-mono">{healthStats.errors}</span>
               </div>
 
-              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[1.5px_1.5px_0px_#000000]">
+              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[2px_2px_0px_#000]">
                 <span className="text-amber-400 font-bold">Warnings</span>
                 <span className="font-extrabold text-amber-400 font-mono">{healthStats.warnings}</span>
               </div>
 
-              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[1.5px_1.5px_0px_#000000]">
+              <div className="border-2 border-black bg-aeres-surface p-2 rounded-xl flex items-center justify-between text-[10px] shadow-[2px_2px_0px_#000]">
                 <span className="text-cyan-400 font-bold">Git Modified</span>
                 <span className="font-extrabold text-cyan-400 font-mono">{healthStats.modified}</span>
               </div>
@@ -401,8 +416,8 @@ export default function ArchVisualizer() {
                     key={`node-${i}`} 
                     transform={`translate(${node.x},${node.y})`}
                     onClick={() => handleNodeClick(node)}
-                    onMouseEnter={() => setHoveredNode(node)}
-                    onMouseLeave={() => setHoveredNode(null)}
+                    onMouseEnter={() => handleMouseEnterNode(node)}
+                    onMouseLeave={handleMouseLeaveNode}
                     className="cursor-pointer group"
                   >
                     {/* Floating effect pulse */}
@@ -457,6 +472,8 @@ export default function ArchVisualizer() {
           {hoveredNode && (
             <div 
               className="fixed pointer-events-auto bg-[#13141f]/95 border-2 border-black rounded-2xl shadow-2xl p-3 z-30 w-56 backdrop-blur-md animate-in fade-in duration-100 flex flex-col gap-2"
+              onMouseEnter={() => { if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current) }}
+              onMouseLeave={handleMouseLeaveNode}
               style={{
                 top: Math.max(10, mousePos.y - 120),
                 left: Math.max(10, mousePos.x + 15)
@@ -503,7 +520,7 @@ export default function ArchVisualizer() {
                   onClick={() => askAeresAboutNode(hoveredNode)}
                   className="flex-1 py-1 bg-aeres-violet text-black hover:scale-102 text-[8px] font-black rounded-lg transition uppercase cursor-pointer flex items-center justify-center gap-0.5"
                 >
-                  ⚡ Ask AI
+                  <Zap size={10} /> Ask AI
                 </button>
               </div>
             </div>

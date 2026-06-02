@@ -2,7 +2,10 @@
   "name": "aeres-ide-monorepo",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["apps/web-frontend", "apps/desktop-client"],
+  "workspaces": [
+    "apps/web-frontend",
+    "apps/desktop-client"
+  ],
   "scripts": {
     "dev:web": "npm run dev --workspace=aeres-web-frontend",
     "dev:desktop": "npm run dev --workspace=aeres-desktop-client",
@@ -18,5 +21,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "tokio": "^0.1.2"
   }
 }

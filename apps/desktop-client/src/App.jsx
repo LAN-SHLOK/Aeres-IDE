@@ -1,30 +1,37 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react'
 import AuthModal from './AuthModal.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import { useStore } from './store.js'
 import { detectLanguage } from './utils/langDetect.js'
 import { openFolderAndResetTerminals } from './utils/workspaceActions.js'
+import { handleGlobalKeys } from './keybindings.js'
 
 // Sidebars
 import FileTree from './components/Sidebar/FileTree.jsx'
-import SearchPanel from './components/Sidebar/SearchPanel.jsx'
-import GitPanel from './components/Git/GitPanel.jsx'
-import DebugPanel from './components/Sidebar/DebugPanel.jsx'
-import ExtensionPanel from './components/Sidebar/ExtensionsPanel.jsx'
+const SearchPanel = lazy(() => import('./components/Sidebar/SearchPanel.jsx'))
+const GitPanel = lazy(() => import('./components/Git/GitPanel.jsx'))
+const ExtensionPanel = lazy(() => import('./components/Sidebar/ExtensionsPanel.jsx'))
+const TestingPanel = lazy(() => import('./components/Sidebar/TestingPanel.jsx'))
+const DebugPanel = lazy(() => import('./components/Sidebar/DebugPanel.jsx'))
 
 // Main Content
 import CodeCanvas from './components/Editor/CodeCanvas.jsx'
-import DependencyRadar from './components/Panels/DependencyRadar.jsx'
-import CausalBlameMap from './components/Panels/CausalBlameMap.jsx'
-import ArchVisualizer from './components/Panels/ArchVisualizer.jsx'
+const JupyterCanvas = lazy(() => import('./components/Editor/JupyterCanvas.jsx'))
+const DependencyRadar = lazy(() => import('./components/Panels/DependencyRadar.jsx'))
+const CausalBlameMap = lazy(() => import('./components/Panels/CausalBlameMap.jsx'))
+const ArchVisualizer = lazy(() => import('./components/Panels/ArchVisualizer.jsx'))
+const WorkspaceSunburst = lazy(() => import('./components/Panels/WorkspaceSunburst.jsx'))
 
 // Right Panels
-import RagChat from './components/Panels/RagChat.jsx'
-import ProblemsPanel from './components/Panels/ProblemsPanel.jsx'
-import ContractSnapshot from './components/Panels/ContractSnapshot.jsx'
-import MutationPanel from './components/Panels/MutationPanel.jsx'
-import TemporalPanel from './components/Panels/TemporalPanel.jsx'
-import FocusSessionManager from './components/Panels/FocusSessionManager.jsx'
+const RagChat = lazy(() => import('./components/Panels/RagChat.jsx'))
+const ProblemsPanel = lazy(() => import('./components/Panels/ProblemsPanel.jsx'))
+const ContractSnapshot = lazy(() => import('./components/Panels/ContractSnapshot.jsx'))
+const TemporalPanel = lazy(() => import('./components/Panels/TemporalPanel.jsx'))
+const FocusSessionManager = lazy(() => import('./components/Panels/FocusSessionManager.jsx'))
+const MutationPanel = lazy(() => import('./components/Panels/MutationPanel.jsx'))
+const WebPreviewPanel = lazy(() => import('./components/Panels/WebPreviewPanel.jsx'))
+const ApiSandboxPanel = lazy(() => import('./components/Panels/ApiSandboxPanel.jsx'))
+const HealthDashboard = lazy(() => import('./components/Panels/HealthDashboard.jsx').then(m => ({ default: m.HealthDashboard })))
 
 // Overlays & Layout
 import TitleBar from './components/TitleBar.jsx'
@@ -32,6 +39,7 @@ import MainMenuBar from './components/Editor/MainMenuBar.jsx'
 import StatusBar from './components/StatusBar.jsx'
 import TerminalTabs from './components/Terminal/TerminalTabs.jsx'
 import CommandPalette from './components/Overlays/CommandPalette.jsx'
+import EnvSelector from './components/Overlays/EnvSelector.jsx'
 import QuickOpen from './components/Overlays/QuickOpen.jsx'
 import KeybindingModal from './components/Overlays/KeybindingModal.jsx'
 import DebugToolbar from './components/Editor/DebugToolbar.jsx'
@@ -39,6 +47,7 @@ import EditorSettings from './components/Editor/EditorSettings.jsx'
 import AeresSettingsModal from './components/Overlays/AeresSettingsModal.jsx'
 import SnippetsModal from './components/Overlays/SnippetsModal.jsx'
 import RateLimitModal from './components/Overlays/RateLimitModal.jsx'
+import NewProjectWizard from './components/Overlays/NewProjectWizard.jsx'
 
 const ACTIVITY_ICONS = [
   { id: 'files', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>, label: 'Explorer' },
@@ -47,14 +56,15 @@ const ACTIVITY_ICONS = [
   { id: 'debug', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 20c-3.31 0-6-2.69-6-6v-1h4v1c0 1.1.9 2 2 2s2-.9 2-2v-1h4v1c0 3.31-2.69 6-6 6Z"/><path d="M12 15V8"/></svg>, label: 'Run and Debug' },
   { id: 'extensions', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m21 16-4-4 4-4"/><path d="M11 7 7 11l4 4"/><path d="m5 16-4-4 4-4"/></svg>, label: 'Extensions' },
   { id: 'testing', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v7.5"/><path d="M14 2v7.5"/><path d="M8.5 13a4 4 0 1 1 7 0L22 20H2l6.5-7Z"/></svg>, label: 'Testing' },
-  { id: 'mutations', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><path d="M7 7l10 10"/><path d="M17 7L7 10l10 7"/></svg>, label: 'Mutations' },
+  { id: 'contract', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>, label: 'Contract Snapshots' },
+  { id: 'mutation', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>, label: 'Mutation Tester' },
   { id: 'perf', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>, label: 'Performance' },
   { id: 'radar', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="m12 12 4 4"/><path d="m12 12-4-4"/><path d="m12 12 4-4"/><path d="m12 12-4 4"/></svg>, label: 'Dependency Radar' },
   { id: 'arch', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label: 'Architecture Visualizer' },
   { id: 'sunburst', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="9" strokeDasharray="4 4" /></svg>, label: 'Workspace Sunburst Matrix' },
+  { id: 'preview', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>, label: 'Device Lab Simulator' },
+  { id: 'api', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>, label: 'Aeres API Sandbox' },
 ]
-
-import WorkspaceSunburst from './components/Panels/WorkspaceSunburst.jsx'
 
 export default function App() {
   const authStatus = useStore((s) => s.authStatus)
@@ -87,9 +97,10 @@ export default function App() {
   const [termDragging, setTermDragging] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editorSettingsOpen, setEditorSettingsOpen] = useState(false)
-  const [aeresSettingsOpen, setAeresSettingsOpen] = useState(false)
+  const [aeresSettingsOpen, setAeresSettingsOpen] = useState(null) // { category, tab } | null
   const [snippetsOpen, setSnippetsOpen] = useState(false)
   const [rateLimitOpen, setRateLimitOpen] = useState(false)
+  const [newProjectWizardOpen, setNewProjectWizardOpen] = useState(false)
 
   useEffect(() => {
     // Dynamic theme migration: Default existing users (or first-time users) to 'cutie-dark'
@@ -113,6 +124,7 @@ export default function App() {
     if (!e) {
       if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         setAuthStatus({ authenticated: true, email: 'dev-mode@aeres.ide' })
+        setBackendUrl('http://127.0.0.1:8000') // Default backend port for local browser testing
       } else {
         setAuthStatus({ authenticated: false, email: null })
       }
@@ -120,6 +132,23 @@ export default function App() {
       return
     }
     e.auth.getStatus().then((s) => { setAuthStatus({ authenticated: !!s.authenticated, email: s.email ?? null }); setLoaded(true); })
+    if (e.auth.onDeepLink) {
+      e.auth.onDeepLink((url) => {
+        try {
+          const urlObj = new URL(url)
+          if (urlObj.pathname.includes('auth') || urlObj.searchParams.has('token')) {
+            const token = urlObj.searchParams.get('token')
+            const email = urlObj.searchParams.get('email') || 'user@aeres.ide'
+            if (token) {
+              e.auth.saveToken(token, email)
+              setAuthStatus({ authenticated: true, email })
+            }
+          }
+        } catch (err) {
+          console.error('[App] Failed to parse deep link:', err)
+        }
+      })
+    }
     if (e.sidecar?.getPort) { e.sidecar.getPort().then(port => { if (port) setBackendUrl(`http://127.0.0.1:${port}`) }) }
   }, [setAuthStatus, setBackendUrl])
 
@@ -213,140 +242,15 @@ export default function App() {
   useEffect(() => {
     let keyBuffer = ''
     const handleKeys = async (e) => {
-      // 1. Ctrl+S -> Save Active File
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault()
-        const store = useStore.getState()
-        const activeTab = store.tabs.find(t => t.id === store.activeTabId)
-        if (activeTab && window.electron) {
-          // If the Prettier Formatter extension is installed, let's auto-format the code beautifully before writing!
-          let content = activeTab.content || ''
-          if (store.installedExtensions.includes('prettier-formatter')) {
-            // Mock a gorgeous code formatting: trim lines and add standard formatting spacing!
-            content = content
-              .split('\n')
-              .map(line => line.trimEnd())
-              .join('\n')
-            store.setTabContent(store.activeTabId, content)
-          }
-          await window.electron.fs.writeFile(activeTab.path, content)
-          store.setTabDirty(store.activeTabId, false)
-        }
-      }
-
-      // Ctrl+Shift+S -> Save Focus Session
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'S' || e.key === 's')) {
-        e.preventDefault()
-        const sessionName = window.prompt('Enter a name for your Focus Session:')
-        if (sessionName) {
-          const store = useStore.getState()
-          store.saveSession(sessionName).then((result) => {
-            if (result && !result.error) {
-              alert(`Focus Session "${sessionName}" saved successfully!`)
-              document.dispatchEvent(new CustomEvent('aeres:focus-sessions-updated'))
-            } else {
-              alert('Failed to save Focus Session: ' + (result?.error || 'Unknown error'))
-            }
-          }).catch((err) => {
-            alert('Failed to save Focus Session: ' + err.message)
-          })
-        }
-      }
-
-      // 2. Ctrl+O -> Open Folder Picker (with terminal reset)
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'O' || e.key === 'o')) {
-        e.preventDefault()
-        await openFolderAndResetTerminals()
-      }
-
-      // 2b. Ctrl+Shift+N -> New Window
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'N' || e.key === 'n')) {
-        e.preventDefault()
-        window.electron?.window?.newWindow()
-      }
-
-      // 3. Ctrl + ` -> Toggle Terminal
-      if ((e.ctrlKey || e.metaKey) && e.key === '`') {
-        e.preventDefault()
-        const store = useStore.getState()
-        store.setTerminalPanelOpen(!store.terminalPanelOpen)
-      }
-
-      // 4. Ctrl+Shift+P -> Command Palette
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'P' || e.key === 'p')) {
-        e.preventDefault()
-        setPaletteOpen(true)
-      }
-
-      // 5. Ctrl+P -> Quick Open
-      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'P' || e.key === 'p')) {
-        e.preventDefault()
-        setQuickOpenOpen(true)
-      }
-
-      // 6. Ctrl+Shift+F -> Focus Global Search tab
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'F' || e.key === 'f')) {
-        e.preventDefault()
-        setActiveSidebarTab('search')
-      }
-
-      // 7. Ctrl+Shift+E -> Focus File Explorer tab
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'E' || e.key === 'e')) {
-        e.preventDefault()
-        setActiveSidebarTab('files')
-      }
-
-      // 8. Ctrl+Shift+G -> Focus Git Source Control tab
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'G' || e.key === 'g')) {
-        e.preventDefault()
-        setActiveSidebarTab('git')
-      }
-
-      // 9. Ctrl+Shift+D -> Focus Run and Debug tab
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
-        e.preventDefault()
-        setActiveSidebarTab('debug')
-      }
-
-      // 10. Ctrl+Shift+X -> Focus Extensions panel
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'X' || e.key === 'x')) {
-        e.preventDefault()
-        setActiveSidebarTab('extensions')
-      }
-
-      // 11. Ctrl+Shift+M -> Modernize Code Action
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'M' || e.key === 'm')) {
-        e.preventDefault()
-        // Focus the RAG AI chat window directly
-        const store = useStore.getState()
-        store.setRightPanelWidth(380)
-        useStore.setState({ rightPanelOpen: true, activeRightTab: 'rag' })
-      }
-
-      // 12. Ctrl+, -> Aeres User Settings Modal
-      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
-        e.preventDefault()
-        setAeresSettingsOpen(true)
-      }
-
-      // 13. Ctrl+K Ctrl+S -> Shortcuts panel
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'K' || e.key === 'k')) {
-        keyBuffer = 'k'
-        setTimeout(() => { keyBuffer = '' }, 1000)
-      }
-      if (keyBuffer === 'k' && (e.ctrlKey || e.metaKey) && (e.key === 'S' || e.key === 's')) {
-        e.preventDefault()
-        setKeybindingsOpen(true)
-        keyBuffer = ''
-      }
+      await handleGlobalKeys(e, { setAeresSettingsOpen })
     }
     window.addEventListener('keydown', handleKeys)
     return () => window.removeEventListener('keydown', handleKeys)
-  }, [setKeybindingsOpen, setActiveSidebarTab, setPaletteOpen, setQuickOpenOpen])
+  }, [setAeresSettingsOpen])
 
   // Custom Event Listeners to receive keyboard triggers from Monaco Editor
   useEffect(() => {
-    const handleOpenSettings = () => setAeresSettingsOpen(true)
+    const handleOpenSettings = (e) => setAeresSettingsOpen(e.detail || {})
     const handleOpenShortcuts = () => setKeybindingsOpen(true)
     const handleOpenExtensions = () => setActiveSidebarTab('extensions')
     const handleOpenExplorer = () => setActiveSidebarTab('files')
@@ -387,6 +291,39 @@ export default function App() {
         console.error('[App] Failed to create new terminal:', err)
       }
     }
+    const handleNewProjectWizard = () => setNewProjectWizardOpen(true)
+    const handleScaffoldProject = async (e) => {
+      const command = e.detail?.command
+      if (!command) return
+
+      const electron = window.electron
+      if (!electron) return
+
+      try {
+        const defaultShell = electron.platform === 'win32' ? 'powershell.exe' : undefined
+        let chosenShell = defaultShell
+        let name = 'Scaffold'
+        if (electron.terminal?.getAvailableShells) {
+          const shells = await electron.terminal.getAvailableShells()
+          if (shells && shells.length > 0) {
+            chosenShell = shells[0].path
+          }
+        }
+        
+        const store = useStore.getState()
+        const cwd = store.rootPath || undefined
+
+        const { id } = await electron.terminal.create({ cwd, shell: chosenShell })
+        useStore.getState().addTerminal({ id, name })
+        
+        // Wait a small bit for terminal to be ready, then send command
+        setTimeout(() => {
+          electron.terminal.write(id, command + (electron.platform === 'win32' ? '\r\n' : '\n'))
+        }, 300)
+      } catch (err) {
+        console.error('[App] Failed to scaffold:', err)
+      }
+    }
 
     document.addEventListener('aeres:open-settings', handleOpenSettings)
     document.addEventListener('aeres:open-shortcuts', handleOpenShortcuts)
@@ -397,6 +334,8 @@ export default function App() {
     document.addEventListener('aeres:open-snippets', handleOpenSnippets)
     window.addEventListener('aeres:rate-limit-hit', handleRateLimit)
     window.addEventListener('aeres:new-terminal', handleNewTerminal)
+    document.addEventListener('aeres:open-new-project', handleNewProjectWizard)
+    document.addEventListener('aeres:scaffold-project', handleScaffoldProject)
 
     return () => {
       document.removeEventListener('aeres:open-settings', handleOpenSettings)
@@ -408,6 +347,8 @@ export default function App() {
       document.removeEventListener('aeres:open-snippets', handleOpenSnippets)
       window.removeEventListener('aeres:rate-limit-hit', handleRateLimit)
       window.removeEventListener('aeres:new-terminal', handleNewTerminal)
+      document.removeEventListener('aeres:open-new-project', handleNewProjectWizard)
+      document.removeEventListener('aeres:scaffold-project', handleScaffoldProject)
     }
   }, [setActiveSidebarTab, setKeybindingsOpen, setPaletteOpen, setQuickOpenOpen])
 
@@ -433,13 +374,20 @@ export default function App() {
       let filePath = uri
       if (uri.startsWith('file:///')) {
         filePath = uri.slice(8)
-        filePath = filePath.replace(/\//g, '\\')
         filePath = decodeURIComponent(filePath)
+        filePath = filePath.replace(/\//g, '\\')
+        // Normalize Windows drive letter to uppercase (e.g., c:\ -> C:\) to match tab paths
+        if (filePath.match(/^[a-z]:\\/)) {
+          filePath = filePath.charAt(0).toUpperCase() + filePath.slice(1)
+        }
       }
       
       const markers = (diagnostics || []).map(d => ({
         message: d.message,
         line: (d.range?.start?.line ?? 0) + 1,
+        startColumn: (d.range?.start?.character ?? 0) + 1,
+        endLine: (d.range?.end?.line ?? 0) + 1,
+        endColumn: (d.range?.end?.character ?? 0) + 1,
         severity: d.severity === 1 ? 'error' : d.severity === 2 ? 'warning' : 'info'
       }))
       
@@ -494,7 +442,7 @@ export default function App() {
                   type="button"
                   onClick={() => {
                     setSettingsOpen(false)
-                    setAeresSettingsOpen(true)
+                    setAeresSettingsOpen({})
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-[#007acc] hover:text-white flex justify-between items-center transition-colors duration-100"
                 >
@@ -505,7 +453,7 @@ export default function App() {
                   type="button"
                   onClick={() => {
                     setSettingsOpen(false)
-                    setAeresSettingsOpen(true)
+                    setAeresSettingsOpen({})
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-[#007acc] hover:text-white flex justify-between items-center transition-colors duration-100"
                 >
@@ -580,7 +528,7 @@ export default function App() {
                       type="button"
                       onClick={() => {
                         setSettingsOpen(false)
-                        useStore.setState({ paletteOpen: true })
+                        setAeresSettingsOpen({ category: 'themes', tab: 'color' })
                       }}
                       className="w-full text-left px-3 py-2 hover:bg-[#007acc] hover:text-white flex justify-between items-center transition-colors duration-100"
                     >
@@ -589,14 +537,20 @@ export default function App() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSettingsOpen(false)}
+                      onClick={() => {
+                        setSettingsOpen(false)
+                        setAeresSettingsOpen({ category: 'themes', tab: 'fileIcons' })
+                      }}
                       className="w-full text-left px-3 py-2 hover:bg-[#007acc] hover:text-white flex justify-between items-center transition-colors duration-100"
                     >
                       <span>File Icon Theme</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSettingsOpen(false)}
+                      onClick={() => {
+                        setSettingsOpen(false)
+                        setAeresSettingsOpen({ category: 'themes', tab: 'productIcons' })
+                      }}
                       className="w-full text-left px-3 py-2 hover:bg-[#007acc] hover:text-white flex justify-between items-center transition-colors duration-100"
                     >
                       <span>Product Icon Theme</span>
@@ -620,7 +574,9 @@ export default function App() {
                   type="button"
                   onClick={() => {
                     setSettingsOpen(false)
-                    alert("Aeres IDE is up to date!")
+                    const store = useStore.getState();
+                    store.appendOutputLog('info', "Aeres IDE is up to date!");
+                    store.setActiveSidebarTab('output');
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-[#007acc] hover:text-white flex justify-between items-center transition-colors duration-100"
                 >
@@ -632,20 +588,23 @@ export default function App() {
         </div>
 
         {/* 2. SIDEBAR */}
-        {!zenMode && !['radar', 'perf', 'arch', 'sunburst'].includes(activeSidebarTab) && (
+        {!zenMode && !['radar', 'perf', 'arch', 'sunburst', 'preview', 'api'].includes(activeSidebarTab) && (
           <div className="relative flex shrink-0 flex-col overflow-hidden border-r border-slate-800/50 bg-slate-950/40 backdrop-blur-md aeres-layout-sidebar" style={{ width: sidebarWidth }}>
             <div className="flex h-9 shrink-0 items-center px-4 text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-800/30">
               {ACTIVITY_ICONS.find(i => i.id === activeSidebarTab)?.label || 'Explorer'}
             </div>
             <div className="flex-1 overflow-y-auto">
               <ErrorBoundary label="Sidebar">
-                {activeSidebarTab === 'files' && <FileTree />}
-                {activeSidebarTab === 'search' && <SearchPanel />}
-                {activeSidebarTab === 'git' && <GitPanel />}
-                {activeSidebarTab === 'debug' && <DebugPanel />}
-                {activeSidebarTab === 'extensions' && <ExtensionPanel />}
-                {activeSidebarTab === 'testing' && <ContractSnapshot />}
-                {activeSidebarTab === 'mutations' && <MutationPanel />}
+                <Suspense fallback={<div className="p-4 text-xs text-slate-500">Loading panel...</div>}>
+                  {activeSidebarTab === 'files' && <FileTree />}
+                  {activeSidebarTab === 'search' && <SearchPanel />}
+                  {activeSidebarTab === 'git' && <GitPanel />}
+                  {activeSidebarTab === 'debug' && <DebugPanel />}
+                  {activeSidebarTab === 'extensions' && <ExtensionPanel />}
+                  {activeSidebarTab === 'testing' && <TestingPanel />}
+                  {activeSidebarTab === 'contract' && <ContractSnapshot />}
+                  {activeSidebarTab === 'mutation' && <MutationPanel />}
+                </Suspense>
               </ErrorBoundary>
             </div>
             <div className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-[#7C3AED]/50 transition-colors z-30"
@@ -663,11 +622,16 @@ export default function App() {
         <div className="flex min-w-0 flex-1 flex-col bg-slate-950/20 aeres-layout-editor-canvas">
           <div className="flex-1 min-h-0 relative">
             <ErrorBoundary label="Main Content">
-               {activeSidebarTab === 'radar' ? <DependencyRadar /> : 
-                activeSidebarTab === 'arch' ? <ArchVisualizer /> :
-                activeSidebarTab === 'perf' ? <TemporalPanel /> :
-                activeSidebarTab === 'sunburst' ? <WorkspaceSunburst /> :
-                activeRightTab === 'causemap' ? <CausalBlameMap /> : <CodeCanvas />}
+              <Suspense fallback={<div className="flex h-full items-center justify-center text-slate-500">Loading editor...</div>}>
+                 {activeSidebarTab === 'radar' ? <DependencyRadar /> : 
+                  activeSidebarTab === 'arch' ? <ArchVisualizer /> :
+                  activeSidebarTab === 'perf' ? <TemporalPanel /> :
+                  activeSidebarTab === 'sunburst' ? <WorkspaceSunburst /> :
+                  activeSidebarTab === 'preview' ? <WebPreviewPanel /> :
+                  activeSidebarTab === 'api' ? <ApiSandboxPanel /> :
+                  activeRightTab === 'causemap' ? <CausalBlameMap /> : 
+                  (useStore.getState().tabs.find(t => t.id === useStore.getState().activeTabId)?.path?.endsWith('.ipynb') ? <JupyterCanvas /> : <CodeCanvas />)}
+              </Suspense>
             </ErrorBoundary>
           </div>
 
@@ -683,11 +647,11 @@ export default function App() {
         </div>
 
         {/* 4. OVERLAYS / RIGHT PANELS */}
-        {!zenMode && rightPanelOpen && !(activeSidebarTab === 'radar' || activeSidebarTab === 'arch' || activeSidebarTab === 'sunburst' || activeRightTab === 'causemap') && (
+        {!zenMode && rightPanelOpen && !(activeSidebarTab === 'radar' || activeSidebarTab === 'arch' || activeSidebarTab === 'sunburst' || activeSidebarTab === 'preview' || activeSidebarTab === 'api' || activeRightTab === 'causemap') && (
           <div className="shrink-0 overflow-hidden border-l border-slate-800/50 bg-slate-900/70 backdrop-blur-3xl z-20 aeres-layout-right-panel" style={{ width: rightPanelWidth }}>
             <div className="flex h-9 items-center justify-between border-b border-slate-800/30 px-2 bg-slate-950/40">
               <div className="flex items-center gap-1.5">
-                {['chat', 'focus'].map((tab) => (
+                {['chat', 'focus', 'health'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveRightTab(tab)}
@@ -697,7 +661,7 @@ export default function App() {
                         : 'text-slate-400 hover:text-white hover:scale-102'
                     }`}
                   >
-                    {tab === 'chat' ? '💬 Chat' : '🎯 Focus'}
+                    {tab === 'chat' ? '💬 Chat' : tab === 'focus' ? '🎯 Focus' : '🛡️ Health'}
                   </button>
                 ))}
               </div>
@@ -711,11 +675,14 @@ export default function App() {
                 </button>
               )}
             </div>
-            <div className="h-[calc(100%-2.25rem)] overflow-hidden">
-               {activeRightTab === 'chat' && (
-                 <RagChat key={activeRightTab} initialMode={activeRightTab} />
-               )}
-               {activeRightTab === 'focus' && <FocusSessionManager />}
+            <div className="h-[calc(100%-2.25rem)]">
+              <ErrorBoundary label="Right Panel">
+                <Suspense fallback={<div className="p-4 text-xs text-slate-500">Loading panel...</div>}>
+                  {activeRightTab === 'chat' && <RagChat key={activeRightTab} initialMode={activeRightTab} />}
+                  {activeRightTab === 'focus' && <FocusSessionManager />}
+                  {activeRightTab === 'health' && <HealthDashboard />}
+                </Suspense>
+              </ErrorBoundary>
             </div>
             <div className="absolute left-0 top-0 h-full w-1 cursor-col-resize hover:bg-[#7C3AED]/50 transition-colors z-30"
                  onMouseDown={(e) => {
@@ -735,6 +702,7 @@ export default function App() {
       {/* OVERLAYS */}
       <DebugToolbar />
       {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      <EnvSelector />
       {quickOpenOpen && <QuickOpen onClose={() => setQuickOpenOpen(false)} />}
       
       {/* Aeres IDE Settings Overlay Panels */}
@@ -747,9 +715,16 @@ export default function App() {
           </div>
         </>
       )}
-      {aeresSettingsOpen && <AeresSettingsModal onClose={() => setAeresSettingsOpen(false)} />}
+      {aeresSettingsOpen && (
+        <AeresSettingsModal 
+          onClose={() => setAeresSettingsOpen(null)} 
+          initialCategory={aeresSettingsOpen.category}
+          initialTab={aeresSettingsOpen.tab}
+        />
+      )}
       {snippetsOpen && <SnippetsModal onClose={() => setSnippetsOpen(false)} />}
       {rateLimitOpen && <RateLimitModal onClose={() => setRateLimitOpen(false)} />}
+      {newProjectWizardOpen && <NewProjectWizard onClose={() => setNewProjectWizardOpen(false)} />}
     </div>
   )
 }

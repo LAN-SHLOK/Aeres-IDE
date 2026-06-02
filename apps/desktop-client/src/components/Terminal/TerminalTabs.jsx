@@ -13,7 +13,7 @@ export default function TerminalTabs() {
   const diagnostics = useStore((s) => s.diagnostics)
   const tabs = useStore((s) => s.tabs)
   const activeTabId = useStore((s) => s.activeTabId)
-  const serverUrl = useStore((s) => s.serverUrl)
+  const backendUrl = useStore((s) => s.backendUrl)
 
   const [activeTab, setActiveTab] = useState('terminal')
   const [availableShells, setAvailableShells] = useState([])
@@ -53,7 +53,14 @@ export default function TerminalTabs() {
         }
       }
 
-      const { id } = await e.terminal.create({ cwd, shell: chosenShell })
+      const store = useStore.getState()
+      const envActivationCommand = store.activeEnvironment?.activationCommand
+
+      const { id } = await e.terminal.create({ 
+        cwd, 
+        shell: chosenShell,
+        envActivationCommand
+      })
       addTerminal({ id, name })
       setActiveTab('terminal')
     } catch (err) {
@@ -211,7 +218,7 @@ export default function TerminalTabs() {
                 {showShellDropdown && (
                   <>
                     <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowShellDropdown(false)} />
-                    <div className="absolute right-0 bottom-full mb-1 z-50 w-44 bg-[#1e1e2f] border border-black shadow-[3px_3px_0px_#000000] py-1 text-xs text-aeres-text font-mono rounded">
+                    <div className="absolute right-0 bottom-full mb-1 z-50 w-44 bg-[#1e1e2f] border border-black shadow-[2px_2px_0px_#000] py-1 text-xs text-aeres-text font-mono rounded">
                       <div className="px-3 py-1 text-[9px] uppercase tracking-wider text-aeres-muted border-b border-aeres-border/40">Select Shell Type:</div>
                       {availableShells.map((shell) => (
                         <button
@@ -248,15 +255,14 @@ export default function TerminalTabs() {
             title="Open Localhost in Default Browser"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            🌐
           </button>
 
           {/* Copy Live Link button */}
-          {serverUrl && (
+          {backendUrl && (
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard.writeText(serverUrl)
+                navigator.clipboard.writeText(backendUrl)
                 setCopied(true)
                 setTimeout(() => setCopied(false), 2000)
               }}
@@ -302,17 +308,27 @@ export default function TerminalTabs() {
         {activeTab === 'output' && (
           <div className="flex h-full items-start justify-start text-xs text-aeres-muted bg-aeres-bg font-mono p-3 overflow-y-auto leading-relaxed select-text">
             <div className="w-full text-left font-mono">
-              <div><span className="text-purple-400">[info]</span> Aeres IDE Compiler Server successfully initialized.</div>
-              <div><span className="text-emerald-400">[info]</span> RAG indexing completed successfully. Discovered 45 source files.</div>
-              <div><span className="text-blue-400">[info]</span> File system watchers active. Performance Telemetry running silenty.</div>
-              <div><span className="text-amber-400">[warning]</span> Pyright LSP initialized but 2 files contain minor structural warnings.</div>
+              {useStore.getState().outputLog.length === 0 ? (
+                <div className="text-aeres-muted/50 italic">No output to display yet.</div>
+              ) : (
+                useStore((s) => s.outputLog).map((log) => (
+                  <div key={log.id} className="whitespace-pre-wrap break-words border-b border-aeres-border/30 pb-1 mb-1">
+                    <span className="text-slate-500 mr-2">[{log.time}]</span>
+                    {log.type === 'info' && <span className="text-blue-400 mr-1">[info]</span>}
+                    {log.type === 'success' && <span className="text-emerald-400 mr-1">[success]</span>}
+                    {log.type === 'warning' && <span className="text-amber-400 mr-1">[warning]</span>}
+                    {log.type === 'error' && <span className="text-red-400 mr-1">[error]</span>}
+                    <span className={log.type === 'error' ? 'text-red-300' : 'text-slate-300'}>{log.msg}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
 
-        {/* Terminal Tab Panel */}
-        {activeTab === 'terminal' && (
-          terminals.length === 0 ? (
+        {/* Terminal Tab Panel — always mounted, visibility controlled by CSS */}
+        <div className="h-full w-full" style={{ display: activeTab === 'terminal' ? 'block' : 'none' }}>
+          {terminals.length === 0 ? (
             <div className="flex h-full items-center justify-center bg-aeres-bg">
               <button
                 type="button"
@@ -333,8 +349,8 @@ export default function TerminalTabs() {
                 isActive={term.id === activeTerminalId}
               />
             ))
-          )
-        )}
+          )}
+        </div>
       </div>
     </div>
   )

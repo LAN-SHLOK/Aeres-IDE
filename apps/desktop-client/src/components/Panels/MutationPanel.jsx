@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
+import { Bug } from 'lucide-react'
 import { useStore } from '../../store.js'
+import { detectTestCommand } from '../../utils/projectRunner.js'
 
 export default function MutationPanel() {
   const activeTabId = useStore((s) => s.activeTabId)
@@ -12,10 +14,17 @@ export default function MutationPanel() {
     if (!activeTab || !window.electron) return
     try {
       const res = await window.electron.analyze.mutationResults(activeTab.path)
-      setData(res)
-      useStore.getState().setMutationResults(activeTab.path, res.results)
+      // Normalize: backend may return { error: '...' } or null on failure
+      if (res && Array.isArray(res.results)) {
+        setData(res)
+        useStore.getState().setMutationResults(activeTab.path, res.results)
+      } else {
+        // Keep existing data if fetch fails, only clear isRunning
+        setData(prev => ({ ...prev, isRunning: false }))
+      }
     } catch (err) {
       setError(err.message)
+      setData(prev => ({ ...prev, isRunning: false }))
     }
   }
 
@@ -23,19 +32,15 @@ export default function MutationPanel() {
     if (!activeTab || !window.electron) return
     setError(null)
     
-    // Dynamically resolve test command based on ecosystem
-    const lang = activeTab.language || 'javascript'
-    let cmd = 'npm test'
-    if (lang === 'python') cmd = 'pytest'
-    else if (lang === 'go') cmd = 'go test ./...'
-    else if (lang === 'rust') cmd = 'cargo test'
-    else if (lang === 'java' || lang === 'kotlin') cmd = 'mvn test'
-    else if (lang === 'cpp' || lang === 'c') cmd = 'make test'
-    else if (lang === 'ruby') cmd = 'rspec'
-    else if (lang === 'php') cmd = 'phpunit'
-    else if (lang === 'csharp') cmd = 'dotnet test'
+    // Dynamically resolve test command for all 30+ supported languages
+    let cmd = await detectTestCommand(activeTab.path, useStore.getState().rootPath)
+    if (!cmd) {
+      setError(`No test runner detected for language: ${activeTab.language || 'unknown'}. Try creating a test file.`)
+      return
+    }
     
     try {
+      setData(prev => ({ ...prev, isRunning: true }))
       await window.electron.analyze.runMutation({
         file_path: activeTab.path,
         source: activeTab.content,
@@ -43,9 +48,10 @@ export default function MutationPanel() {
         repo_path: useStore.getState().rootPath,
         max_mutations: 10
       })
-      fetchResults()
+      await fetchResults()
     } catch (err) {
       setError(err.message)
+      setData(prev => ({ ...prev, isRunning: false }))
     }
   }
 
@@ -58,39 +64,53 @@ export default function MutationPanel() {
   if (!activeTab) return (
     <div className="p-8 text-center text-aeres-muted text-sm">Open a file to see test quality analysis.</div>
   )
+  // Score calculation
+  let score = 0
+  if (data?.tested > 0) {
+    score = Math.round(((data.tested - (data.results?.length || 0)) / data.tested) * 100)
+  } else if (!data?.isRunning && data?.results?.length === 0) {
+    score = 100 // Fallback logic if tested is missing but we somehow ran
+  }
 
-  const score = data.results.length === 0 ? 100 : Math.max(0, 100 - (data.results.length * 10))
+  const hasTestedData = typeof data?.tested === 'number'
 
   return (
-    <div className="flex flex-col h-full bg-aeres-bg">
-      <div className="p-3 border-b border-aeres-border flex justify-between items-center bg-aeres-surface/40">
-        <h3 className="text-xs font-bold text-white uppercase tracking-wider">Test Quality (Mutation)</h3>
-        <button 
-          onClick={handleRun} 
-          disabled={data.isRunning}
-          className={`p-1 text-aeres-muted hover:text-white transition-all ${data.isRunning ? 'animate-pulse' : ''}`}
+    <div className="h-full flex flex-col bg-aeres-panel rounded-lg shadow-2xl font-sans overflow-hidden border border-aeres-border">
+      <div className="flex items-center justify-between px-4 py-3 bg-aeres-surface border-b border-aeres-border">
+        <div className="flex items-center gap-2">
+          <Bug size={16} className="text-aeres-violet" />
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider">Mutation Score</h3>
+        </div>
+        <button
+          onClick={handleRun}
+          disabled={data?.isRunning || !activeTab}
+          className="p-1.5 hover:bg-white/10 rounded-md transition-colors disabled:opacity-50 text-aeres-muted hover:text-white"
+          title="Run Mutation Tests"
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <svg className={`w-4 h-4 ${data?.isRunning ? 'animate-spin text-aeres-violet' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </button>
       </div>
 
       <div className="p-4 flex flex-col items-center">
-        <div className={`text-4xl font-display font-extrabold mb-1 ${data.results.length > 0 ? (score > 80 ? 'text-aeres-green' : score > 50 ? 'text-aeres-amber' : 'text-aeres-red') : 'text-aeres-muted'}`}>
-          {data.results.length === 0 && !data.isRunning ? '--%' : `${score}%`}
+        <div className={`text-4xl font-display font-extrabold mb-1 ${
+          data.isRunning ? 'text-aeres-muted' :
+          (!hasTestedData || data.tested === 0) ? 'text-aeres-muted' :
+          (score > 80 ? 'text-aeres-green' : score > 50 ? 'text-aeres-amber' : 'text-aeres-red')
+        }`}>
+          {data.isRunning ? '--%' : (!hasTestedData || data.tested === 0) ? '--%' : `${score}%`}
         </div>
         <div className="text-[10px] text-aeres-muted font-bold uppercase tracking-widest pl-1">Aeres Quality Index</div>
       </div>
 
-      {error && (
+      {(error || data?.error) && (
         <div className="mx-2 my-2 p-3 rounded-lg border border-red-800/40 bg-red-950/20 text-red-400 text-[11px] leading-relaxed animate-in slide-in-from-top-1 duration-200">
           <div className="flex gap-2">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <div>
               <span className="font-bold block mb-0.5">Mutation Engine Error</span>
-              {error}
+              {error || data?.error}
             </div>
           </div>
         </div>
@@ -104,16 +124,23 @@ export default function MutationPanel() {
           </div>
         )}
 
-        {data.results.length === 0 && !data.isRunning ? (
+        {(!data.isRunning && hasTestedData && data.tested === 0 && !data.error) ? (
           <div className="p-8 text-center">
-            <div className="flex justify-center mb-3">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-aeres-violet/20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <p className="text-xs text-aeres-muted leading-relaxed">No weak spots found or run not yet initiated. Silent Mutation Tester verifies if your tests actually prove your logic.</p>
+            <p className="text-xs text-aeres-muted leading-relaxed">No mutable logic found in this file to test, or tests are entirely missing.</p>
           </div>
-        ) : (
+        ) : (!data.isRunning && data.results?.length === 0 && data.tested > 0) ? (
+          <div className="p-8 text-center text-aeres-muted">
+            <div className="flex justify-center mb-3">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-500/50"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <p className="text-xs text-white font-medium mb-1">Ironclad Defense!</p>
+            <p className="text-[10px]">Your test suite killed 100% of the {data.tested} mutations.</p>
+          </div>
+        ) : (!data.isRunning && data.results?.length > 0) ? (
           <div className="p-2 space-y-2">
-            <h4 className="text-[9px] font-bold text-aeres-red uppercase px-2 mb-1">Survived Mutations (Lying Tests)</h4>
+            <h4 className="text-[9px] font-bold text-aeres-red uppercase px-2 mb-1">
+              Survived Mutations ({data.results.length} / {data.tested})
+            </h4>
             {data.results.map((r, i) => (
               <div key={i} className="p-2.5 rounded border border-aeres-red/20 bg-aeres-red/5 flex items-start gap-3">
                 <span className="text-[10px] bg-aeres-red text-white font-mono px-1 rounded">L{r.line}</span>
@@ -123,6 +150,13 @@ export default function MutationPanel() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : (!data.isRunning && !hasTestedData && !data.error) && (
+           <div className="p-8 text-center">
+            <div className="flex justify-center mb-3">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-aeres-violet/20"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <p className="text-xs text-aeres-muted leading-relaxed">Run not yet initiated. Silent Mutation Tester verifies if your tests actually prove your logic.</p>
           </div>
         )}
       </div>

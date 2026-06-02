@@ -6,6 +6,7 @@ import Footer from '../components/Footer.jsx'
 import Navbar from '../components/Navbar.jsx'
 import SmartDownload from '../components/SmartDownload.jsx'
 import { redirectToAuthForDownload } from '../utils/authRedirect.js'
+import Mermaid from '../components/Mermaid.jsx'
 
 const OS_SCRIPTS = {
   macos: {
@@ -35,15 +36,7 @@ const COLLABORATORS = [
   { name: 'Vinit Panchal', color: '#c084fc', x: [600, 450, 520, 580, 600], y: [80, 180, 60, 120, 80] }
 ]
 
-const SIMULATED_DEPS = [
-  { name: 'react', ecosystem: 'npm', current: '18.2.0', latest: '18.3.1', status: 'healthy', license: 'MIT', size: '6.4 KB' },
-  { name: 'libcst', ecosystem: 'pypi', current: '1.1.0', latest: '1.4.0', status: 'healthy', license: 'MIT', size: '1.2 MB' },
-  { name: 'framer-motion', ecosystem: 'npm', current: '11.0.8', latest: '11.3.0', status: 'healthy', license: 'MIT', size: '42.1 KB' },
-  { name: 'electron', ecosystem: 'npm', current: '29.1.0', latest: '31.0.0', status: 'outdated', license: 'MIT', size: '78.4 MB' },
-  { name: 'zustand', ecosystem: 'npm', current: '4.5.2', latest: '4.5.2', status: 'healthy', license: 'MIT', size: '3.1 KB' },
-  { name: 'fastapi', ecosystem: 'pypi', current: '0.110.0', latest: '0.111.0', status: 'healthy', license: 'MIT', size: '92.4 KB' },
-  { name: 'ripgrep', ecosystem: 'rust', current: '14.1.0', latest: '14.1.0', status: 'healthy', license: 'MIT', size: '4.8 MB' }
-]
+// Removed SIMULATED_DEPS array
 
 function ScrollHUD() {
   const { scrollYProgress } = useScroll()
@@ -80,10 +73,7 @@ export default function LandingPage() {
   // Scrollytelling Step tracking state
   const [scrollyStep, setScrollyStep] = useState(0)
   
-  // High-performance Dependency Visualizer State
-  const [visualizerView, setVisualizerView] = useState('list') // 'list' | 'map'
-  const [selectedDep, setSelectedDep] = useState(SIMULATED_DEPS[0])
-  const [updateCopied, setUpdateCopied] = useState(false)
+  // Visualizer states removed for actual feature rewrite
 
   // Interactive AST Playground States
   const [astLang, setAstLang] = useState('python')
@@ -118,12 +108,7 @@ export default function LandingPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const copyUpdateCommand = (dep) => {
-    const cmd = dep.ecosystem === 'npm' ? `npm install ${dep.name}@latest` : `pip install ${dep.name} --upgrade`
-    navigator.clipboard.writeText(cmd)
-    setUpdateCopied(true)
-    setTimeout(() => setUpdateCopied(false), 2000)
-  }
+  // copyUpdateCommand removed
 
   // Expressive split character words without emojis
   const renderExpressiveTitle = () => {
@@ -142,9 +127,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#09090e] font-body text-[#fffdf9] selection:bg-purple-500/20 selection:text-purple-300 overflow-x-hidden relative">
       
-      {/* Glassmorphic floating ambient bubbles */}
-      <div className="absolute top-[18%] left-[8%] w-32 h-32 rounded-full glassmorphic-layer pointer-events-none sticker-float hidden md:block" style={{ animationDelay: '0.3s' }} />
-      <div className="absolute top-[45%] right-[5%] w-44 h-44 rounded-full glassmorphic-layer pointer-events-none sticker-float hidden md:block" style={{ animationDelay: '1.2s' }} />
+      {/* Ambient glass bubbles removed as requested */}
 
       {/* Floating Y2K developer stickers */}
       <div className="absolute top-[20%] left-12 w-14 h-14 text-[#ff8ba7] sticker-float hidden md:block" style={{ animationDelay: '0.1s' }}>
@@ -165,22 +148,9 @@ export default function LandingPage() {
       <section className="pt-40 pb-20 px-6 max-w-[1200px] mx-auto z-10 relative">
         <div className="kawaii-card bg-[#13141f] p-10 md:p-16 text-center relative overflow-hidden">
           
-          {/* Real-time simulated cursor overlay */}
-          {COLLABORATORS.map((collab, index) => (
-            <motion.div
-              key={index}
-              className="collab-pointer hidden md:flex"
-              animate={{ x: collab.x, y: collab.y }}
-              transition={{ repeat: Infinity, duration: 8 + index * 2, ease: "easeInOut" }}
-            >
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill={collab.color} stroke="#000000" strokeWidth="2">
-                <path d="M4.5 3v15.2l3.8-3.8 2.5 5.8 2.3-1-2.5-5.8 4.4-.1z" />
-              </svg>
-              <div className="collab-label" style={{ borderColor: collab.color }}>{collab.name}</div>
-            </motion.div>
-          ))}
+          {/* Cursors Removed */}
 
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-8 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-8 font-mono">
             welcome_to_aeres
           </span>
 
@@ -233,7 +203,7 @@ export default function LandingPage() {
       {/* Zero-Config CLI Terminal Dashboard */}
       <section className="relative px-6 py-12 max-w-[1400px] mx-auto z-10">
         <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
             terminal_daemon
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -304,11 +274,11 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
           <div>
             <div className="mb-4 font-mono text-[10px] font-black uppercase tracking-[0.5em] text-[#ff8ba7]">Interactive Diagnostics Showcase // v1.0.4</div>
             <h2 className="font-display text-[clamp(2.5rem,7vw,4.5rem)] font-black tracking-tight leading-[0.85] text-white">
-              Dynamic <br/><span className="text-[#ff8ba7] italic font-bold">Scrollytelling.</span>
+              Core <br/><span className="text-[#ff8ba7] italic font-bold">Diagnostics.</span>
             </h2>
           </div>
           <p className="max-w-[420px] text-white/60 text-xs font-bold leading-relaxed text-right md:mb-4 font-sans">
-            Hover or click through the development lifecycle stages on the left to see the sticky Aeres mock IDE dynamically render D3 Dependency Radars, Causal Blame Maps, and active Mutation sweeps in real time!
+            Explore the core diagnostic panels of Aeres IDE. Understand your codebase structure, track error causality, and ensure software resilience.
           </p>
         </div>
 
@@ -317,7 +287,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
           {/* Left Column: Interactive Scrolling Steps */}
           <div className="w-full lg:w-1/2 space-y-8">
             
-            {/* Step 1: AST Dependency Radar */}
+            {/* Step 1: Universal LSP */}
             <div 
               onClick={() => setScrollyStep(0)}
               onMouseEnter={() => setScrollyStep(0)}
@@ -325,15 +295,15 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#ff8ba7]">
                 <span className="px-3 py-1 bg-[#ff8ba7] text-black border-2 border-black rounded-full">STAGE 01</span>
-                <span>AST SEMANTIC RADAR</span>
+                <span>UNIVERSAL LSP INTEGRATION</span>
               </div>
-              <h3 className="text-2xl font-black text-white mb-3">AST Dependency Radar</h3>
+              <h3 className="text-2xl font-black text-white mb-3">Language Server Bridge</h3>
               <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-                Fully integrates d3-based active import sweepers. Analyzes all circular file references, deprecated license triggers, and CVE vulnerability updates on local systems seamlessly.
+                Aeres bridges the Monaco Editor directly to local background daemons (gopls, clangd, rust-analyzer) via our FastAPI Python sidecar using raw JSON-RPC streams for zero-latency IntelliSense.
               </p>
             </div>
 
-            {/* Step 2: Causal Blame Mapping */}
+            {/* Step 2: Self-Healing Terminal */}
             <div 
               onClick={() => setScrollyStep(1)}
               onMouseEnter={() => setScrollyStep(1)}
@@ -341,15 +311,15 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#eab308]">
                 <span className="px-3 py-1 bg-[#fef08a] text-black border-2 border-black rounded-full">STAGE 02</span>
-                <span>GIT TELEMETRY TRACKER</span>
+                <span>PTY STREAM PIPELINES</span>
               </div>
-              <h3 className="text-2xl font-black text-white mb-3">Causal Blame Graph</h3>
+              <h3 className="text-2xl font-black text-white mb-3">Self-Healing Terminal</h3>
               <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-                Tracing regressional code edits is simple. Right-click any syntax target to spin up a directed force layout mapping bug roots back to individual git commits automatically.
+                Our embedded xterm.js canvas streams raw PTY outputs from the background manager, allowing you to compile, debug, and trace execution stacks directly within a secure sandboxed memory space.
               </p>
             </div>
 
-            {/* Step 3: Sandboxed Mutation sweeps */}
+            {/* Step 3: Deep-Linked Auth */}
             <div 
               onClick={() => setScrollyStep(2)}
               onMouseEnter={() => setScrollyStep(2)}
@@ -357,11 +327,11 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#2dd4bf]">
                 <span className="px-3 py-1 bg-[#2dd4bf] text-black border-2 border-black rounded-full">STAGE 03</span>
-                <span>AST MUTATION SANDBOX</span>
+                <span>TAURI AUTHENTICATION HANDLERS</span>
               </div>
-              <h3 className="text-2xl font-black text-white mb-3">Offline Mutation Testing</h3>
+              <h3 className="text-2xl font-black text-white mb-3">Deep-Linked Authentication</h3>
               <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-                Clones workspace file buffers into secure memory storage, synthesizing mutants (flipped operators, altered bounds) to ensure local test assertions catch regressions before production.
+                We handle OAuth securely by funneling Clerk tokens back through native aeres:// deep links. This bridges web identity tightly into local Zustand state for persistent workspace configurations.
               </p>
             </div>
 
@@ -376,7 +346,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
                 <div className="flex items-center gap-2">
                   <div className="w-3.5 h-3.5 rounded-full border-2 border-black bg-[#ff8ba7]" />
                   <span className="text-xs font-black uppercase text-white tracking-wide">
-                    {scrollyStep === 0 ? 'dependency_radar_visualizer.js' : scrollyStep === 1 ? 'causal_blame_directed_graph.bin' : 'mutation_tester_daemon.log'}
+                    {scrollyStep === 0 ? 'monaco_lsp_bridge.js' : scrollyStep === 1 ? 'pty_build_stream.sh' : 'clerk_oauth_handler.ts'}
                   </span>
                 </div>
                 <span className="text-[10px] font-mono font-black text-white/40">aeres-ide // active</span>
@@ -385,165 +355,119 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
               {/* IDE Content Canvas */}
               <div className="p-6 bg-[#13141f] min-h-[420px] flex flex-col justify-between font-mono text-xs relative">
                 
-                {/* Visualizer 0: HIGH-PERFORMANCE REAL DEPENDENCY RADAR */}
+                {/* Visualizer 0: Universal LSP */}
                 {scrollyStep === 0 && (
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
-                    <div>
-                      <div className="flex justify-between items-center mb-3">
-                        <span className="text-[10px] font-black text-[#ff8ba7] uppercase">Dependency Analyzer (Ecosystem)</span>
-                        <div className="flex bg-[#1b1c2b] rounded border-2 border-black overflow-hidden font-display">
-                          <button 
-                            onClick={() => setVisualizerView('list')}
-                            className={`px-2 py-0.5 text-[9px] font-black transition-all ${visualizerView === 'list' ? 'bg-[#ff8ba7] text-black' : 'text-white/60 hover:text-white'}`}
-                          >
-                            LIST
-                          </button>
-                          <button 
-                            onClick={() => setVisualizerView('map')}
-                            className={`px-2 py-0.5 text-[9px] font-black transition-all ${visualizerView === 'map' ? 'bg-[#ff8ba7] text-black' : 'text-white/60 hover:text-white'}`}
-                          >
-                            MAP
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Stats Bar */}
-                      <div className="flex justify-between border-2 border-black bg-[#1b1c2b] p-2 rounded-xl text-[9px] mb-3 text-white/70">
-                        <span>0 CVE</span>
-                        <span>•</span>
-                        <span>0 Deprecated</span>
-                        <span>•</span>
-                        <span className="text-amber-400 font-bold">1 Outdated</span>
-                        <span>•</span>
-                        <span className="text-emerald-400 font-bold">6 OK</span>
-                      </div>
-
-                      {/* View Modes */}
-                      {visualizerView === 'list' ? (
-                        <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
-                          {SIMULATED_DEPS.map(dep => (
-                            <button
-                              key={dep.name}
-                              onClick={() => setSelectedDep(dep)}
-                              className={`w-full text-left p-2 rounded-xl border-2 border-black transition-all flex items-center justify-between ${selectedDep.name === dep.name ? 'bg-[#ff8ba7]/20 border-[#ff8ba7]' : 'bg-[#1b1c2b]/50 border-black hover:border-white/20'}`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className={`w-2 h-2 rounded-full ${dep.status === 'outdated' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                                <span className="font-extrabold text-white">{dep.name}</span>
-                              </div>
-                              <div className="text-[10px] text-white/50">
-                                {dep.current} &rarr; {dep.latest} ({dep.ecosystem})
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        /* Treemap View Mock */
-                        <div className="grid grid-cols-4 gap-1.5 h-32 bg-[#1b1c2b]/30 p-2.5 rounded-xl border-2 border-black">
-                          {SIMULATED_DEPS.map(dep => (
-                            <button
-                              key={dep.name}
-                              onClick={() => setSelectedDep(dep)}
-                              className={`rounded-lg border-2 transition-all p-1 flex flex-col justify-between text-left ${dep.status === 'outdated' ? 'bg-amber-400/20 border-amber-400' : 'bg-emerald-400/20 border-emerald-400'} ${selectedDep.name === dep.name ? 'ring-2 ring-[#ff8ba7] scale-95' : 'hover:scale-95'}`}
-                            >
-                              <span className="text-[9px] font-black text-white truncate w-full">{dep.name}</span>
-                              <span className="text-[8px] text-white/50">{dep.size}</span>
-                            </button>
-                          ))}
-                          <div className="rounded-lg border-2 border-dashed border-black/35 bg-[#1b1c2b]/10 flex items-center justify-center text-white/20 text-[8px] font-black">SPARE</div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Selected Dependency Detail Card */}
-                    {selectedDep && (
-                      <div className="bg-[#1b1c2b] border-2 border-black p-3.5 rounded-2xl shadow-[2.5px_2.5px_0px_#000000] text-sans mt-3">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <span className="text-[#ff8ba7] font-black text-xs block">{selectedDep.name}</span>
-                            <span className="text-white/40 text-[9px] uppercase font-mono">Ecosystem: {selectedDep.ecosystem} • Size: {selectedDep.size}</span>
-                          </div>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black border-2 border-black ${selectedDep.status === 'outdated' ? 'bg-amber-400 text-black' : 'bg-emerald-400 text-black'}`}>
-                            {selectedDep.status.toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center gap-4 text-[10px] text-white/70 mt-1 font-sans">
-                          <span>License: <strong className="text-white">{selectedDep.license}</strong></span>
-                          <button
-                            onClick={() => copyUpdateCommand(selectedDep)}
-                            className={`px-3 py-1.5 rounded-full border-2 border-black text-[9px] font-black uppercase transition-all shrink-0 ${updateCopied ? 'bg-emerald-300 text-black' : 'kawaii-btn-mint p-0 border-black'}`}
-                          >
-                            {updateCopied ? 'Copied command!' : `Update to ${selectedDep.latest}`}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Visualizer 1: Causal Blame Graph */}
-                {scrollyStep === 1 && (
-                  <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
-                    <span className="text-[10px] font-black text-[#eab308] block mb-4 uppercase">Directed Regression Chain</span>
+                    <span className="text-[10px] font-black text-[#ff8ba7] block mb-4 uppercase">Monaco JSON-RPC Sync</span>
                     
-                    <div className="w-full h-56 flex flex-col justify-center border-3 border-dashed border-black/10 rounded-3xl bg-[#1b1c2b]/40 p-5 font-mono text-[10px]">
-                      <div className="space-y-3.5">
-                        
-                        {/* Initial error Node */}
-                        <div className="flex items-center gap-3">
-                          <div className="w-16 py-1 text-center bg-red-400 border-2 border-black font-black text-[9px] rounded-lg text-black">ERROR</div>
-                          <span className="text-white/40">&rarr;</span>
-                          <span className="text-white font-extrabold">Line 142 in CodeCanvas.jsx (OutOfMemory)</span>
-                        </div>
-                        
-                        {/* Middle causal commit node */}
-                        <div className="flex items-center gap-3 pl-8">
-                          <span className="text-white/40">&darr;</span>
-                          <div className="w-16 py-1 text-center bg-purple-300 border-2 border-black font-black text-[9px] rounded-lg shadow-[1.5px_1.5px_0px_#000000] relative text-black">
-                            a8e90f
-                            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 border border-black animate-ping" />
-                          </div>
-                          <span className="text-white/40">&rarr;</span>
-                          <span className="text-white/80 font-bold">Rutvik Gudaliya: Swapped buffer bounds in caching loop</span>
-                        </div>
-                        
-                        {/* Origin commit node */}
-                        <div className="flex items-center gap-3 pl-16">
-                          <span className="text-white/40">&darr;</span>
-                          <div className="w-16 py-1 text-center bg-slate-300 border-2 border-black font-black text-[9px] rounded-lg text-black">d5b12a</div>
-                          <span className="text-white/40">&rarr;</span>
-                          <span className="text-white/80 font-bold">Vinit Panchal: Setup basic buffer canvas allocations</span>
-                        </div>
+                    <div className="w-full h-56 border-3 border-black rounded-3xl bg-[#09090e] p-5 font-mono text-[10px] text-white/80 overflow-y-auto leading-relaxed relative">
+                      <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-white/10 text-white/50">
+                        <span>1</span>
+                        <span className="text-[#c084fc]">function</span> <span className="text-[#2dd4bf]">initializeLSP</span>() {'{'}
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-white/50">2</span>
+                        <span className="pl-4">const connection = <span className="text-[#ff8ba7]">await</span> <span className="text-[#2dd4bf]">connectToFastAPI</span>();</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-white/50">3</span>
+                        <span className="pl-4">connection.<span className="text-[#fef08a]">sendRequest</span>('initialize', payload);</span>
+                      </div>
+                      <div className="flex gap-2 text-white/30 italic">
+                        <span className="text-white/50">4</span>
+                        <span className="pl-4">// Receiving real-time AST diagnostics</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-white/50">5</span>
+                        <span className="pl-4 text-[#ff8ba7]">return</span> <span className="text-[#2dd4bf]">MonacoLanguageClient</span>.create(connection);
+                      </div>
+                      <div className="flex gap-2 mt-2 pt-2 border-t-2 border-white/10 text-white/50">
+                        <span>6</span>
+                        <span>{'}'}</span>
+                      </div>
 
+                      {/* Mock Diagnostic Popup */}
+                      <div className="absolute top-16 left-12 bg-[#1b1c2b] border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_#000000] w-[70%] animate-pulse">
+                        <div className="text-[9px] text-[#ff8ba7] font-black uppercase mb-1">TypeScript Diagnostics</div>
+                        <div className="text-white/80 text-[10px]">Property 'sendRequest' implicitly has an 'any' type.</div>
                       </div>
                     </div>
 
                     <span className="text-[9px] font-bold text-white/50 block mt-4 font-sans leading-relaxed">
-                      CausalBlame utilizes local git-diff streams and AST parser bridges to map logical causation variables cleanly.
+                      LSP responses are streamed flawlessly over WebSockets directly to the Monaco editor, keeping typing latency under 5ms.
                     </span>
                   </div>
                 )}
 
-                {/* Visualizer 2: Self-Healing Mutation Terminal */}
-                {scrollyStep === 2 && (
+                {/* Visualizer 1: Self-Healing Terminal */}
+                {scrollyStep === 1 && (
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
-                    <span className="text-[10px] font-black text-[#2dd4bf] block mb-4 uppercase">Mutation Testing Console</span>
+                    <span className="text-[10px] font-black text-[#eab308] block mb-4 uppercase">Background Daemon PTY</span>
                     
-                    <div className="w-full h-56 border-3 border-black rounded-3xl bg-black p-5 font-mono text-[9px] text-[#2dd4bf] overflow-y-auto leading-relaxed select-none">
+                    <div className="w-full h-56 flex flex-col justify-end border-3 border-black rounded-3xl bg-black p-5 font-mono text-[10px] overflow-y-auto leading-relaxed text-[#2dd4bf]">
                       <div className="space-y-1">
-                        <div>$ aeres mutate</div>
-                        <div className="text-white/40">[Core] Synthesized 14 mutant blocks in memory</div>
-                        <div className="text-white/40">[Runner] Executing test sweeps against mutated targets...</div>
-                        <div className="text-red-400">CompareBounds: flipped comparison bound &lt; to &lt;= ... KILLED</div>
-                        <div className="text-red-400">AuthRedirect: flipped boolean true to false ... KILLED</div>
-                        <div className="text-emerald-400">RadarChecker: altered boundary offset +1 to -1 ... SURVIVED</div>
-                        <div className="text-white font-extrabold mt-2">Recalibrating agent self-healing repair loop...</div>
-                        <div className="text-emerald-500 font-extrabold">All repair checks passed successfully. Build clean! (0.00s)</div>
+                        <div className="text-white/50">➜  workspace git:(main) aeres build</div>
+                        <div className="text-white/70">[Core] Initializing Rust Tauri bundler...</div>
+                        <div className="text-white/70">[Deps] Fetching crates.io registry...</div>
+                        <div className="text-white">Compiling aeres-core v1.0.4</div>
+                        <div className="text-red-400">error[E0425]: cannot find value `config` in this scope</div>
+                        <div className="text-white/50"> &nbsp;--&gt; src/main.rs:42:15</div>
+                        <div className="text-[#eab308] italic animate-pulse">Waiting for diagnostic repair payload...</div>
+                        <div className="text-emerald-400 font-extrabold mt-2">Build finished in 4.2s. Output: target/release/aeres</div>
+                        <div className="text-white/50 flex">➜  workspace git:(main) <span className="w-2 h-4 bg-[#2dd4bf] ml-1 animate-ping inline-block" /></div>
                       </div>
                     </div>
 
                     <span className="text-[9px] font-bold text-white/50 block mt-4 font-sans leading-relaxed">
-                      Mutation testing runs locally, allowing developers to ensure unit assertions are robust enough to stop logical regression leaks.
+                      xterm.js embeds natively into the React tree, streaming subprocess buffers straight from the underlying Rust architecture.
+                    </span>
+                  </div>
+                )}
+
+                {/* Visualizer 2: Deep-Linked Auth */}
+                {scrollyStep === 2 && (
+                  <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
+                    <span className="text-[10px] font-black text-[#2dd4bf] block mb-4 uppercase">OAuth Protocol Handler</span>
+                    
+                    <div className="w-full h-56 border-3 border-black rounded-3xl bg-[#1b1c2b] p-5 font-mono text-[9px] overflow-y-auto leading-relaxed relative flex flex-col justify-center gap-3">
+                      
+                      {/* Flow Step 1 */}
+                      <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50">
+                        <div className="w-6 h-6 rounded-full bg-[#ff8ba7] border-2 border-black flex items-center justify-center shrink-0">1</div>
+                        <div>
+                          <div className="text-white font-bold">Clerk Identity Provider</div>
+                          <div className="text-white/50">Browser resolves OAuth handshake securely.</div>
+                        </div>
+                      </div>
+
+                      {/* Arrow */}
+                      <div className="w-1 h-4 bg-white/20 mx-auto" />
+
+                      {/* Flow Step 2 */}
+                      <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50 ring-2 ring-[#2dd4bf]">
+                        <div className="w-6 h-6 rounded-full bg-[#2dd4bf] border-2 border-black flex items-center justify-center shrink-0 text-black">2</div>
+                        <div>
+                          <div className="text-[#2dd4bf] font-bold">aeres:// Deep Link Execution</div>
+                          <div className="text-white/50 truncate w-40">aeres://auth?token=eyJhbG...</div>
+                        </div>
+                      </div>
+
+                      {/* Arrow */}
+                      <div className="w-1 h-4 bg-white/20 mx-auto" />
+
+                      {/* Flow Step 3 */}
+                      <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50">
+                        <div className="w-6 h-6 rounded-full bg-[#c084fc] border-2 border-black flex items-center justify-center shrink-0 text-black">3</div>
+                        <div>
+                          <div className="text-white font-bold">Tauri IPC Hydration</div>
+                          <div className="text-white/50">Zustand global store receives JWT payload.</div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    <span className="text-[9px] font-bold text-white/50 block mt-4 font-sans leading-relaxed">
+                      We bypass traditional electron auth hurdles by mapping custom OS protocol handlers directly into the local React state via Tauri hooks.
                     </span>
                   </div>
                 )}
@@ -558,7 +482,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
       {/* Workspace Architectural Schema Flow Section (New Content) */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
             architecture_schema.map
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -571,39 +495,110 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
 
         <div className="kawaii-card bg-[#13141f] p-8 md:p-12 relative overflow-hidden">
           {/* Schematic SVG Flowchart */}
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-8 font-mono text-center text-xs">
+          <div className="flex flex-col items-center justify-center gap-8 font-mono text-center text-xs">
+            <div className="w-full h-auto overflow-hidden rounded-xl border-3 border-black bg-[#09090e] p-6 shadow-[3px_3px_0px_#000000]">
+              <Mermaid chart={`
+graph TD
+    classDef tauri fill:#fef08a,stroke:#000000,stroke-width:3px,color:#000,font-weight:900
+    classDef react fill:#2dd4bf,stroke:#000000,stroke-width:3px,color:#000,font-weight:900
+    classDef python fill:#c084fc,stroke:#000000,stroke-width:3px,color:#000,font-weight:900
+    classDef web fill:#ff8ba7,stroke:#000000,stroke-width:3px,color:#000,font-weight:900
+    classDef ext fill:#fae3d9,stroke:#000000,stroke-width:3px,color:#000,font-weight:900
+    classDef bridge fill:#ec4899,stroke:#000000,stroke-width:3px,color:#000,font-weight:900
+
+    subgraph Desktop ["Aeres Desktop Environment"]
+        direction TB
+        
+        subgraph Frontend ["React 18 Vite"]
+            direction TB
+            Store["Zustand Local State"]
+            Editor["Monaco Editor LanguageClient"]
+            Terminal["xterm.js Canvas"]
+            D3["D3.js Force Graphs"]
+            Components["CodeCanvas API Sandbox BlameGraph"]
             
-            {/* Component 1: Browser client */}
-            <motion.div initial={{ opacity: 0, x: -50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }} className="w-full lg:w-1/4 p-6 border-3 border-black rounded-3xl bg-[#1b1c2b] shadow-[3px_3px_0px_#000000] transition duration-200 hover:-translate-y-1">
-              <span className="text-[10px] font-black text-[#ff8ba7] block mb-2 font-mono uppercase">User Interface</span>
-              <h3 className="font-display text-sm font-bold text-white mb-2">Browser / Electron</h3>
-              <p className="text-white/60 text-[10px] leading-relaxed">Renders high-performance Monaco buffers, D3 radars, and real-time logs at 60fps.</p>
-            </motion.div>
+            Components --> Store
+            Editor --> Components
+            Terminal --> Components
+            D3 --> Components
+        end
+        
+        subgraph Tauri ["Tauri Rust Core"]
+            direction TB
+            IPC["Tauri IPC Command Router"]
+            ProcessMgr["Sidecar Daemon Manager"]
+            FS["Native FS Git Hooks"]
+            AuthHandler["aeres:// Protocol Handler"]
+        end
+        
+        Frontend <-->|"Tauri invoke Events"| IPC
+        IPC --> FS
+        IPC --> AuthHandler
+        ProcessMgr -->|"Monitors"| IPC
+    end
 
-            {/* Bridge 1 */}
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.3 }} className="text-[#ff8ba7] font-black text-sm lg:rotate-0 rotate-90 shrink-0">
-              &rarr; aeres:// &rarr;
-            </motion.div>
+    subgraph Backend ["Local Python Sidecar"]
+        direction TB
+        
+        FastAPI["FastAPI Server via Uvicorn"]
+        
+        subgraph LSPManager ["Language Server Protocol"]
+            LSPRouter["LSP JSON-RPC Router"]
+            LSPClients["Language-Specific Wrappers"]
+        end
+        
+        subgraph DAPManager ["Debug Adapter Protocol"]
+            DAPRouter["DAP Stream Interceptor"]
+            DAPClients["Debug Target Spawners"]
+        end
+        
+        subgraph ASTCore ["Static Analysis Core"]
+            AstParser["Python ast Parsers"]
+            Mutator["Mutation Synthesizer"]
+        end
+        
+        FastAPI <--> LSPRouter
+        FastAPI <--> DAPRouter
+        FastAPI <--> AstParser
+        AstParser --> Mutator
+        LSPRouter <--> LSPClients
+        DAPRouter <--> DAPClients
+    end
 
-            {/* Component 2: Local Python Sidecar Daemon */}
-            <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.5 }} className="w-full lg:w-1/4 p-6 border-3 border-black rounded-3xl bg-[#1b1c2b] shadow-[3px_3px_0px_#000000] transition duration-200 hover:-translate-y-1">
-              <span className="text-[10px] font-black text-[#2dd4bf] block mb-2 font-mono uppercase">Local Sidecar API</span>
-              <h3 className="font-display text-sm font-bold text-white mb-2">FastAPI Sidecar</h3>
-              <p className="text-white/60 text-[10px] leading-relaxed">Low-overhead background daemon routing WebSockets queries and Ripgrep scanners.</p>
-            </motion.div>
+    subgraph Binaries ["External Daemons"]
+        Gopls["gopls (Go)"]
+        Clangd["clangd (C/C++)"]
+        RustAnalyzer["rust-analyzer (Rust)"]
+        Jedi["jedi-language-server (Python)"]
+        Ripgrep["ripgrep (Search)"]
+    end
 
-            {/* Bridge 2 */}
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.7 }} className="text-[#2dd4bf] font-black text-sm lg:rotate-0 rotate-90 shrink-0">
-              &rarr; WebSockets &rarr;
-            </motion.div>
+    subgraph Web ["Aeres Cloud Platform"]
+        Marketing["Vite Landing Page"]
+        Clerk["Clerk Auth Provider"]
+    end
 
-            {/* Component 3: AST logic loop */}
-            <motion.div initial={{ opacity: 0, x: 50 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.9 }} className="w-full lg:w-1/4 p-6 border-3 border-black rounded-3xl bg-[#1b1c2b] shadow-[3px_3px_0px_#000000] transition duration-200 hover:-translate-y-1">
-              <span className="text-[10px] font-black text-[#c084fc] block mb-2 font-mono uppercase">Intelligence Core</span>
-              <h3 className="font-display text-sm font-bold text-white mb-2">LibCST AST Engine</h3>
-              <p className="text-white/60 text-[10px] leading-relaxed">Autonomous agent synthesizes comparison mutators and parses dependencies local-first.</p>
-            </motion.div>
+    ProcessMgr -->|"Spawns executable sidecar"| FastAPI
+    Editor <-->|"WebSockets JSON-RPC"| FastAPI
+    Terminal <-->|"PTY Streams"| FastAPI
+    
+    LSPClients <-->|"stdio socket"| Gopls
+    LSPClients <-->|"stdio socket"| Clangd
+    LSPClients <-->|"stdio socket"| RustAnalyzer
+    LSPClients <-->|"stdio socket"| Jedi
+    
+    FastAPI <-->|"Subprocess"| Ripgrep
+    
+    Clerk -->|"OAuth Redirect Token"| AuthHandler
+    AuthHandler -->|"Verifies JWT"| Store
 
+    class Desktop,Tauri,IPC,ProcessMgr,FS,AuthHandler tauri
+    class Frontend,Store,Editor,Terminal,D3,Components react
+    class Backend,FastAPI,LSPManager,LSPRouter,LSPClients,DAPManager,DAPRouter,DAPClients,ASTCore,AstParser,Mutator python
+    class Web,Marketing,Clerk web
+    class Binaries,Gopls,Clangd,RustAnalyzer,Jedi,Ripgrep ext
+              `} className="w-full mx-auto" />
+            </div>
           </div>
 
           <div className="mt-10 border-t-3 border-black/10 pt-8 text-center font-sans text-white/50 text-[10px] font-bold leading-relaxed max-w-[620px] mx-auto">
@@ -615,7 +610,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
       {/* Deep Feature Diagnostic Grid Section (New Content) */}
       <section className="relative px-6 py-20 max-w-[1400px] mx-auto z-10">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
             feature_diagnostics.sys
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -702,25 +697,25 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             </p>
           </motion.div>
 
-          {/* Card 8: Multiverse AI variant */}
+          {/* Card 8: Universal LSP */}
           <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.8 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
             <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border-2 border-black flex items-center justify-center mb-6 text-[#ff8ba7] shadow-[2px_2px_0px_#000000]">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="m22 8-6 4 6 4V8Z"/><circle cx="8" cy="12" r="6"/></svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Multiverse Variant</h3>
+            <h3 className="font-display text-lg font-black text-white mb-3">Universal LSP Engine</h3>
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Synthesizes three structurally distinct syntax-correct variants (A, B, and C) parallelly for instant click-and-apply comparison.
+              Auto-detects and spawns dedicated Language Servers (gopls, clangd, rust-analyzer, jedi) based on file extensions out of the box.
             </p>
           </motion.div>
 
-          {/* Card 9: Focus Session State */}
+          {/* Card 9: Universal DAP Debugging */}
           <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.9 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
             <div className="w-10 h-10 rounded-2xl bg-[#fef08a]/20 border-2 border-black flex items-center justify-center mb-6 text-[#fef08a] shadow-[2px_2px_0px_#000000]">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 20c-3.31 0-6-2.69-6-6v-1h4v1c0 1.1.9 2 2 2s2-.9 2-2v-1h4v1c0 3.31-2.69 6-6 6Z"/><path d="M12 15V8"/></svg>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Focus Session Restore</h3>
+            <h3 className="font-display text-lg font-black text-white mb-3">Universal Debugging (DAP)</h3>
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Saves full canvas bounds, panel configurations, and open terminals (Ctrl+Shift+S) to restore precise coding states instantly.
+              Natively parses `.aeres/launch.json` or `.vscode/launch.json` to attach high-speed breakpoints across Go, Node, Python, and Rust.
             </p>
           </motion.div>
 
@@ -730,7 +725,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
       {/* Creators Showcase Section (New Content) */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
             engineering_team.log
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -785,7 +780,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
       {/* Interactive AST Playground Section */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
             ast_synthesizer.run
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -915,7 +910,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
       {/* AI Agent Autonomy Comparison Grid Section */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
             agent_benchmarks.log
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -982,7 +977,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
       {/* Deep Technical Systems FAQ Accordion Section */}
       <section className="relative px-6 py-20 max-w-[900px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
             technical_faq.log
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">

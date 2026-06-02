@@ -1,10 +1,73 @@
+# =========================
+# Node & Frontend (Tauri/React/Vite)
+# =========================
 node_modules/
-.env
-__pycache__/
-*.pyc
-/data/chroma_db/
-/apps/python-backend/data/
 dist/
+dist-ssr/
+*.local
+.npm/
+.eslintcache
+.vite/
+
+# Tauri/Rust
+apps/desktop-client/src-tauri/target/
+apps/desktop-client/src-tauri/binaries/
+apps/desktop-client/src-tauri/gen/
+**/*.rs.bk
+
+# =========================
+# Python Backend
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+.venv/
+.env/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# PyInstaller
 build/
+dist/
+*.spec
+!apps/python-backend/build_sidecar.py
+
+# =========================
+# Environment Variables & Secrets
+# =========================
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+*.pem
+
+# =========================
+# Aeres Specific Data
+# =========================
+data/
+/data/chroma_db/
+apps/python-backend/data/
+*.db
+*.sqlite3
+*.log
+
+# =========================
+# OS & IDE Junk
+# =========================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+ehthumbs_vista.db
+[Tt]humbs.db
 .vscode/
+.idea/
+*.swp
+*.swo

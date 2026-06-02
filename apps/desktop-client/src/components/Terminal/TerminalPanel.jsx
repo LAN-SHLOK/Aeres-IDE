@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
@@ -60,8 +60,6 @@ export default function TerminalPanel({ terminalId, isActive }) {
     }))
     xterm.open(containerRef.current)
 
-    try { fitAddon.fit() } catch { /* ignore initial fit errors */ }
-
     xtermRef.current = xterm
     fitAddonRef.current = fitAddon
     attachedRef.current = true
@@ -69,23 +67,40 @@ export default function TerminalPanel({ terminalId, isActive }) {
     const e = window.electron
     if (!e) return
 
+    // Handle Ctrl+C: copy if text selected, otherwise send SIGINT to pty
+    xterm.attachCustomKeyEventHandler((event) => {
+      if (event.ctrlKey && event.type === 'keydown' && event.key === 'c' && xterm.hasSelection()) {
+        navigator.clipboard.writeText(xterm.getSelection())
+        xterm.clearSelection()
+        return false
+      }
+      // Ctrl+V paste from clipboard
+      if (event.ctrlKey && event.type === 'keydown' && event.key === 'v') {
+        navigator.clipboard.readText().then((text) => {
+          if (text) e.terminal.write(terminalId, text)
+        })
+        return false
+      }
+      return true
+    })
+
     // Forward xterm input → pty
     xterm.onData((data) => {
       e.terminal.write(terminalId, data)
     })
 
     // Forward pty output → xterm
-    e.terminal.onData(terminalId, (data) => {
+    const unlistenData = e.terminal.onData(terminalId, (data) => {
       xterm.write(data)
     })
 
     // Handle pty exit
-    e.terminal.onExit(terminalId, ({ exitCode }) => {
+    const unlistenExit = e.terminal.onExit(terminalId, ({ exitCode }) => {
       xterm.writeln(`\r\n\x1b[90m[Process exited with code ${exitCode}]\x1b[0m`)
     })
 
-    // Resize observer
-    const resizeObserver = new ResizeObserver(() => {
+    // Initial fit after a short delay to ensure the container has its final layout
+    setTimeout(() => {
       try {
         fitAddon.fit()
         const dims = fitAddon.proposeDimensions()
@@ -93,12 +108,29 @@ export default function TerminalPanel({ terminalId, isActive }) {
           e.terminal.resize(terminalId, dims.rows, dims.cols)
         }
       } catch { /* ignore */ }
+    }, 100)
+
+    // Resize observer — debounced to avoid spamming resize calls
+    let resizeTimer = null
+    const resizeObserver = new ResizeObserver(() => {
+      clearTimeout(resizeTimer)
+      resizeTimer = setTimeout(() => {
+        try {
+          fitAddon.fit()
+          const dims = fitAddon.proposeDimensions()
+          if (dims) {
+            e.terminal.resize(terminalId, dims.rows, dims.cols)
+          }
+        } catch { /* ignore */ }
+      }, 50)
     })
     resizeObserver.observe(containerRef.current)
 
     return () => {
+      clearTimeout(resizeTimer)
       resizeObserver.disconnect()
-      e.terminal.offAll(terminalId)
+      if (unlistenData) unlistenData()
+      if (unlistenExit) unlistenExit()
       xterm.dispose()
       attachedRef.current = false
     }

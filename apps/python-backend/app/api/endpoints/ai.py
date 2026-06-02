@@ -2,21 +2,29 @@
 
 from __future__ import annotations
 import os
-from fastapi import APIRouter, Depends
+import json
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.models import CompletionRequest, ExplainRequest, GenerateRequest
+from app.core.models import CompletionRequest, ExplainRequest, GenerateRequest, RagQueryRequest
 from app.core.security import get_current_user
+from app.rag_engine.groq_gateway import groq_complete
+from app.agents.codebase_agent import CodebaseAgent
+from pydantic import BaseModel
+
+class ApiPayloadRequest(BaseModel):
+    method: str
+    url: str
 from app.rag_engine.groq_gateway import groq_complete
 from app.agents.codebase_agent import CodebaseAgent
 
 router = APIRouter()
 
 @router.post("/chat")
-async def codebase_chat(req: ExplainRequest, user: dict = Depends(get_current_user)):
+async def codebase_chat(req: RagQueryRequest, user: dict = Depends(get_current_user)):
     """General chat about the codebase."""
     try:
         agent = CodebaseAgent(root_path=os.getcwd())
-        answer = await agent.answer_question(req.selection, file_context=req.selection)
+        answer = await agent.answer_question(req.question, file_context=req.context)
         return {"answer": answer}
     except Exception as e:
         import traceback
@@ -62,3 +70,21 @@ async def generate_from_comment(req: GenerateRequest, user: dict = Depends(get_c
 
     code = await groq_complete(system, user_prompt, max_tokens=1000, temperature=0.2)
     return {"code": code.strip()}
+
+@router.post("/generate-api-payload")
+async def generate_api_payload(req: ApiPayloadRequest, user: dict = Depends(get_current_user)):
+    """Generate a mock JSON payload for an API request."""
+    system = (
+        "You are an API assistant. The user will provide an HTTP method and URL. "
+        "Generate a realistic JSON body payload for that request. "
+        "Output ONLY valid JSON. No markdown formatting, no explanations."
+    )
+    user_prompt = f"Method: {req.method}\nURL: {req.url}\n\nGenerate JSON body:"
+
+    payload = await groq_complete(system, user_prompt, max_tokens=500, temperature=0.3)
+    payload = payload.strip().strip("`").removeprefix("json").strip()
+    try:
+        parsed_payload = json.loads(payload)
+    except Exception:
+        parsed_payload = payload
+    return {"payload": parsed_payload}

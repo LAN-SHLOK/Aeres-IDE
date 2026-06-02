@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../../store.js'
 import { detectLanguage } from '../../utils/langDetect.js'
+import { getFileIcon } from '../../utils/getFileIcon.jsx'
 
 function flattenTree(nodes, prefix = '') {
   const result = []
@@ -22,6 +23,8 @@ export default function QuickOpen({ onClose }) {
   const fileTree = useStore((s) => s.fileTree)
   const openTab = useStore((s) => s.openTab)
   const recentlyClosedTabs = useStore((s) => s.recentlyClosedTabs)
+  const theme = useStore((s) => s.theme)
+  const fileIconTheme = useStore((s) => s.fileIconTheme)
 
   const allFiles = useMemo(() => flattenTree(fileTree), [fileTree])
 
@@ -119,9 +122,7 @@ export default function QuickOpen({ onClose }) {
                 i === selected ? 'bg-aeres-violet text-white' : 'text-aeres-text hover:bg-white/5'
               }`}
             >
-              <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${i === selected ? 'bg-white/20 text-white' : 'bg-aeres-bg text-aeres-muted'}`}>
-                {file.ext || '?'}
-              </span>
+              {getFileIcon(file.name, theme, fileIconTheme)}
               <span className="min-w-0 truncate">{file.relativePath || file.name}</span>
             </div>
           ))}

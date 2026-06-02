@@ -6,7 +6,7 @@ import asyncio
 import re
 import time
 from typing import Dict, Optional
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from urllib.robotparser import RobotFileParser
 
 import httpx
@@ -51,8 +51,8 @@ async def resolve_doc_url(docs_query: str) -> str:
             for topic in related:
                 if isinstance(topic, dict) and topic.get("FirstURL"):
                     return topic["FirstURL"]
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[doc_crawler] DuckDuckGo resolve failed: {e}")
 
     return f"https://www.google.com/search?q={docs_query.replace(' ', '+')}"
 
@@ -95,6 +95,20 @@ async def polite_fetch(url: str) -> str:
         return resp.text
 
 
+async def find_latest_release_url(index_url: str, link_pattern: str) -> Optional[str]:
+    """Fetch an index URL, parse it, and return the first link matching the regex pattern."""
+    try:
+        html = await polite_fetch(index_url)
+        soup = BeautifulSoup(html, "html.parser")
+        pattern = re.compile(link_pattern, re.IGNORECASE)
+        for a in soup.find_all("a", href=True):
+            if pattern.search(a["href"]):
+                return urljoin(index_url, a["href"])
+    except Exception as e:
+        print(f"[doc_crawler] Failed to traverse {index_url}: {e}")
+    return None
+
+
 async def crawl_and_extract(url: str) -> str:
     """Crawl a URL and extract clean text content."""
     if not can_fetch(url):
@@ -103,7 +117,19 @@ async def crawl_and_extract(url: str) -> str:
             return ""
 
     try:
-        html = await polite_fetch(url)
+        try:
+            from playwright.async_api import async_playwright
+            async with async_playwright() as p:
+                browser = await p.chromium.launch(headless=True)
+                page = await browser.new_page(user_agent="AgenticIDE/1.0")
+                await page.goto(url, timeout=30000, wait_until="networkidle")
+                html = await page.content()
+                await browser.close()
+        except ImportError:
+            html = await polite_fetch(url)
+        except Exception as e:
+            print(f"[doc_crawler] Playwright fetch failed for {url}, falling back: {e}")
+            html = await polite_fetch(url)
     except Exception as e:
         print(f"[doc_crawler] Fetch failed for {url}: {e}")
         return ""

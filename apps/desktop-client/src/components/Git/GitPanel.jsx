@@ -21,6 +21,27 @@ export default function GitPanel() {
   const [showBranchDropdown, setShowBranchDropdown] = useState(false)
   const [newBranchName, setNewBranchName] = useState('')
   const [creatingBranch, setCreatingBranch] = useState(false)
+  const [authPrompt, setAuthPrompt] = useState(null)
+  
+  const [gitAuth, setGitAuthInternal] = useState(() => {
+    try {
+      const saved = localStorage.getItem('aeres-git-auth')
+      return saved ? JSON.parse(saved) : null
+    } catch (e) {
+      return null
+    }
+  })
+
+  const setGitAuth = useCallback((newAuth) => {
+    setGitAuthInternal(newAuth)
+    if (newAuth) {
+      localStorage.setItem('aeres-git-auth', JSON.stringify(newAuth))
+    } else {
+      localStorage.removeItem('aeres-git-auth')
+    }
+  }, [])
+  const [remotePrompt, setRemotePrompt] = useState(null)
+  const [identityPrompt, setIdentityPrompt] = useState(null)
 
   const fetchBranches = useCallback(async () => {
     if (!rootPath || !window.electron) return
@@ -28,7 +49,11 @@ export default function GitPanel() {
       const info = await window.electron.git.branches(rootPath)
       setBranchesInfo(info)
     } catch (err) {
-      console.error('[GitPanel] Error fetching branches:', err)
+      if (err.message && (err.message.includes('not a git repository') || err.message.includes('is not recognized') || err.message.includes('command not found'))) {
+         setIsGitRepo(false)
+      } else {
+         console.error('[GitPanel] Error fetching branches:', err)
+      }
     }
   }, [rootPath])
 
@@ -44,7 +69,11 @@ export default function GitPanel() {
       const log = await window.electron.git.log(rootPath, 30)
       setCommitLog(log)
     } catch (err) {
-      console.error('[GitPanel] Error fetching log:', err)
+      if (err.message && (err.message.includes('not a git repository') || err.message.includes('is not recognized') || err.message.includes('command not found'))) {
+         setIsGitRepo(false)
+      } else {
+         console.error('[GitPanel] Error fetching log:', err)
+      }
     }
   }, [rootPath])
 
@@ -63,7 +92,7 @@ export default function GitPanel() {
         setGitStatus(status)
         setIsGitRepo(true)
       } catch (err) {
-        if (err.message && err.message.includes('not a git repository')) {
+        if (err.message && (err.message.includes('not a git repository') || err.message.includes('is not recognized') || err.message.includes('command not found'))) {
           setIsGitRepo(false)
         }
       }
@@ -73,69 +102,118 @@ export default function GitPanel() {
     return () => clearInterval(interval)
   }, [rootPath, setGitStatus])
 
-  const handleInit = async () => {
+  const handleInitAndPush = async (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const remoteUrl = fd.get('remoteUrl');
+    
     if (!window.electron || !rootPath) return
     setIniting(true)
     setError(null)
+    const store = useStore.getState()
+
     try {
-      const res = await window.electron.git.init(rootPath)
-      if (res?.success) {
-        setIsGitRepo(true)
+      if (remoteUrl) {
+        store.setGitTask('Initializing...')
+      }
+      const initRes = await window.electron.git.init(rootPath)
+      if (!initRes?.success) throw new Error(initRes?.error || 'Failed to initialize repository')
+      
+      setIsGitRepo(true)
+      
+      if (!remoteUrl) {
+        // Just local init
         const status = await window.electron.git.status(rootPath)
         setGitStatus(status)
-      } else {
-        setError(res?.error || 'Failed to initialize repository')
+        return
       }
+
+      // 2. Stage All
+      store.setGitTask('Staging files...')
+      await window.electron.git.stage(rootPath, [])
+
+      // 3. Commit
+      store.setGitTask('Creating initial commit...')
+      let commitRes = await window.electron.git.commit(rootPath, "Initial commit")
+      if (!commitRes?.success) {
+        const errorMsg = commitRes?.error || ''
+        if (errorMsg.includes('Author identity unknown') || errorMsg.includes('tell me who you are')) {
+          const identity = await new Promise((resolve) => setIdentityPrompt({ resolve }))
+          if (identity) {
+            store.setGitTask('Configuring Git Identity...')
+            await window.electron.git.setConfig(rootPath, identity.name, identity.email)
+            commitRes = await window.electron.git.commit(rootPath, "Initial commit")
+            if (!commitRes?.success) throw new Error(commitRes?.error || 'Commit failed after config')
+          } else {
+            throw new Error("Identity configuration cancelled. Repository was initialized locally.")
+          }
+        } else {
+          // If nothing was staged or other error, ignore and move on
+          if (errorMsg.includes('nothing to commit') || errorMsg.includes('nothing added to commit')) {
+            throw new Error("Cannot push an empty repository. Please add files (or check if folders are nested git repos) before publishing.")
+          }
+          console.warn("Initial commit warn:", errorMsg)
+        }
+      }
+
+      // 4. Add Remote
+      store.setGitTask('Adding remote...')
+      const remoteRes = await window.electron.git.addRemote(rootPath, remoteUrl)
+      if (!remoteRes?.success) throw new Error(remoteRes?.error || 'Failed to add remote')
+
+      // 5. Push
+      store.setGitTask('Pushing to remote...')
+      let pushRes = await window.electron.git.push(rootPath, false, gitAuth)
+      if (!pushRes?.success) {
+        const errorMsg = pushRes?.error || ''
+        if (
+          errorMsg.includes('Authentication failed') ||
+          errorMsg.includes('could not read Username') ||
+          errorMsg.includes('terminal prompts disabled') ||
+          errorMsg.includes('Authorization') ||
+          errorMsg.includes('Not Found') ||
+          errorMsg.includes('credentials') ||
+          errorMsg.includes('403') ||
+          errorMsg.includes('Permission') ||
+          errorMsg.includes('denied')
+        ) {
+          const newAuth = await new Promise((resolve) => setAuthPrompt({ action: 'push', resolve }))
+          if (newAuth) {
+            setGitAuth(newAuth)
+            pushRes = await window.electron.git.push(rootPath, false, newAuth)
+            if (!pushRes?.success) throw new Error(pushRes?.error || 'Push failed after authentication')
+          } else {
+            throw new Error("Authentication cancelled. Repository initialized and committed locally.")
+          }
+        } else {
+          throw new Error(errorMsg)
+        }
+      }
+
+      setSuccessModal({
+        icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400 mx-auto"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 16 4-4 4 4"/></svg>,
+        title: 'Project Published!',
+        message: `Successfully initialized and pushed your project to the remote repository.`
+      })
+      const status = await window.electron.git.status(rootPath)
+      setGitStatus(status)
+      fetchBranches()
     } catch (err) {
       setError(err.message)
+      // Check if we managed to init at least
+      const status = await window.electron.git.status(rootPath).catch(() => null)
+      if (status) {
+        setIsGitRepo(true)
+        setGitStatus(status)
+      } else {
+        setIsGitRepo(false)
+      }
     } finally {
       setIniting(false)
+      store.setGitTask(null)
     }
   }
 
-  if (!rootPath) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-6 text-center text-aeres-muted">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 mb-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
-        <span className="text-xs">No project opened yet</span>
-      </div>
-    )
-  }
-
-  if (!isGitRepo) {
-    return (
-      <div className="flex h-full flex-col justify-between bg-[#0a0a0f] p-4 animate-in fade-in duration-300">
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-          <div className="relative mb-4">
-            <div className="absolute inset-0 bg-violet-600/10 blur-xl rounded-full" />
-            <div className="relative flex items-center justify-center w-12 h-12 rounded-full border border-slate-800 bg-slate-900/80 text-slate-400">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 15V9a4 4 0 0 0-4-4H9"/><line x1="6" y1="9" x2="6" y2="15"/></svg>
-            </div>
-          </div>
-          
-          <h3 className="text-xs font-bold text-slate-200 tracking-wide uppercase mb-1">Source Control</h3>
-          <p className="text-[11px] text-slate-400 max-w-[200px] leading-relaxed mb-4">
-            This workspace folder is not currently a Git repository. Initialize Git to start tracking file changes.
-          </p>
-
-          {error && (
-            <div className="w-full mb-3 p-2 rounded bg-red-950/20 border border-red-900/30 text-red-400 text-[10px] text-left leading-normal">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={handleInit}
-            disabled={initing}
-            className="px-4 py-1.5 bg-[#4F8EF7] hover:bg-[#4F8EF7]/90 text-white font-medium text-xs rounded-sm transition-all shadow-lg shadow-blue-500/10 disabled:opacity-50 disabled:cursor-not-allowed w-full max-w-[180px]"
-          >
-            {initing ? 'Initializing...' : 'Initialize Repository'}
-          </button>
-        </div>
-      </div>
-    )
-  }
 
   const staged = (gitStatus.files || []).filter((f) => f.x !== ' ' && f.x !== '?')
   const changes = (gitStatus.files || []).filter((f) => f.y !== ' ' && f.y !== '?' && f.x !== 'A')
@@ -166,20 +244,38 @@ export default function GitPanel() {
     setDiffFile(filePath)
   }, [rootPath, diffFile])
 
-  const handleCommit = useCallback(async () => {
-    if (!commitMsg.trim() || staged.length === 0) return
+  const handleCommit = useCallback(async (msg, amend) => {
+    if (!msg?.trim() || staged.length === 0) return
     const e = window.electron
     if (!e || !rootPath) return
     setLoading((l) => ({ ...l, commit: true }))
     setError(null)
     try {
-      const res = await e.git.commit(rootPath, commitMsg)
+      const res = await e.git.commit(rootPath, msg)
       if (!res?.success) {
-        setError(res?.error || 'Commit failed')
-        return
+        const errorMsg = res?.error || ''
+        if (errorMsg.includes('Author identity unknown') || errorMsg.includes('tell me who you are')) {
+          const identity = await new Promise((resolve) => setIdentityPrompt({ resolve }))
+          if (identity) {
+            const store = useStore.getState()
+            store.setGitTask('Configuring Git Identity...')
+            await e.git.setConfig(rootPath, identity.name, identity.email)
+            // Retry commit
+            const retryRes = await e.git.commit(rootPath, commitMsg)
+            if (!retryRes?.success) {
+              setError(retryRes?.error || 'Commit failed on retry')
+              return
+            }
+          } else {
+             return
+          }
+        } else {
+          setError(errorMsg || 'Commit failed')
+          return
+        }
       }
       setSuccessModal({
-        emoji: '📦',
+        icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-fuchsia-400 mx-auto"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>,
         title: 'Commit Created!',
         message: `Successfully committed staged changes to branch:\n"${gitStatus.branch || 'main'}"`
       })
@@ -191,10 +287,9 @@ export default function GitPanel() {
       console.error('[GitPanel] commit error:', err)
     } finally {
       setLoading((l) => ({ ...l, commit: false }))
+      useStore.getState().setGitTask(null)
     }
   }, [commitMsg, staged.length, rootPath, setGitStatus, gitStatus.branch])
-
-  const [gitAuth, setGitAuth] = useState(null)
 
   const handleAction = useCallback(async (action) => {
     const e = window.electron
@@ -215,28 +310,65 @@ export default function GitPanel() {
       }
 
       if (!res?.success) {
-        const errorMsg = res?.error || ''
+        let errorMsg = res?.error || ''
+
+        if (errorMsg.includes('not a git repository')) {
+           setIsGitRepo(false)
+           return
+        }
+        
+        if (errorMsg === 'NO_REMOTE' && action === 'push') {
+          const remoteUrl = await new Promise((resolve) => setRemotePrompt({ resolve }))
+          if (remoteUrl) {
+            store.setGitTask('Adding remote...')
+            const addRes = await e.git.addRemote(rootPath, remoteUrl)
+            if (!addRes.success) {
+              setError(addRes.error || 'Failed to add remote repository')
+              return
+            }
+            // Retry the push now that we have a remote!
+            store.setGitTask('Retrying push...')
+            const retryRes = await e.git.push(rootPath, false, gitAuth)
+            if (!retryRes?.success) {
+               errorMsg = retryRes.error || `Push failed on retry`
+            } else {
+              setSuccessModal({
+                icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400 mx-auto"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 16 4-4 4 4"/></svg>,
+                title: 'Git Push Successful!',
+                message: `Successfully pushed active branch "${gitStatus.branch || 'main'}" to remote repository: "origin" (GitHub).`
+              })
+              const status = await e.git.status(rootPath)
+              setGitStatus(status)
+              return
+            }
+          } else {
+            return
+          }
+        }
+
         if (
           errorMsg.includes('Authentication failed') ||
           errorMsg.includes('could not read Username') ||
           errorMsg.includes('terminal prompts disabled') ||
           errorMsg.includes('Authorization') ||
           errorMsg.includes('Not Found') ||
-          errorMsg.includes('credentials')
+          errorMsg.includes('credentials') ||
+          errorMsg.includes('403') ||
+          errorMsg.includes('Permission') ||
+          errorMsg.includes('denied')
         ) {
-          const username = window.prompt('Aeres Git Authentication:\nEnter your Git/GitHub Username:')
-          if (username) {
-            const token = window.prompt('Enter your Personal Access Token (PAT) or Password:')
-            if (token) {
-              const newAuth = { username, token }
-              setGitAuth(newAuth)
-              
-              store.setGitTask(`Retrying ${action}...`)
+          const newAuth = await new Promise((resolve) => setAuthPrompt({ action, resolve }))
+          if (newAuth) {
+            setGitAuth(newAuth)
+            
+            store.setGitTask(`Retrying ${action}...`)
               let retryRes
               if (action === 'push') {
                 retryRes = await e.git.push(rootPath, false, newAuth)
               } else if (action === 'pull') {
                 retryRes = await e.git.pull(rootPath, newAuth)
+              } else if (action === 'fetch') {
+                retryRes = await e.git.fetch(rootPath, newAuth)
               } else {
                 retryRes = await e.git[action](rootPath)
               }
@@ -244,22 +376,26 @@ export default function GitPanel() {
               if (!retryRes?.success) {
                 setError(retryRes.error || `${action} failed on retry`)
               } else {
-                let modalDetails = { emoji: '✅', title: 'Git Action Complete!', message: 'Operation completed successfully.' }
+                let modalDetails = {
+                  icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 mx-auto"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+                  title: 'Git Action Complete!',
+                  message: 'Operation completed successfully.'
+                }
                 if (action === 'push') {
                   modalDetails = {
-                    emoji: '🚀',
+                    icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400 mx-auto"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 16 4-4 4 4"/></svg>,
                     title: 'Git Push Successful!',
                     message: `Successfully pushed active branch "${gitStatus.branch || 'main'}" to remote repository: "origin" (GitHub).`
                   }
                 } else if (action === 'pull') {
                   modalDetails = {
-                    emoji: '🔄',
+                    icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400 mx-auto"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>,
                     title: 'Git Pull Successful!',
                     message: `Successfully pulled new updates for branch "${gitStatus.branch || 'main'}" from remote repository: "origin" (GitHub).`
                   }
                 } else if (action === 'fetch') {
                   modalDetails = {
-                    emoji: '📡',
+                    icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 mx-auto"><path d="M12 2v20"/><path d="M5 9l7-7 7 7"/><path d="M5 15l7 7 7-7"/><path d="M2 12h20"/></svg>,
                     title: 'Git Fetch Successful!',
                     message: `Successfully fetched latest changes and branches from remote repository: "origin" (GitHub).`
                   }
@@ -272,28 +408,31 @@ export default function GitPanel() {
               return
             }
           }
-        }
-        setError(res?.error || `${action} failed`)
+        setError(errorMsg || `${action} failed (No details provided)`)
         return
       }
 
       // Action succeeded on first try
-      let modalDetails = { emoji: '✅', title: 'Git Action Complete!', message: 'Operation completed successfully.' }
+      let modalDetails = {
+        icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-400 mx-auto"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+        title: 'Git Action Complete!',
+        message: 'Operation completed successfully.'
+      }
       if (action === 'push') {
         modalDetails = {
-          emoji: '🚀',
+          icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-violet-400 mx-auto"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 16 4-4 4 4"/></svg>,
           title: 'Git Push Successful!',
           message: `Successfully pushed active branch "${gitStatus.branch || 'main'}" to remote repository: "origin" (GitHub).`
         }
       } else if (action === 'pull') {
         modalDetails = {
-          emoji: '🔄',
+          icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400 mx-auto"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>,
           title: 'Git Pull Successful!',
           message: `Successfully pulled new updates for branch "${gitStatus.branch || 'main'}" from remote repository: "origin" (GitHub).`
         }
       } else if (action === 'fetch') {
         modalDetails = {
-          emoji: '📡',
+          icon: <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 mx-auto"><path d="M12 2v20"/><path d="M5 9l7-7 7 7"/><path d="M5 15l7 7 7-7"/><path d="M2 12h20"/></svg>,
           title: 'Git Fetch Successful!',
           message: `Successfully fetched latest changes and branches from remote repository: "origin" (GitHub).`
         }
@@ -313,8 +452,59 @@ export default function GitPanel() {
 
   if (!rootPath) {
     return (
-      <div className="flex h-full items-center justify-center text-xs text-aeres-muted px-4 text-center">
-        Open a folder to use source control
+      <div className="flex h-full flex-col items-center justify-center p-6 text-center text-aeres-muted">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-40 mb-2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+        <span className="text-xs">No project opened yet</span>
+      </div>
+    )
+  }
+
+  if (!isGitRepo) {
+    return (
+      <div className="flex h-full flex-col justify-between bg-[#0a0a0f] p-4 animate-in fade-in duration-300">
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
+          <div className="relative mb-4">
+            <div className="absolute inset-0 bg-violet-600/10 blur-xl rounded-full" />
+            <div className="relative flex items-center justify-center w-12 h-12 rounded-full border border-slate-800 bg-slate-900/80 text-slate-400">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 15V9a4 4 0 0 0-4-4H9"/><line x1="6" y1="9" x2="6" y2="15"/></svg>
+            </div>
+          </div>
+          
+          <h3 className="text-xs font-bold text-slate-200 tracking-wide uppercase mb-1">Source Control</h3>
+          <p className="text-[11px] text-slate-400 max-w-[200px] leading-relaxed mb-4">
+            This workspace folder is not currently a Git repository.
+          </p>
+
+          {error && (
+            <div className="w-full mb-3 p-2 rounded bg-red-950/20 border border-red-900/30 text-red-400 text-[10px] text-left leading-normal">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleInitAndPush} className="w-full max-w-[200px] flex flex-col gap-2">
+            <input 
+              type="url" 
+              name="remoteUrl" 
+              placeholder="Remote URL (e.g. GitHub link)" 
+              className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-white focus:border-violet-500 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={initing}
+              className="px-4 py-1.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-[10px] rounded transition-all shadow-lg shadow-violet-500/10 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide cursor-pointer"
+            >
+              {initing ? 'Publishing...' : 'Initialize & Push'}
+            </button>
+            <button
+              type="button"
+              onClick={handleInitAndPush}
+              disabled={initing}
+              className="text-[10px] text-slate-500 hover:text-slate-300 underline mt-1"
+            >
+              Just initialize locally
+            </button>
+          </form>
+        </div>
       </div>
     )
   }
@@ -489,7 +679,15 @@ export default function GitPanel() {
               actionIcon={<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
               actionTitle="Stage"
               onAction={() => handleStage(f.path)}
-              onClick={() => {}}
+              onClick={async () => {
+                if (diffFile === f.path) { setDiffFile(null); setDiffContent(''); return }
+                try {
+                  const content = await window.electron.fs.readFile(`${rootPath}/${f.path}`)
+                  setDiffContent(content ? content.split('\n').map(l => `+${l}`).join('\n') : '+ (empty file)')
+                  setDiffFile(f.path)
+                } catch(e) {}
+              }}
+              isExpanded={diffFile === f.path}
             />
           ))}
         </Section>
@@ -577,18 +775,14 @@ export default function GitPanel() {
 
       {/* Commit panel */}
       <CommitInput
-        commitMsg={commitMsg}
-        setCommitMsg={setCommitMsg}
-        handleCommit={handleCommit}
-        disabled={!commitMsg.trim() || staged.length === 0 || loading.commit}
-        stagedLength={staged.length}
-        loading={loading.commit}
+        onCommit={handleCommit}
+        isLoading={loading.commit}
       />
 
       {successModal && (
         <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-slate-900 border border-[#7C3AED]/40 rounded-xl p-4 w-full max-w-[250px] text-center shadow-2xl shadow-[#7C3AED]/20 animate-in zoom-in-95 duration-200">
-            <div className="text-3xl mb-2">{successModal.emoji}</div>
+            <div className="mb-3">{successModal.icon}</div>
             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-1">{successModal.title}</h4>
             <p className="text-[10px] text-slate-300 leading-relaxed mb-4 whitespace-pre-line">{successModal.message}</p>
             <button
@@ -597,6 +791,98 @@ export default function GitPanel() {
             >
               Awesome
             </button>
+          </div>
+        </div>
+      )}
+
+      {remotePrompt && (
+        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-violet-500/40 rounded-xl p-4 w-full max-w-[250px] shadow-2xl">
+            <h4 className="text-xs font-bold text-white uppercase mb-2">Connect Repository</h4>
+            <p className="text-[10px] text-slate-400 mb-3">Where do you want to push this code? Enter your remote repository URL.</p>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const fd = new FormData(e.target)
+              const url = fd.get('url')
+              if (url) {
+                remotePrompt.resolve(url)
+                setRemotePrompt(null)
+              }
+            }} className="flex flex-col gap-2">
+              <input name="url" type="url" placeholder="https://github.com/user/repo.git" required autoFocus className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-white focus:border-violet-500 outline-none" />
+              <div className="flex gap-2 mt-2">
+                <button type="button" onClick={() => { remotePrompt.resolve(null); setRemotePrompt(null) }} className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[10px] rounded">Cancel</button>
+                <button type="submit" className="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 text-xs rounded transition-colors cursor-pointer">Connect</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {identityPrompt && (
+        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-violet-500/40 rounded-xl p-4 w-full max-w-[250px] shadow-2xl">
+            <h4 className="text-xs font-bold text-white uppercase mb-2">Configure Git Identity</h4>
+            <p className="text-[10px] text-slate-400 mb-3">Git needs to know who you are before you can commit.</p>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const fd = new FormData(e.target)
+              const name = fd.get('name')
+              const email = fd.get('email')
+              if (name && email) {
+                identityPrompt.resolve({ name, email })
+                setIdentityPrompt(null)
+              }
+            }} className="flex flex-col gap-2">
+              <input name="name" type="text" placeholder="Your Name" required autoFocus className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-white focus:border-violet-500 outline-none" />
+              <input name="email" type="email" placeholder="you@example.com" required className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-white focus:border-violet-500 outline-none" />
+              <div className="flex gap-2 mt-2">
+                <button type="button" onClick={() => { identityPrompt.resolve(null); setIdentityPrompt(null) }} className="flex-1 bg-slate-800 hover:bg-slate-700 text-white font-medium py-1.5 text-xs rounded transition-colors cursor-pointer">Cancel</button>
+                <button type="submit" className="flex-1 bg-violet-600 hover:bg-violet-500 text-white font-bold py-1.5 text-xs rounded transition-colors cursor-pointer">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {authPrompt && (
+        <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-slate-900 border border-violet-500/40 rounded-xl p-4 w-full max-w-[250px] shadow-2xl">
+            <h4 className="text-xs font-bold text-white uppercase mb-2">Git Authentication</h4>
+            <div className="text-[10px] text-slate-400 mb-3">
+              <p>Please enter your credentials to retry {authPrompt.action}.</p>
+              <p className="mt-1">
+                Don't have a token?{' '}
+                <a 
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const url = 'https://github.com/settings/tokens/new?scopes=repo&description=Aeres%20IDE'
+                    window.electron.auth.openExternal ? window.electron.auth.openExternal(url) : window.open(url, '_blank')
+                  }}
+                  className="text-violet-400 hover:text-violet-300 underline cursor-pointer"
+                >
+                  Generate one here
+                </a>
+              </p>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              const fd = new FormData(e.target)
+              const username = fd.get('username')
+              const token = fd.get('token')
+              if (username && token) {
+                authPrompt.resolve({ username, token })
+                setAuthPrompt(null)
+              }
+            }} className="flex flex-col gap-2">
+              <input name="username" type="text" placeholder="Username" required autoFocus className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-white focus:border-violet-500 outline-none" />
+              <input name="token" type="password" placeholder="Personal Access Token / Password" required className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs text-white focus:border-violet-500 outline-none" />
+              <div className="flex gap-2 mt-2">
+                <button type="button" onClick={() => { authPrompt.resolve(null); setAuthPrompt(null) }} className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[10px] rounded">Cancel</button>
+                <button type="submit" className="flex-1 py-1.5 bg-violet-600 hover:bg-violet-500 text-white font-bold text-[10px] rounded">Authenticate</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -613,10 +899,10 @@ function Section({ title, children }) {
   )
 }
 
-function FileRow({ file, color, actionIcon, actionTitle, onAction, onClick }) {
+function FileRow({ file, color, actionIcon, actionTitle, onAction, onClick, isExpanded }) {
   const name = file.path.split(/[/\\]/).pop()
   return (
-    <div className="group flex cursor-pointer items-center gap-1 px-3 py-0.5 text-xs transition hover:bg-white/5" onClick={onClick}>
+    <div className={`group flex cursor-pointer items-center gap-1 px-3 py-0.5 text-xs transition ${isExpanded ? 'bg-white/10' : 'hover:bg-white/5'}`} onClick={onClick}>
       <span className={`min-w-0 flex-1 truncate ${color}`}>{name}</span>
       <span className="text-[9px] text-aeres-muted truncate max-w-[100px]">{file.path}</span>
       <button

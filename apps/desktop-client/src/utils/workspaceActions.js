@@ -28,7 +28,12 @@ export async function openFolderAndResetTerminals() {
   store.setRootPath(folderPath)
 
   // 2. Refresh the file tree
-  const tree = await e.fs.getTree(folderPath)
+  let tree = await e.fs.getTree(folderPath)
+  // Normalize: if Rust returns root object, extract children
+  if (tree && !Array.isArray(tree) && tree.children) {
+    tree = tree.children
+  }
+  if (!Array.isArray(tree)) tree = []
   store.setFileTree(tree)
 
   // 3. Kill all existing terminals (they point to the old folder)

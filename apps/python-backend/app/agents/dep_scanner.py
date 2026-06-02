@@ -2,6 +2,7 @@ import httpx, json, asyncio
 import re, os
 from typing import List, Dict
 from datetime import datetime, timezone
+from app.rag_engine.vector_db import get_package_migration_docs
 
 OSV_API = "https://api.osv.dev/v1/query"
 BUNDLEPHOBIA_API = "https://bundlephobia.com/api/size"
@@ -37,13 +38,8 @@ async def scan_single_npm(client: httpx.AsyncClient, name: str, version_spec: st
         deprecated = bool(current_info.get('deprecated'))
         deprecation_msg = current_info.get('deprecated', '') if deprecated else ''
 
-        # Get bundle size
+        # Get bundle size (disabled to speed up scan)
         bundle_kb = None
-        try:
-            bp = await client.get(f"{BUNDLEPHOBIA_API}?package={name}@{clean_ver}")
-            if bp.status_code == 200:
-                bundle_kb = round(bp.json().get('gzip', 0) / 1024, 1)
-        except Exception: pass
 
         # Check for CVEs
         cves = await check_osv(client, name, clean_ver, 'npm')
@@ -76,8 +72,6 @@ async def scan_single_npm(client: httpx.AsyncClient, name: str, version_spec: st
         # Fetch latest release notes / migration guide from GitHub
         migration_notes = ''
         breaking_changes = []
-        if 'github.com' in repo_url and clean_ver != latest:
-            migration_notes, breaking_changes = await fetch_npm_migration_info(client, repo_url, clean_ver, latest, name)
 
         status = 'healthy'
         if cves: status = 'critical'
@@ -105,6 +99,24 @@ async def fetch_npm_migration_info(client, repo_url: str, current: str, latest: 
     """Auto-fetch release notes and detect breaking changes from GitHub releases."""
     migration_notes = ''
     breaking_changes = []
+    
+    # 1. Check Offline ChromaDB first
+    try:
+        offline_docs = get_package_migration_docs(name)
+        if offline_docs:
+            combined_docs = "\\n\\n".join([doc["document"] for doc in offline_docs])
+            migration_notes = combined_docs[:500] + "...\\n\\n[Offline Docs Loaded from ChromaDB]"
+            # Extract basic breaking changes from docs
+            lines = combined_docs.split('\\n')
+            for line in lines:
+                if 'breaking' in line.lower() or 'removed' in line.lower() or 'deprecated' in line.lower():
+                    clean = line.strip().lstrip('*-# ')
+                    if clean and len(clean) > 5 and clean not in breaking_changes:
+                        breaking_changes.append(clean[:200])
+            return migration_notes, breaking_changes[:5]
+    except Exception:
+        pass
+
     try:
         # Extract owner/repo from URL
         parts = repo_url.split('github.com/')[-1].split('#')[0].strip('/')
@@ -139,7 +151,9 @@ async def fetch_npm_migration_info(client, repo_url: str, current: str, latest: 
                     lat_major = int(latest.split('.')[0])
                     if lat_major > cur_major:
                         breaking_changes.append(f'Major version bump: {current} → {latest}. Review migration guide.')
-                except: pass
+                except Exception as e:
+                    import sys
+                    print(f"[Dep Scanner] Error extracting python import: {e}", file=sys.stderr)
     except Exception:
         pass
     
@@ -156,7 +170,9 @@ async def check_osv(client, package_name: str, version: str, ecosystem: str) -> 
         if resp.status_code == 200:
             vulns = resp.json().get('vulns', [])
             return [{'id': v['id'], 'summary': v.get('summary', '')[:100]} for v in vulns[:3]]
-    except Exception: pass
+    except Exception as e:
+        import sys
+        print(f"[Dep Scanner] Error extracting javascript imports: {e}", file=sys.stderr)
     return []
 
 async def scan_python_deps(requirements_path: str) -> List[Dict]:
@@ -218,13 +234,13 @@ async def scan_single_pypi(client, name, version):
                     pub_date = datetime.fromisoformat(upload_time)
                     days_since_publish = (datetime.now(timezone.utc) - pub_date.replace(tzinfo=timezone.utc)).days
                     is_abandoned = days_since_publish > 730
-                except: pass
+                except Exception as e:
+                    import sys
+                    print(f"[Dep Scanner] Error extracting go import: {e}", file=sys.stderr)
 
         # Auto-fetch migration notes from GitHub if available
         migration_notes = ''
         breaking_changes = []
-        if 'github.com' in repo_url and version != latest:
-            migration_notes, breaking_changes = await fetch_pypi_migration_info(client, repo_url, version, latest, clean_name)
 
         status = 'healthy'
         if cves: status = 'critical'
@@ -250,6 +266,24 @@ async def fetch_pypi_migration_info(client, repo_url: str, current: str, latest:
     """Auto-fetch release notes from GitHub for Python packages."""
     migration_notes = ''
     breaking_changes = []
+
+    # 1. Check Offline ChromaDB first
+    try:
+        offline_docs = get_package_migration_docs(name)
+        if offline_docs:
+            combined_docs = "\\n\\n".join([doc["document"] for doc in offline_docs])
+            migration_notes = combined_docs[:500] + "...\\n\\n[Offline Docs Loaded from ChromaDB]"
+            # Extract basic breaking changes from docs
+            lines = combined_docs.split('\\n')
+            for line in lines:
+                if 'breaking' in line.lower() or 'removed' in line.lower() or 'deprecated' in line.lower():
+                    clean = line.strip().lstrip('*-# ')
+                    if clean and len(clean) > 5 and clean not in breaking_changes:
+                        breaking_changes.append(clean[:200])
+            return migration_notes, breaking_changes[:5]
+    except Exception:
+        pass
+
     try:
         parts = repo_url.split('github.com/')[-1].split('#')[0].strip('/')
         if '/' not in parts:
@@ -279,7 +313,9 @@ async def fetch_pypi_migration_info(client, repo_url: str, current: str, latest:
                     lat_major = int(latest.split('.')[0])
                     if lat_major > cur_major:
                         breaking_changes.append(f'Major version bump: {current} → {latest}. Review migration guide.')
-                except: pass
+                except Exception as e:
+                    import sys
+                    print(f"[Dep Scanner] Error extracting java import: {e}", file=sys.stderr)
     except Exception:
         pass
     

@@ -1,53 +1,483 @@
 {
   "javascript": {
     "componentWillMount": {
-      "replacement": "componentDidMount or useEffect",
+      "replacement": "componentDidMount or useEffect(() => {}, [])",
       "docs_query": "react componentWillMount migration to useEffect",
       "severity": "high",
-      "since_version": "React 16.3"
-    },
-    "ReactDOM.render": {
-      "replacement": "createRoot().render()",
-      "docs_query": "react 18 createRoot migration from ReactDOM.render",
-      "severity": "high",
-      "since_version": "React 18"
-    },
-    "findDOMNode": {
-      "replacement": "React.createRef or useRef",
-      "docs_query": "react findDOMNode deprecated use ref instead",
-      "severity": "medium",
-      "since_version": "React 16.3"
+      "since_version": "React 16.3",
+      "exclude": ["UNSAFE_componentWillMount"]
     },
     "componentWillReceiveProps": {
-      "replacement": "getDerivedStateFromProps or useEffect",
+      "replacement": "getDerivedStateFromProps or useEffect with deps",
       "docs_query": "react componentWillReceiveProps migration",
       "severity": "high",
-      "since_version": "React 16.3"
+      "since_version": "React 16.3",
+      "exclude": ["UNSAFE_componentWillReceiveProps"]
     },
     "componentWillUpdate": {
       "replacement": "getSnapshotBeforeUpdate or useEffect",
       "docs_query": "react componentWillUpdate migration",
       "severity": "high",
+      "since_version": "React 16.3",
+      "exclude": ["UNSAFE_componentWillUpdate"]
+    },
+    "ReactDOM.render": {
+      "replacement": "createRoot(container).render(<App />)",
+      "docs_query": "react 18 createRoot migration from ReactDOM.render",
+      "severity": "high",
+      "since_version": "React 18"
+    },
+    "ReactDOM.hydrate": {
+      "replacement": "hydrateRoot(container, <App />)",
+      "docs_query": "react 18 hydrateRoot migration from ReactDOM.hydrate",
+      "severity": "high",
+      "since_version": "React 18"
+    },
+    "ReactDOM.unmountComponentAtNode": {
+      "replacement": "root.unmount()",
+      "docs_query": "react 18 unmountComponentAtNode deprecated",
+      "severity": "high",
+      "since_version": "React 18"
+    },
+    "findDOMNode": {
+      "replacement": "React.createRef() or useRef()",
+      "docs_query": "react findDOMNode deprecated use ref instead",
+      "severity": "medium",
       "since_version": "React 16.3"
     },
+    "React.createFactory": {
+      "replacement": "React.createElement or JSX",
+      "docs_query": "react createFactory deprecated",
+      "severity": "medium",
+      "since_version": "React 18"
+    },
+    "defaultProps": {
+      "replacement": "Default parameter values in function components",
+      "docs_query": "react defaultProps deprecated function components",
+      "severity": "info",
+      "since_version": "React 18.3",
+      "exclude": ["static defaultProps", "class "]
+    },
+    "getInitialState": {
+      "replacement": "useState() hook or constructor state",
+      "docs_query": "react getInitialState deprecated",
+      "severity": "high",
+      "since_version": "React 16"
+    },
+
+    "getServerSideProps": {
+      "replacement": "Server Components with async/await (App Router)",
+      "docs_query": "next.js app router migration from getServerSideProps",
+      "severity": "medium",
+      "since_version": "Next.js 13 App Router"
+    },
+    "getStaticProps": {
+      "replacement": "Server Components with fetch + revalidate (App Router)",
+      "docs_query": "next.js app router migration from getStaticProps",
+      "severity": "medium",
+      "since_version": "Next.js 13 App Router"
+    },
+    "getStaticPaths": {
+      "replacement": "generateStaticParams() in App Router",
+      "docs_query": "next.js app router migration from getStaticPaths to generateStaticParams",
+      "severity": "medium",
+      "since_version": "Next.js 13 App Router"
+    },
+    "next/router": {
+      "replacement": "next/navigation (useRouter, usePathname, useSearchParams)",
+      "docs_query": "next.js app router migration from next/router to next/navigation",
+      "severity": "medium",
+      "since_version": "Next.js 13 App Router"
+    },
+    "next/head": {
+      "replacement": "Metadata API (export const metadata) in App Router",
+      "docs_query": "next.js app router migration from next/head to metadata API",
+      "severity": "medium",
+      "since_version": "Next.js 13 App Router"
+    },
+    "req.url": {
+      "replacement": "req.nextUrl.clone() or req.nextUrl",
+      "docs_query": "next.js NextRequest req.url deprecated use req.nextUrl",
+      "severity": "medium",
+      "since_version": "Next.js App Router",
+      "require_context": true,
+      "context_patterns": ["NextRequest"]
+    },
+    "searchParams.get": {
+      "replacement": "await searchParams (in Next.js 15+ searchParams is a Promise)",
+      "docs_query": "next.js 15 searchParams promise await",
+      "severity": "high",
+      "since_version": "Next.js 15",
+      "require_context": true,
+      "context_patterns": ["export async function", "NextRequest"]
+    },
+    "params.": {
+      "replacement": "await params (in Next.js 15+ params is a Promise)",
+      "docs_query": "next.js 15 params promise await",
+      "severity": "high",
+      "since_version": "Next.js 15",
+      "require_context": true,
+      "context_patterns": ["export async function", "NextRequest"]
+    },
+    "next/image' + legacyBehavior": {
+      "replacement": "next/image with built-in layout behavior",
+      "docs_query": "next.js image component legacyBehavior migration",
+      "severity": "info",
+      "since_version": "Next.js 13"
+    },
+    "next/link' + legacyBehavior": {
+      "replacement": "next/link (no longer requires <a> child)",
+      "docs_query": "next.js link component no longer needs anchor child",
+      "severity": "info",
+      "since_version": "Next.js 13"
+    },
+
+    "new Buffer(": {
+      "replacement": "Buffer.alloc(), Buffer.from(), or Buffer.allocUnsafe()",
+      "docs_query": "node.js Buffer constructor deprecated security vulnerability",
+      "severity": "high",
+      "since_version": "Node.js 6"
+    },
+    "require('url').parse": {
+      "replacement": "new URL(input, base)",
+      "docs_query": "node.js url.parse deprecated use WHATWG URL API",
+      "severity": "medium",
+      "since_version": "Node.js 11"
+    },
+    "url.parse(": {
+      "replacement": "new URL(input, base)",
+      "docs_query": "node.js url.parse deprecated use WHATWG URL API",
+      "severity": "medium",
+      "since_version": "Node.js 11"
+    },
+    "require('body-parser')": {
+      "replacement": "express.json() and express.urlencoded()",
+      "docs_query": "express body-parser deprecated use express.json",
+      "severity": "medium",
+      "since_version": "Express 4.16.0"
+    },
+    "url.resolve(": {
+      "replacement": "new URL(path, base).href",
+      "docs_query": "node.js url.resolve deprecated use WHATWG URL",
+      "severity": "medium",
+      "since_version": "Node.js 11"
+    },
+    "url.format(": {
+      "replacement": "url.format(new URL(...))",
+      "docs_query": "node.js url.format deprecated use WHATWG URL",
+      "severity": "info",
+      "since_version": "Node.js 11"
+    },
+    "path.exists(": {
+      "replacement": "fs.existsSync() or fs.access()",
+      "docs_query": "node.js path.exists deprecated use fs.existsSync",
+      "severity": "medium",
+      "since_version": "Node.js 1"
+    },
+    "fs.exists(": {
+      "replacement": "fs.access() or fs.stat()",
+      "docs_query": "node.js fs.exists deprecated use fs.access",
+      "severity": "medium",
+      "since_version": "Node.js 1",
+      "exclude": ["fs.existsSync"]
+    },
+    "util.pump(": {
+      "replacement": "stream.pipeline() or stream.pipe()",
+      "docs_query": "node.js util.pump deprecated use stream.pipeline",
+      "severity": "high",
+      "since_version": "Node.js 0.10"
+    },
+    "util.puts(": {
+      "replacement": "console.log()",
+      "docs_query": "node.js util.puts deprecated",
+      "severity": "medium",
+      "since_version": "Node.js 0.12"
+    },
+    "util.print(": {
+      "replacement": "process.stdout.write()",
+      "docs_query": "node.js util.print deprecated",
+      "severity": "medium",
+      "since_version": "Node.js 0.12"
+    },
+    "util.debug(": {
+      "replacement": "console.error()",
+      "docs_query": "node.js util.debug deprecated",
+      "severity": "medium",
+      "since_version": "Node.js 0.12"
+    },
+    "util.log(": {
+      "replacement": "console.log() with custom timestamp",
+      "docs_query": "node.js util.log deprecated",
+      "severity": "info",
+      "since_version": "Node.js 6"
+    },
+    "util.isArray(": {
+      "replacement": "Array.isArray()",
+      "docs_query": "node.js util.isArray deprecated",
+      "severity": "medium",
+      "since_version": "Node.js 4"
+    },
+    "util.isBuffer(": {
+      "replacement": "Buffer.isBuffer()",
+      "docs_query": "node.js util.isBuffer deprecated",
+      "severity": "medium",
+      "since_version": "Node.js 4"
+    },
+    "util.isDate(": {
+      "replacement": "instanceof Date or Number.isNaN(date.getTime())",
+      "docs_query": "node.js util.isDate deprecated",
+      "severity": "info",
+      "since_version": "Node.js 4"
+    },
+    "util.isRegExp(": {
+      "replacement": "instanceof RegExp",
+      "docs_query": "node.js util.isRegExp deprecated",
+      "severity": "info",
+      "since_version": "Node.js 4"
+    },
+    "util.isError(": {
+      "replacement": "instanceof Error",
+      "docs_query": "node.js util.isError deprecated",
+      "severity": "info",
+      "since_version": "Node.js 4"
+    },
+    "domain.create": {
+      "replacement": "AsyncLocalStorage or try/catch with proper error handling",
+      "docs_query": "node.js domain module deprecated",
+      "severity": "high",
+      "since_version": "Node.js 4"
+    },
+    "require('domain')": {
+      "replacement": "AsyncLocalStorage or structured error handling",
+      "docs_query": "node.js domain module deprecated",
+      "severity": "high",
+      "since_version": "Node.js 4"
+    },
+    "crypto.createCipher(": {
+      "replacement": "crypto.createCipheriv() with explicit IV",
+      "docs_query": "node.js crypto.createCipher deprecated use createCipheriv",
+      "severity": "high",
+      "since_version": "Node.js 10"
+    },
+    "crypto.createDecipher(": {
+      "replacement": "crypto.createDecipheriv() with explicit IV",
+      "docs_query": "node.js crypto.createDecipher deprecated use createDecipheriv",
+      "severity": "high",
+      "since_version": "Node.js 10"
+    },
+    "process.binding(": {
+      "replacement": "Public API equivalents",
+      "docs_query": "node.js process.binding deprecated",
+      "severity": "high",
+      "since_version": "Node.js 10"
+    },
+    "SlowBuffer": {
+      "replacement": "Buffer.allocUnsafeSlow()",
+      "docs_query": "node.js SlowBuffer deprecated",
+      "severity": "medium",
+      "since_version": "Node.js 6"
+    },
+    "require('punycode')": {
+      "replacement": "Install 'punycode' from npm as userland package",
+      "docs_query": "node.js punycode module deprecated",
+      "severity": "medium",
+      "since_version": "Node.js 7"
+    },
+
+    "app.del(": {
+      "replacement": "app.delete()",
+      "docs_query": "express app.del deprecated use app.delete",
+      "severity": "medium",
+      "since_version": "Express 4"
+    },
+    "res.json(status,": {
+      "replacement": "res.status(code).json(body)",
+      "docs_query": "express res.json signature deprecated",
+      "severity": "medium",
+      "since_version": "Express 4"
+    },
+    "res.send(status,": {
+      "replacement": "res.status(code).send(body)",
+      "docs_query": "express res.send signature deprecated",
+      "severity": "medium",
+      "since_version": "Express 4"
+    },
+    "res.sendfile(": {
+      "replacement": "res.sendFile() (capital F)",
+      "docs_query": "express res.sendfile deprecated case sensitive",
+      "severity": "info",
+      "since_version": "Express 4.8"
+    },
+    "app.configure(": {
+      "replacement": "Use if/else with process.env.NODE_ENV directly",
+      "docs_query": "express app.configure deprecated",
+      "severity": "medium",
+      "since_version": "Express 4"
+    },
+    "bodyParser()": {
+      "replacement": "express.json() and express.urlencoded()",
+      "docs_query": "express bodyParser middleware deprecated",
+      "severity": "medium",
+      "since_version": "Express 4.16"
+    },
+
+    ".exec(function": {
+      "replacement": "Use .exec() with await (Promises) — callbacks removed in Mongoose 7",
+      "docs_query": "mongoose 7 callback removed use async await",
+      "severity": "high",
+      "since_version": "Mongoose 7"
+    },
+    ".save(function": {
+      "replacement": "Use await doc.save() — callbacks removed in Mongoose 7",
+      "docs_query": "mongoose 7 save callback removed use promise",
+      "severity": "high",
+      "since_version": "Mongoose 7"
+    },
+    "mongoose.connect(": {
+      "replacement": "Ensure using promise form: await mongoose.connect(uri) — useNewUrlParser/useUnifiedTopology no longer needed",
+      "docs_query": "mongoose 7 connect options deprecated useNewUrlParser useUnifiedTopology",
+      "severity": "info",
+      "since_version": "Mongoose 6+",
+      "context_patterns": ["useNewUrlParser", "useUnifiedTopology", "useCreateIndex", "useFindAndModify"],
+      "require_context": true
+    },
+    "useNewUrlParser": {
+      "replacement": "Remove this option — it's the default and ignored in Mongoose 6+",
+      "docs_query": "mongoose useNewUrlParser deprecated default behavior",
+      "severity": "medium",
+      "since_version": "Mongoose 6"
+    },
+    "useUnifiedTopology": {
+      "replacement": "Remove this option — it's the default and ignored in Mongoose 6+",
+      "docs_query": "mongoose useUnifiedTopology deprecated default behavior",
+      "severity": "medium",
+      "since_version": "Mongoose 6"
+    },
+    "useCreateIndex": {
+      "replacement": "Remove this option — ensureIndex is always used in Mongoose 6+",
+      "docs_query": "mongoose useCreateIndex deprecated",
+      "severity": "medium",
+      "since_version": "Mongoose 6"
+    },
+    "useFindAndModify": {
+      "replacement": "Remove this option — findOneAndUpdate() always uses MongoDB driver directly",
+      "docs_query": "mongoose useFindAndModify deprecated",
+      "severity": "medium",
+      "since_version": "Mongoose 6"
+    },
+    "Model.count(": {
+      "replacement": "Model.countDocuments() or Model.estimatedDocumentCount()",
+      "docs_query": "mongoose Model.count deprecated use countDocuments",
+      "severity": "medium",
+      "since_version": "Mongoose 6"
+    },
+
+    ".substr(": {
+      "replacement": ".substring() or .slice()",
+      "docs_query": "javascript String.prototype.substr deprecated",
+      "severity": "info",
+      "since_version": "ECMAScript 2022 (Annex B)"
+    },
+    "__defineGetter__": {
+      "replacement": "Object.defineProperty(obj, prop, { get: fn })",
+      "docs_query": "javascript __defineGetter__ deprecated use Object.defineProperty",
+      "severity": "medium",
+      "since_version": "ES5"
+    },
+    "__defineSetter__": {
+      "replacement": "Object.defineProperty(obj, prop, { set: fn })",
+      "docs_query": "javascript __defineSetter__ deprecated use Object.defineProperty",
+      "severity": "medium",
+      "since_version": "ES5"
+    },
+    "__lookupGetter__": {
+      "replacement": "Object.getOwnPropertyDescriptor(obj, prop).get",
+      "docs_query": "javascript __lookupGetter__ deprecated",
+      "severity": "info",
+      "since_version": "ES5"
+    },
+    "__lookupSetter__": {
+      "replacement": "Object.getOwnPropertyDescriptor(obj, prop).set",
+      "docs_query": "javascript __lookupSetter__ deprecated",
+      "severity": "info",
+      "since_version": "ES5"
+    },
+    "escape(": {
+      "replacement": "encodeURIComponent() or encodeURI()",
+      "docs_query": "javascript escape function deprecated use encodeURIComponent",
+      "severity": "medium",
+      "since_version": "ES3",
+      "exclude": ["CSS.escape", "RegExp.escape", "escape(", "html.escape", "_.escape"]
+    },
+    "unescape(": {
+      "replacement": "decodeURIComponent() or decodeURI()",
+      "docs_query": "javascript unescape function deprecated use decodeURIComponent",
+      "severity": "medium",
+      "since_version": "ES3"
+    },
+    "with (": {
+      "replacement": "Use destructuring or direct property access",
+      "docs_query": "javascript with statement deprecated strict mode",
+      "severity": "high",
+      "since_version": "ES5 strict mode"
+    },
+    "arguments.callee": {
+      "replacement": "Use named function expressions",
+      "docs_query": "javascript arguments.callee deprecated",
+      "severity": "high",
+      "since_version": "ES5 strict mode"
+    },
+    "document.write(": {
+      "replacement": "DOM manipulation APIs (createElement, innerHTML, etc.)",
+      "docs_query": "javascript document.write deprecated performance issues",
+      "severity": "medium",
+      "since_version": "Modern browsers"
+    },
+    "document.all": {
+      "replacement": "document.getElementById() or document.querySelector()",
+      "docs_query": "javascript document.all deprecated",
+      "severity": "medium",
+      "since_version": "HTML5"
+    },
+
     "moment(": {
-      "replacement": "dayjs or date-fns",
+      "replacement": "dayjs, date-fns, or Temporal API",
       "docs_query": "migrate from moment.js to dayjs",
       "severity": "medium",
-      "since_version": "moment.js deprecated 2020"
+      "since_version": "moment.js deprecated 2020",
+      "exclude": ["from 'moment'", "from \"moment\"", "require('moment')"]
     },
-    "request(": {
-      "replacement": "axios or node-fetch",
-      "docs_query": "migrate from request npm package to axios",
+    "require('request')": {
+      "replacement": "axios, node-fetch, or built-in fetch (Node 18+)",
+      "docs_query": "migrate from request npm package to fetch or axios",
+      "severity": "medium",
+      "since_version": "request deprecated 2020"
+    },
+    "from 'request'": {
+      "replacement": "axios, node-fetch, or built-in fetch (Node 18+)",
+      "docs_query": "migrate from request npm package to fetch or axios",
       "severity": "medium",
       "since_version": "request deprecated 2020"
     }
   },
+
   "python": {
     "asyncio.coroutine": {
       "replacement": "async def",
       "docs_query": "python asyncio.coroutine deprecated use async def",
       "severity": "high",
+      "since_version": "Python 3.8"
+    },
+    "@asyncio.coroutine": {
+      "replacement": "async def",
+      "docs_query": "python asyncio.coroutine decorator deprecated",
+      "severity": "high",
+      "since_version": "Python 3.8"
+    },
+    "yield from": {
+      "replacement": "await (inside async functions)",
+      "docs_query": "python yield from deprecated in coroutines use await",
+      "severity": "medium",
       "since_version": "Python 3.8"
     },
     "collections.Mapping": {
@@ -56,29 +486,762 @@
       "severity": "medium",
       "since_version": "Python 3.3"
     },
+    "collections.MutableMapping": {
+      "replacement": "collections.abc.MutableMapping",
+      "docs_query": "python collections ABCs moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
+    "collections.Sequence": {
+      "replacement": "collections.abc.Sequence",
+      "docs_query": "python collections ABCs moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
+    "collections.MutableSequence": {
+      "replacement": "collections.abc.MutableSequence",
+      "docs_query": "python collections ABCs moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
+    "collections.Set": {
+      "replacement": "collections.abc.Set",
+      "docs_query": "python collections ABCs moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
+    "collections.Callable": {
+      "replacement": "collections.abc.Callable or typing.Callable",
+      "docs_query": "python collections.Callable moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
+    "collections.Iterable": {
+      "replacement": "collections.abc.Iterable",
+      "docs_query": "python collections.Iterable moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
+    "collections.Iterator": {
+      "replacement": "collections.abc.Iterator",
+      "docs_query": "python collections.Iterator moved to collections.abc",
+      "severity": "medium",
+      "since_version": "Python 3.3"
+    },
     "imp.load_module": {
-      "replacement": "importlib.import_module",
+      "replacement": "importlib.import_module()",
       "docs_query": "python imp module deprecated use importlib",
       "severity": "high",
       "since_version": "Python 3.4"
     },
-    "os.popen": {
-      "replacement": "subprocess.run or subprocess.Popen",
+    "import imp": {
+      "replacement": "import importlib",
+      "docs_query": "python imp module deprecated use importlib",
+      "severity": "high",
+      "since_version": "Python 3.4"
+    },
+    "os.popen(": {
+      "replacement": "subprocess.run() or subprocess.Popen()",
       "docs_query": "python os.popen deprecated use subprocess",
       "severity": "medium",
       "since_version": "Python 3.0"
     },
+    "os.popen2(": {
+      "replacement": "subprocess.Popen() with stdin/stdout pipes",
+      "docs_query": "python os.popen2 deprecated use subprocess",
+      "severity": "medium",
+      "since_version": "Python 3.0"
+    },
+    "os.popen3(": {
+      "replacement": "subprocess.Popen() with stdin/stdout/stderr pipes",
+      "docs_query": "python os.popen3 deprecated use subprocess",
+      "severity": "medium",
+      "since_version": "Python 3.0"
+    },
+    "os.system(": {
+      "replacement": "subprocess.run() for better control and security",
+      "docs_query": "python os.system vs subprocess.run security",
+      "severity": "info",
+      "since_version": "Python 2.6 (soft)"
+    },
+    "os.tmpnam(": {
+      "replacement": "tempfile.mkstemp() or tempfile.NamedTemporaryFile()",
+      "docs_query": "python os.tmpnam deprecated security vulnerability",
+      "severity": "high",
+      "since_version": "Python 2.3"
+    },
+    "os.tempnam(": {
+      "replacement": "tempfile.mkstemp() or tempfile.NamedTemporaryFile()",
+      "docs_query": "python os.tempnam deprecated security vulnerability",
+      "severity": "high",
+      "since_version": "Python 2.3"
+    },
     "threading.currentThread": {
-      "replacement": "threading.current_thread",
-      "docs_query": "python threading.currentThread deprecated",
+      "replacement": "threading.current_thread()",
+      "docs_query": "python threading.currentThread deprecated camelCase",
+      "severity": "info",
+      "since_version": "Python 3.10"
+    },
+    "threading.activeCount": {
+      "replacement": "threading.active_count()",
+      "docs_query": "python threading.activeCount deprecated camelCase",
+      "severity": "info",
+      "since_version": "Python 3.10"
+    },
+    "threading.isDaemon": {
+      "replacement": "threading.daemon property",
+      "docs_query": "python threading isDaemon deprecated",
+      "severity": "info",
+      "since_version": "Python 3.10"
+    },
+    "threading.setDaemon": {
+      "replacement": "thread.daemon = True",
+      "docs_query": "python threading setDaemon deprecated",
       "severity": "info",
       "since_version": "Python 3.10"
     },
     "json.loads(s.decode())": {
-      "replacement": "json.loads(s)",
+      "replacement": "json.loads(s) — accepts bytes directly since 3.6",
       "docs_query": "python 3.6+ json.loads supports bytes",
       "severity": "info",
       "since_version": "Python 3.6"
+    },
+    "logging.warn(": {
+      "replacement": "logging.warning()",
+      "docs_query": "python logging.warn deprecated use logging.warning",
+      "severity": "info",
+      "since_version": "Python 3.3"
+    },
+    ".warn(": {
+      "replacement": ".warning() — warn() is a deprecated alias",
+      "docs_query": "python logging warn deprecated use warning method",
+      "severity": "info",
+      "since_version": "Python 3.3",
+      "exclude": ["console.warn", "warnings.warn"]
+    },
+    "optparse": {
+      "replacement": "argparse",
+      "docs_query": "python optparse deprecated use argparse",
+      "severity": "info",
+      "since_version": "Python 3.2"
+    },
+    "getopt": {
+      "replacement": "argparse",
+      "docs_query": "python getopt deprecated use argparse",
+      "severity": "info",
+      "since_version": "Python 3.2 (soft)"
+    },
+    "distutils": {
+      "replacement": "setuptools or build module",
+      "docs_query": "python distutils deprecated removed in 3.12",
+      "severity": "high",
+      "since_version": "Python 3.10 (removed 3.12)"
+    },
+    "cgi.FieldStorage": {
+      "replacement": "multipart or custom parsing with modern frameworks",
+      "docs_query": "python cgi module deprecated removed in 3.13",
+      "severity": "high",
+      "since_version": "Python 3.11 (removed 3.13)"
+    },
+    "import cgi": {
+      "replacement": "Use html.escape, urllib.parse, email.message, or framework utilities",
+      "docs_query": "python cgi module deprecated alternatives",
+      "severity": "high",
+      "since_version": "Python 3.11 (removed 3.13)"
+    },
+    "import cgitb": {
+      "replacement": "Use traceback module or logging for debugging",
+      "docs_query": "python cgitb module deprecated",
+      "severity": "high",
+      "since_version": "Python 3.11 (removed 3.13)"
+    },
+    "crypt.crypt": {
+      "replacement": "hashlib, bcrypt, or passlib",
+      "docs_query": "python crypt module deprecated use hashlib",
+      "severity": "high",
+      "since_version": "Python 3.11 (removed 3.13)"
+    },
+    "pipes.Template": {
+      "replacement": "subprocess module",
+      "docs_query": "python pipes module deprecated",
+      "severity": "high",
+      "since_version": "Python 3.11 (removed 3.13)"
+    },
+    "from typing import Optional": {
+      "replacement": "X | None (PEP 604 union syntax, Python 3.10+)",
+      "docs_query": "python typing Optional deprecated use X | None PEP 604",
+      "severity": "info",
+      "since_version": "Python 3.10"
+    },
+    "from typing import Union": {
+      "replacement": "X | Y (PEP 604 union syntax, Python 3.10+)",
+      "docs_query": "python typing Union deprecated use pipe operator PEP 604",
+      "severity": "info",
+      "since_version": "Python 3.10"
+    },
+    "from typing import List": {
+      "replacement": "list[X] (PEP 585, Python 3.9+)",
+      "docs_query": "python typing List deprecated use builtin list PEP 585",
+      "severity": "info",
+      "since_version": "Python 3.9"
+    },
+    "from typing import Dict": {
+      "replacement": "dict[K, V] (PEP 585, Python 3.9+)",
+      "docs_query": "python typing Dict deprecated use builtin dict PEP 585",
+      "severity": "info",
+      "since_version": "Python 3.9"
+    },
+    "from typing import Tuple": {
+      "replacement": "tuple[X, Y] (PEP 585, Python 3.9+)",
+      "docs_query": "python typing Tuple deprecated use builtin tuple PEP 585",
+      "severity": "info",
+      "since_version": "Python 3.9"
+    },
+    "from typing import Set": {
+      "replacement": "set[X] (PEP 585, Python 3.9+)",
+      "docs_query": "python typing Set deprecated use builtin set PEP 585",
+      "severity": "info",
+      "since_version": "Python 3.9"
+    },
+    "unittest.makeSuite": {
+      "replacement": "unittest.TestLoader().loadTestsFromTestCase()",
+      "docs_query": "python unittest makeSuite deprecated",
+      "severity": "medium",
+      "since_version": "Python 3.11"
+    },
+    "unittest.findTestCases": {
+      "replacement": "unittest.TestLoader().loadTestsFromModule()",
+      "docs_query": "python unittest findTestCases deprecated",
+      "severity": "medium",
+      "since_version": "Python 3.11"
+    },
+    "assertEquals": {
+      "replacement": "assertEqual (no trailing 's')",
+      "docs_query": "python unittest assertEquals deprecated use assertEqual",
+      "severity": "info",
+      "since_version": "Python 3.2"
+    },
+    "assertNotEquals": {
+      "replacement": "assertNotEqual (no trailing 's')",
+      "docs_query": "python unittest assertNotEquals deprecated",
+      "severity": "info",
+      "since_version": "Python 3.2"
+    },
+    "assertRegexpMatches": {
+      "replacement": "assertRegex()",
+      "docs_query": "python unittest assertRegexpMatches deprecated use assertRegex",
+      "severity": "info",
+      "since_version": "Python 3.2"
+    },
+
+    "django.conf.urls.url(": {
+      "replacement": "django.urls.re_path() or django.urls.path()",
+      "docs_query": "django url() deprecated use path() or re_path()",
+      "severity": "high",
+      "since_version": "Django 3.1 (removed 4.0)"
+    },
+    "from django.conf.urls import url": {
+      "replacement": "from django.urls import path, re_path",
+      "docs_query": "django url function deprecated import path re_path",
+      "severity": "high",
+      "since_version": "Django 3.1 (removed 4.0)"
+    },
+    "django.utils.encoding.force_text": {
+      "replacement": "django.utils.encoding.force_str",
+      "docs_query": "django force_text deprecated use force_str",
+      "severity": "medium",
+      "since_version": "Django 4.0"
+    },
+    "django.utils.encoding.smart_text": {
+      "replacement": "django.utils.encoding.smart_str",
+      "docs_query": "django smart_text deprecated use smart_str",
+      "severity": "medium",
+      "since_version": "Django 4.0"
+    },
+    "django.utils.translation.ugettext": {
+      "replacement": "django.utils.translation.gettext",
+      "docs_query": "django ugettext deprecated use gettext",
+      "severity": "medium",
+      "since_version": "Django 4.0"
+    },
+    "django.utils.translation.ugettext_lazy": {
+      "replacement": "django.utils.translation.gettext_lazy",
+      "docs_query": "django ugettext_lazy deprecated use gettext_lazy",
+      "severity": "medium",
+      "since_version": "Django 4.0"
+    },
+    "django.utils.translation.ungettext": {
+      "replacement": "django.utils.translation.ngettext",
+      "docs_query": "django ungettext deprecated use ngettext",
+      "severity": "medium",
+      "since_version": "Django 4.0"
+    },
+    "NullBooleanField": {
+      "replacement": "BooleanField(null=True)",
+      "docs_query": "django NullBooleanField deprecated use BooleanField null=True",
+      "severity": "medium",
+      "since_version": "Django 3.1 (removed 4.0)"
+    },
+    "@login_required(login_url=": {
+      "replacement": "LoginRequiredMixin for class-based views or settings.LOGIN_URL",
+      "docs_query": "django login_required best practices",
+      "severity": "info",
+      "since_version": "Django best practice"
+    },
+    "render_to_response": {
+      "replacement": "render() shortcut (includes RequestContext automatically)",
+      "docs_query": "django render_to_response deprecated use render shortcut",
+      "severity": "medium",
+      "since_version": "Django 3.0 (removed 4.0)"
+    },
+    "HttpResponse(content_type=": {
+      "replacement": "Ensure using content_type= not mimetype= (mimetype removed)",
+      "docs_query": "django HttpResponse mimetype deprecated use content_type",
+      "severity": "info",
+      "since_version": "Django 1.7"
+    },
+    "@receiver(post_syncdb)": {
+      "replacement": "post_migrate signal",
+      "docs_query": "django post_syncdb signal removed use post_migrate",
+      "severity": "high",
+      "since_version": "Django 1.9"
+    },
+    "on_delete": {
+      "replacement": "on_delete is REQUIRED on ForeignKey/OneToOneField — add it explicitly",
+      "docs_query": "django ForeignKey on_delete required",
+      "severity": "high",
+      "since_version": "Django 2.0",
+      "exclude": ["on_delete="],
+      "require_context": true,
+      "context_patterns": ["ForeignKey(", "OneToOneField("]
+    },
+
+    "flask.ext.": {
+      "replacement": "flask_<extension> (e.g., flask_sqlalchemy)",
+      "docs_query": "flask flask.ext deprecated use flask_ prefix",
+      "severity": "high",
+      "since_version": "Flask 1.0"
+    },
+    "@app.before_first_request": {
+      "replacement": "Use app initialization or app.before_request with a flag",
+      "docs_query": "flask before_first_request deprecated removed 2.3",
+      "severity": "high",
+      "since_version": "Flask 2.3"
+    },
+    "from flask import Markup": {
+      "replacement": "from markupsafe import Markup",
+      "docs_query": "flask Markup deprecated import from markupsafe",
+      "severity": "medium",
+      "since_version": "Flask 2.1"
+    },
+    "from flask import escape": {
+      "replacement": "from markupsafe import escape",
+      "docs_query": "flask escape deprecated import from markupsafe",
+      "severity": "medium",
+      "since_version": "Flask 2.1"
+    },
+    "from flask import json": {
+      "replacement": "import json (standard library)",
+      "docs_query": "flask json module wrapper deprecated",
+      "severity": "info",
+      "since_version": "Flask 2.3"
+    }
+  },
+
+  "go": {
+    "ioutil.ReadAll": {
+      "replacement": "io.ReadAll()",
+      "docs_query": "go ioutil deprecated use io and os packages",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "ioutil.ReadFile": {
+      "replacement": "os.ReadFile()",
+      "docs_query": "go ioutil.ReadFile deprecated use os.ReadFile",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "ioutil.WriteFile": {
+      "replacement": "os.WriteFile()",
+      "docs_query": "go ioutil.WriteFile deprecated use os.WriteFile",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "ioutil.TempDir": {
+      "replacement": "os.MkdirTemp()",
+      "docs_query": "go ioutil.TempDir deprecated use os.MkdirTemp",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "ioutil.TempFile": {
+      "replacement": "os.CreateTemp()",
+      "docs_query": "go ioutil.TempFile deprecated use os.CreateTemp",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "ioutil.ReadDir": {
+      "replacement": "os.ReadDir()",
+      "docs_query": "go ioutil.ReadDir deprecated use os.ReadDir",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "ioutil.NopCloser": {
+      "replacement": "io.NopCloser()",
+      "docs_query": "go ioutil.NopCloser deprecated use io.NopCloser",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "ioutil.Discard": {
+      "replacement": "io.Discard",
+      "docs_query": "go ioutil.Discard deprecated use io.Discard",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "\"io/ioutil\"": {
+      "replacement": "Use \"io\" and \"os\" packages directly",
+      "docs_query": "go io/ioutil package deprecated use io and os",
+      "severity": "medium",
+      "since_version": "Go 1.16"
+    },
+    "strings.Title(": {
+      "replacement": "golang.org/x/text/cases.Title()",
+      "docs_query": "go strings.Title deprecated use cases package",
+      "severity": "info",
+      "since_version": "Go 1.18"
+    },
+    "x509.ParseCRL(": {
+      "replacement": "x509.ParseRevocationList()",
+      "docs_query": "go x509.ParseCRL deprecated",
+      "severity": "medium",
+      "since_version": "Go 1.19"
+    },
+    "rand.Seed(": {
+      "replacement": "Automatic seeding (no call needed in Go 1.20+)",
+      "docs_query": "go math/rand Seed deprecated automatic seeding",
+      "severity": "info",
+      "since_version": "Go 1.20"
+    },
+    "rand.Read(": {
+      "replacement": "crypto/rand.Read()",
+      "docs_query": "go math/rand Read deprecated use crypto/rand",
+      "severity": "medium",
+      "since_version": "Go 1.20"
+    }
+  },
+
+  "rust": {
+    "try!(": {
+      "replacement": "? operator (question mark operator)",
+      "docs_query": "rust try! macro deprecated use question mark operator",
+      "severity": "medium",
+      "since_version": "Rust 1.39"
+    },
+    "#[no_debug]": {
+      "replacement": "Removed — use #[derive(Debug)] selectively",
+      "docs_query": "rust no_debug attribute deprecated",
+      "severity": "info",
+      "since_version": "Rust 2018 edition"
+    },
+    ".mem::uninitialized()": {
+      "replacement": "MaybeUninit<T>",
+      "docs_query": "rust mem::uninitialized deprecated use MaybeUninit",
+      "severity": "high",
+      "since_version": "Rust 1.36"
+    },
+    "mem::zeroed()": {
+      "replacement": "MaybeUninit<T>::zeroed()",
+      "docs_query": "rust mem::zeroed safety concerns use MaybeUninit",
+      "severity": "medium",
+      "since_version": "Rust 1.36 (recommended)"
+    },
+    ".trim_left()": {
+      "replacement": ".trim_start()",
+      "docs_query": "rust trim_left deprecated use trim_start",
+      "severity": "info",
+      "since_version": "Rust 1.33"
+    },
+    ".trim_right()": {
+      "replacement": ".trim_end()",
+      "docs_query": "rust trim_right deprecated use trim_end",
+      "severity": "info",
+      "since_version": "Rust 1.33"
+    },
+    ".trim_left_matches(": {
+      "replacement": ".trim_start_matches()",
+      "docs_query": "rust trim_left_matches deprecated use trim_start_matches",
+      "severity": "info",
+      "since_version": "Rust 1.33"
+    },
+    ".trim_right_matches(": {
+      "replacement": ".trim_end_matches()",
+      "docs_query": "rust trim_right_matches deprecated use trim_end_matches",
+      "severity": "info",
+      "since_version": "Rust 1.33"
+    }
+  },
+
+  "java": {
+    "new Date(int, int, int)": {
+      "replacement": "java.time.LocalDate.of(year, month, day)",
+      "docs_query": "java Date constructor deprecated use java.time",
+      "severity": "medium",
+      "since_version": "Java 8"
+    },
+    "new java.util.Date(": {
+      "replacement": "java.time.Instant.now() or LocalDateTime.now()",
+      "docs_query": "java util Date deprecated use java.time API",
+      "severity": "info",
+      "since_version": "Java 8 (recommended)"
+    },
+    "Thread.stop()": {
+      "replacement": "Use Thread.interrupt() with cooperative cancellation",
+      "docs_query": "java Thread.stop deprecated thread safety",
+      "severity": "high",
+      "since_version": "Java 1.2"
+    },
+    "Thread.suspend()": {
+      "replacement": "Use wait/notify or Lock conditions",
+      "docs_query": "java Thread.suspend deprecated deadlock",
+      "severity": "high",
+      "since_version": "Java 1.2"
+    },
+    "Thread.resume()": {
+      "replacement": "Use wait/notify or Lock conditions",
+      "docs_query": "java Thread.resume deprecated",
+      "severity": "high",
+      "since_version": "Java 1.2"
+    },
+    "Runtime.runFinalizersOnExit": {
+      "replacement": "Use shutdown hooks: Runtime.addShutdownHook()",
+      "docs_query": "java runFinalizersOnExit deprecated",
+      "severity": "high",
+      "since_version": "Java 1.2"
+    },
+    "System.runFinalizersOnExit": {
+      "replacement": "Use shutdown hooks",
+      "docs_query": "java System.runFinalizersOnExit deprecated",
+      "severity": "high",
+      "since_version": "Java 1.2"
+    },
+    "finalize()": {
+      "replacement": "AutoCloseable / try-with-resources or Cleaner API",
+      "docs_query": "java finalize method deprecated use Cleaner or AutoCloseable",
+      "severity": "high",
+      "since_version": "Java 9"
+    },
+    "new Integer(": {
+      "replacement": "Integer.valueOf() — constructor deprecated for boxing",
+      "docs_query": "java Integer constructor deprecated use valueOf",
+      "severity": "medium",
+      "since_version": "Java 9"
+    },
+    "new Boolean(": {
+      "replacement": "Boolean.valueOf() or Boolean.TRUE/FALSE",
+      "docs_query": "java Boolean constructor deprecated use valueOf",
+      "severity": "medium",
+      "since_version": "Java 9"
+    },
+    "new Long(": {
+      "replacement": "Long.valueOf()",
+      "docs_query": "java Long constructor deprecated use valueOf",
+      "severity": "medium",
+      "since_version": "Java 9"
+    },
+    "new Double(": {
+      "replacement": "Double.valueOf()",
+      "docs_query": "java Double constructor deprecated use valueOf",
+      "severity": "medium",
+      "since_version": "Java 9"
+    },
+    "new Float(": {
+      "replacement": "Float.valueOf()",
+      "docs_query": "java Float constructor deprecated use valueOf",
+      "severity": "medium",
+      "since_version": "Java 9"
+    },
+    "Class.newInstance()": {
+      "replacement": "Class.getDeclaredConstructor().newInstance()",
+      "docs_query": "java Class.newInstance deprecated use getDeclaredConstructor",
+      "severity": "medium",
+      "since_version": "Java 9"
+    },
+    "SecurityManager": {
+      "replacement": "Remove — SecurityManager is deprecated for removal",
+      "docs_query": "java SecurityManager deprecated for removal",
+      "severity": "high",
+      "since_version": "Java 17"
+    },
+    "Applet": {
+      "replacement": "Web technologies (HTML/JS), Java Web Start removed",
+      "docs_query": "java Applet deprecated removed",
+      "severity": "high",
+      "since_version": "Java 9 (removed 17)"
+    }
+  },
+
+  "csharp": {
+    "WebClient": {
+      "replacement": "HttpClient",
+      "docs_query": "csharp WebClient deprecated use HttpClient",
+      "severity": "medium",
+      "since_version": ".NET 6"
+    },
+    "WebRequest": {
+      "replacement": "HttpClient",
+      "docs_query": "csharp WebRequest deprecated use HttpClient",
+      "severity": "medium",
+      "since_version": ".NET 6"
+    },
+    "HttpWebRequest": {
+      "replacement": "HttpClient with HttpRequestMessage",
+      "docs_query": "csharp HttpWebRequest deprecated use HttpClient",
+      "severity": "medium",
+      "since_version": ".NET 6"
+    },
+    "BinaryFormatter": {
+      "replacement": "System.Text.Json or protobuf/MessagePack",
+      "docs_query": "csharp BinaryFormatter security vulnerability deprecated",
+      "severity": "high",
+      "since_version": ".NET 5"
+    },
+    "Thread.Abort()": {
+      "replacement": "CancellationToken cooperative cancellation",
+      "docs_query": "csharp Thread.Abort deprecated use CancellationToken",
+      "severity": "high",
+      "since_version": ".NET 5 (throws PlatformNotSupportedException)"
+    },
+    "Thread.Suspend()": {
+      "replacement": "Use ManualResetEventSlim or SemaphoreSlim",
+      "docs_query": "csharp Thread.Suspend deprecated",
+      "severity": "high",
+      "since_version": ".NET Core"
+    },
+    "AppDomain.CreateDomain": {
+      "replacement": "AssemblyLoadContext for isolation",
+      "docs_query": "csharp AppDomain.CreateDomain not supported in .NET Core",
+      "severity": "high",
+      "since_version": ".NET Core"
+    },
+    "Remoting": {
+      "replacement": "gRPC, WCF Core, or REST APIs",
+      "docs_query": "csharp .NET Remoting deprecated use gRPC",
+      "severity": "high",
+      "since_version": ".NET Core"
+    }
+  },
+
+  "ruby": {
+    "File.exists?(": {
+      "replacement": "File.exist?()",
+      "docs_query": "ruby File.exists? deprecated use File.exist?",
+      "severity": "medium",
+      "since_version": "Ruby 2.1"
+    },
+    "Dir.exists?(": {
+      "replacement": "Dir.exist?()",
+      "docs_query": "ruby Dir.exists? deprecated use Dir.exist?",
+      "severity": "medium",
+      "since_version": "Ruby 2.1"
+    },
+    "URI.escape(": {
+      "replacement": "CGI.escape() or ERB::Util.url_encode()",
+      "docs_query": "ruby URI.escape deprecated use CGI.escape",
+      "severity": "medium",
+      "since_version": "Ruby 2.7"
+    },
+    "URI.encode(": {
+      "replacement": "CGI.escape() or ERB::Util.url_encode()",
+      "docs_query": "ruby URI.encode deprecated use CGI.escape",
+      "severity": "medium",
+      "since_version": "Ruby 2.7"
+    },
+    "URI.decode(": {
+      "replacement": "CGI.unescape()",
+      "docs_query": "ruby URI.decode deprecated use CGI.unescape",
+      "severity": "medium",
+      "since_version": "Ruby 2.7"
+    },
+    ".object_id == ": {
+      "replacement": ".equal?() for identity comparison",
+      "docs_query": "ruby object_id comparison best practice use equal?",
+      "severity": "info",
+      "since_version": "Ruby best practice"
+    },
+    "require 'webrick'": {
+      "replacement": "Puma, Unicorn, or Falcon — WEBrick bundled gem removed",
+      "docs_query": "ruby webrick removed from default gems use puma",
+      "severity": "medium",
+      "since_version": "Ruby 3.0"
+    }
+  },
+
+  "php": {
+    "mysql_connect(": {
+      "replacement": "mysqli_connect() or PDO",
+      "docs_query": "php mysql_connect deprecated removed use mysqli or PDO",
+      "severity": "high",
+      "since_version": "PHP 5.5 (removed 7.0)"
+    },
+    "mysql_query(": {
+      "replacement": "mysqli_query() or PDO::query()",
+      "docs_query": "php mysql_query deprecated removed use mysqli",
+      "severity": "high",
+      "since_version": "PHP 5.5 (removed 7.0)"
+    },
+    "mysql_real_escape_string(": {
+      "replacement": "Prepared statements with PDO or mysqli",
+      "docs_query": "php mysql_real_escape_string deprecated use prepared statements",
+      "severity": "high",
+      "since_version": "PHP 5.5 (removed 7.0)"
+    },
+    "mysql_fetch_array(": {
+      "replacement": "mysqli_fetch_array() or PDOStatement::fetch()",
+      "docs_query": "php mysql_fetch_array deprecated",
+      "severity": "high",
+      "since_version": "PHP 5.5 (removed 7.0)"
+    },
+    "ereg(": {
+      "replacement": "preg_match()",
+      "docs_query": "php ereg deprecated use preg_match PCRE",
+      "severity": "high",
+      "since_version": "PHP 5.3 (removed 7.0)"
+    },
+    "eregi(": {
+      "replacement": "preg_match() with /i flag",
+      "docs_query": "php eregi deprecated use preg_match case insensitive",
+      "severity": "high",
+      "since_version": "PHP 5.3 (removed 7.0)"
+    },
+    "split(": {
+      "replacement": "preg_split() or explode()",
+      "docs_query": "php split deprecated use preg_split or explode",
+      "severity": "high",
+      "since_version": "PHP 5.3 (removed 7.0)",
+      "exclude": [".split(", "split(\""]
+    },
+    "each(": {
+      "replacement": "foreach loop",
+      "docs_query": "php each deprecated use foreach",
+      "severity": "high",
+      "since_version": "PHP 7.2 (removed 8.0)"
+    },
+    "create_function(": {
+      "replacement": "Anonymous functions (closures)",
+      "docs_query": "php create_function deprecated use closures",
+      "severity": "high",
+      "since_version": "PHP 7.2 (removed 8.0)"
+    },
+    "utf8_encode(": {
+      "replacement": "mb_convert_encoding($s, 'UTF-8', 'ISO-8859-1')",
+      "docs_query": "php utf8_encode deprecated use mb_convert_encoding",
+      "severity": "medium",
+      "since_version": "PHP 8.2"
+    },
+    "utf8_decode(": {
+      "replacement": "mb_convert_encoding($s, 'ISO-8859-1', 'UTF-8')",
+      "docs_query": "php utf8_decode deprecated use mb_convert_encoding",
+      "severity": "medium",
+      "since_version": "PHP 8.2"
     }
   }
 }

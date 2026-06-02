@@ -2,6 +2,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import asyncio
+import os
+import sys
+
+if os.name == 'nt':
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 from app.api.endpoints import (
     ai,
@@ -16,9 +21,15 @@ from app.api.endpoints import (
     rag_ingest,
     search,
     settings,
+    lsp,
+    lsp_ws,
+    debug_api,
+    dap_ws,
+    env,
+    proxy,
 )
 from app.core.file_watcher import file_watcher
-
+from app.scrapers.cron_scraper import start_cron_scraper
 
 def create_app() -> FastAPI:
     application = FastAPI(
@@ -27,6 +38,11 @@ def create_app() -> FastAPI:
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
     )
+    
+    @application.on_event("startup")
+    async def startup_event():
+        start_cron_scraper()
+        
     application.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],
@@ -81,6 +97,14 @@ def create_app() -> FastAPI:
     application.include_router(search.router, prefix="/api/search", tags=["search"])
     application.include_router(rag_ingest.router, prefix="/api/rag", tags=["rag"])
     application.include_router(settings.router, prefix="/api/settings", tags=["settings"])
+    application.include_router(lsp.router, prefix="/api/lsp", tags=["lsp"])
+    application.include_router(lsp_ws.router, prefix="/api/lsp", tags=["lsp-ws"])
+    application.include_router(debug_api.router, prefix="/api/debug", tags=["debug"])
+    application.include_router(dap_ws.router, prefix="/api/debug/dap", tags=["dap-ws"])
+    application.include_router(env.router, prefix="/api/env", tags=["env"])
+    application.include_router(proxy.router, prefix="/api/proxy", tags=["proxy"])
+    from app.api.endpoints import jupyter_endpoints
+    application.include_router(jupyter_endpoints.router, prefix="/api/jupyter", tags=["jupyter"])
 
     return application
 

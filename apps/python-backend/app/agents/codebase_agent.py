@@ -6,8 +6,9 @@ from app.rag_engine.groq_gateway import groq_complete
 from app.rag_engine.vector_db import query_relevant_fix
 
 class CodebaseAgent:
-    def __init__(self, root_path: str):
+    def __init__(self, root_path: str, api_key: str = None):
         self.root_path = root_path
+        self.api_key = api_key
 
     async def answer_question(self, question: str, file_context: str = "") -> str:
         # Fast-path: Skip CPU-heavy RAG embedding generation for simple greetings or very short queries
@@ -40,7 +41,7 @@ class CodebaseAgent:
         user_prompt = f"Context:\n{full_context}\n\nQuestion: {question}"
         
         try:
-            answer = await groq_complete(system_prompt, user_prompt, max_tokens=1000)
+            answer = await groq_complete(system_prompt, user_prompt, max_tokens=1000, api_key=self.api_key)
             return answer
         except Exception as e:
             print(f"[CodebaseAgent] Groq error: {e}")
@@ -72,7 +73,7 @@ class CodebaseAgent:
         )
         
         try:
-            raw = await groq_complete(system_prompt, user_prompt, max_tokens=4000, temperature=0.1, model=settings.GROQ_MODEL)
+            raw = await groq_complete(system_prompt, user_prompt, max_tokens=4000, temperature=0.1, model=settings.GROQ_MODEL, api_key=self.api_key)
             
             # Try to parse JSON from the response
             cleaned = raw.strip()

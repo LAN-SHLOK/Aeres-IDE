@@ -4,7 +4,7 @@ from app.api.endpoints.deps import scan_deps
 from app.core.models import DepScanRequest
 
 async def test():
-    root = "c:\\Project\\Aeres_IDE\\AERES-IDE"
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     print(f"Scanning root: {root}")
     req = DepScanRequest(root_path=root)
     results = await scan_deps(req, None, {})

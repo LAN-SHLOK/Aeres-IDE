@@ -17,7 +17,7 @@ export default class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex h-screen w-screen flex-col items-center justify-center bg-slate-950 text-slate-300 gap-4 p-8">
+        <div className="flex h-full w-full flex-col items-center justify-center bg-slate-950/80 text-slate-300 gap-4 p-8 text-center overflow-hidden">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
             <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -27,10 +27,16 @@ export default class ErrorBoundary extends Component {
             {this.state.error?.message || 'An unexpected error occurred.'}
           </p>
           <button
-            onClick={() => this.setState({ hasError: false, error: null })}
+            onClick={() => {
+              if (this.state.error?.message?.includes('Failed to fetch dynamically imported module')) {
+                window.location.reload();
+              } else {
+                this.setState({ hasError: false, error: null });
+              }
+            }}
             className="px-4 py-2 rounded bg-violet-600 text-white text-sm hover:bg-violet-500 transition"
           >
-            Try Again
+            {this.state.error?.message?.includes('Failed to fetch dynamically imported module') ? 'Reload Window' : 'Try Again'}
           </button>
         </div>
       )

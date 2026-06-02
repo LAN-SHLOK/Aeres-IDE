@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Save, XCircle, AlertTriangle, Heart, Package, Zap, Bot } from 'lucide-react'
 import { useStore } from '../store.js'
 
 export default function StatusBar() {
@@ -16,6 +17,18 @@ export default function StatusBar() {
   
   const activeTab = tabs.find(t => t.id === activeTabId)
   const [backendStatus, setBackendStatus] = useState('Offline')
+  const lspStatus = useStore((s) => s.lspStatus)
+  
+  const rootPath = useStore((s) => s.rootPath)
+  const activeEnvironment = useStore((s) => s.activeEnvironment)
+  const setEnvSelectorOpen = useStore((s) => s.setEnvSelectorOpen)
+  const refreshEnvironments = useStore((s) => s.refreshEnvironments)
+
+  useEffect(() => {
+    if (rootPath) {
+      refreshEnvironments()
+    }
+  }, [rootPath, refreshEnvironments])
 
   useEffect(() => {
     if (!backendUrl) {
@@ -56,7 +69,7 @@ export default function StatusBar() {
 
   if (isCutie) {
     return (
-      <div className="flex h-7 shrink-0 items-center justify-between px-4 mx-2 mb-2 text-[10px] font-bold text-black select-none border-2.5 border-black rounded-full shadow-[2.5px_2.5px_0px_#000]"
+      <div className="flex h-7 shrink-0 items-center justify-between px-4 mx-2 mb-2 text-[10px] font-bold text-black select-none border-2.5 border-black rounded-full shadow-[2px_2px_0px_#000]"
            style={{
              backgroundSize: '16px 16px',
              backgroundImage: 'linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px)',
@@ -65,7 +78,7 @@ export default function StatusBar() {
         {/* Left */}
         <div className="flex items-center h-full gap-4">
           <button className="flex items-center gap-1 hover:opacity-80 transition-opacity text-black">
-            <span className="text-[11px]">💾</span>
+            <Save size={12} className="shrink-0" />
             <span className="leading-none text-black font-black">{gitStatus.branch || 'main'}</span>
           </button>
 
@@ -77,11 +90,11 @@ export default function StatusBar() {
           )}
           
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-0.5 px-1 bg-red-400 border border-black rounded-md shadow-[1px_1px_0px_#000] text-black">
-              <span>🔴</span> {errorCount}
+            <button className="flex items-center gap-0.5 px-1 bg-red-400 border border-black rounded-md shadow-[2px_2px_0px_#000] text-black">
+              <XCircle size={10} className="shrink-0" /> {errorCount}
             </button>
-            <button className="flex items-center gap-0.5 px-1 bg-yellow-400 border border-black rounded-md shadow-[1px_1px_0px_#000] text-black">
-              <span>🟡</span> {warningCount}
+            <button className="flex items-center gap-0.5 px-1 bg-yellow-400 border border-black rounded-md shadow-[2px_2px_0px_#000] text-black">
+              <AlertTriangle size={10} className="shrink-0" /> {warningCount}
             </button>
           </div>
         </div>
@@ -90,9 +103,9 @@ export default function StatusBar() {
         <div className="flex items-center h-full">
           {currentSessionName && (
             <button 
-              className="flex items-center gap-1 px-2.5 py-0.5 bg-white border border-black rounded-full shadow-[1.5px_1.5px_0px_#000] font-black uppercase tracking-wider text-[9px] text-black"
+              className="flex items-center gap-1 px-2.5 py-0.5 bg-white border border-black rounded-full shadow-[2px_2px_0px_#000] font-black uppercase tracking-wider text-[9px] text-black"
             >
-              <span className="text-[10px] animate-pulse">💖</span>
+              <Heart size={10} className="animate-pulse shrink-0 fill-current text-pink-500" />
               {currentSessionName}
             </button>
           )}
@@ -111,15 +124,23 @@ export default function StatusBar() {
             </div>
           )}
           
-          {activeTab && useStore.getState().lspStatus[activeTab.language] && (
+          <button 
+            onClick={() => setEnvSelectorOpen(true)}
+            className="flex items-center gap-1 px-1.5 py-0.5 bg-indigo-200 border border-black rounded-md text-black hover:bg-indigo-300"
+          >
+             <Package size={10} className="shrink-0" />
+             <span className="font-black text-[9px]">{activeEnvironment?.name || 'No Env'}</span>
+          </button>
+          
+          {activeTab && lspStatus[activeTab.language] && (
             <div className="flex items-center gap-1 px-1.5 py-0.5 bg-white border border-black rounded-md text-black">
-               <span className="text-[10px] animate-bounce">⚡</span>
-               <span className="capitalize font-black text-[9px]">LSP: {useStore.getState().lspStatus[activeTab.language]}</span>
+               <Zap size={10} className="animate-bounce shrink-0 fill-current text-yellow-500" />
+               <span className="capitalize font-black text-[9px]">LSP: {lspStatus[activeTab.language]}</span>
             </div>
           )}
 
-          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-[#a7f3d0] border border-black rounded-md shadow-[1px_1px_0px_#000] text-black">
-            <span className="text-[10px]">😸</span>
+          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-[#a7f3d0] border border-black rounded-md shadow-[2px_2px_0px_#000] text-black">
+            <Bot size={10} className="shrink-0" />
             <span className="font-black tracking-wide uppercase text-[8px]">{backendStatus === 'Connected' ? 'Aeres Sync' : 'Offline'}</span>
           </div>
         </div>
@@ -181,14 +202,22 @@ export default function StatusBar() {
           </div>
         )}
         
-        {activeTab && useStore.getState().lspStatus[activeTab.language] && (
+        <button 
+          onClick={() => setEnvSelectorOpen(true)}
+          className="flex items-center gap-1.5 hover:text-slate-300 transition-colors"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          <span className="capitalize">{activeEnvironment?.name || 'Select Env'}</span>
+        </button>
+        
+        {activeTab && lspStatus[activeTab.language] && (
           <div className="flex items-center gap-1.5">
              <div className={`h-1.5 w-1.5 rounded-full ${
-               useStore.getState().lspStatus[activeTab.language] === 'ready' ? 'bg-emerald-400' :
-               useStore.getState().lspStatus[activeTab.language] === 'initializing' ? 'bg-amber-400 animate-pulse' :
+               lspStatus[activeTab.language] === 'ready' ? 'bg-emerald-400' :
+               lspStatus[activeTab.language] === 'initializing' ? 'bg-amber-400 animate-pulse' :
                'bg-rose-400'
              }`} />
-             <span className="capitalize opacity-80">LSP: {useStore.getState().lspStatus[activeTab.language]}</span>
+             <span className="capitalize opacity-80">LSP: {lspStatus[activeTab.language]}</span>
           </div>
         )}
 

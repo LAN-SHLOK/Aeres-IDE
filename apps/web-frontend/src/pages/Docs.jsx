@@ -160,6 +160,60 @@ const DOCUMENTATION_SECTIONS = [
     ]
   },
   {
+    category: 'UNIVERSAL LANGUAGE SUPPORT',
+    pages: [
+      {
+        id: 'universal-lsp',
+        title: 'Universal LSP Support',
+        icon: Icons.file,
+        header: 'Zero-config Language Servers for all frameworks',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Aeres IDE comes with native built-in integration for Language Server Protocol (LSP). Instead of relying on rigid, single-language bindings, the editor automatically spins up the correct Language Server based on the file you open.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How It Works</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Auto-Detection:</strong> When you open a `.go`, `.rs`, `.py`, or `.ts` file, the Sidecar immediately launches `gopls`, `rust-analyzer`, `jedi`, or `typescript-language-server` respectively.</li>
+              <li><strong>Custom LSP Configs:</strong> You can explicitly map custom commands by creating a `.aeres/lsp.json` file in your workspace to override the default servers.</li>
+              <li><strong>High-Performance Bindings:</strong> The Monaco editor connects to these servers using a custom background WebSocket stream to guarantee ultra-low latency autocomplete, hover info, and diagnostics.</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        id: 'universal-dap',
+        title: 'Universal Debugging (DAP)',
+        icon: Icons.file,
+        header: 'Debug Any Language Locally',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Aeres IDE implements the Debug Adapter Protocol (DAP) natively. This allows you to attach debuggers to nearly any programming language without switching to a different IDE.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Standardized Configuration</h3>
+            <p className="text-white/60 text-xs font-bold mb-4 leading-relaxed font-sans text-left">
+              Aeres fully supports standard `.vscode/launch.json` and `.aeres/launch.json` formats. Define your configurations identically to VS Code:
+            </p>
+            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+              &#123;<br />
+              &nbsp;&nbsp;"version": "0.2.0",<br />
+              &nbsp;&nbsp;"configurations": [<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&#123;<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": "node",<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"request": "launch",<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "Launch Program",<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"program": "$&#123;workspaceFolder&#125;/index.js"<br />
+              &nbsp;&nbsp;&nbsp;&nbsp;&#125;<br />
+              &nbsp;&nbsp;]<br />
+              &#125;
+            </pre>
+          </div>
+        )
+      }
+    ]
+  },
+  {
     category: 'CORE DIAGNOSTICS',
     pages: [
       {
@@ -536,7 +590,7 @@ export default function Docs() {
       <div className="flex-1 flex max-w-7xl w-full mx-auto pt-32 px-4 md:px-8 gap-8 items-start pb-20">
         
         {/* Sleek Sidebar with dynamic search and glowing navigation buttons */}
-        <aside className="w-72 shrink-0 hidden md:flex flex-col sticky top-32 max-h-[calc(100vh-10rem)] overflow-y-auto pr-4 scrollbar-none bg-[#13141f] border-4 border-black shadow-[4px_4px_0px_#000000] rounded-[2rem] p-6">
+        <aside className="w-72 shrink-0 hidden md:block sticky top-32 h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain pr-4 bg-[#13141f] border-4 border-black shadow-[4px_4px_0px_#000000] rounded-[2rem] p-6">
           
           {/* Docs Live Search Filter */}
           <div className="mb-6 font-sans">
@@ -572,7 +626,7 @@ export default function Docs() {
                             setActivePageId(p.id)
                             setActiveOutlineId(p.id)
                           }}
-                          className={`w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-left rounded-full border-3 border-black transition-all duration-300 ${isActive ? 'bg-[#c084fc] text-black font-black shadow-[2px_2px_0px_#000000]' : 'bg-[#1b1c2b] text-white/75 hover:bg-[#ff8ba7]/20 shadow-[1.5px_1.5px_0px_#000000]'}`}
+                          className={`w-full flex items-center gap-2.5 px-5 py-3.5 text-xs text-left rounded-full border-3 border-black transition-all duration-300 ${isActive ? 'bg-[#c084fc] text-black font-black shadow-[2px_2px_0px_#000000]' : 'bg-[#1b1c2b] text-white/75 hover:bg-[#ff8ba7]/20 shadow-[1.5px_1.5px_0px_#000000]'}`}
                         >
                           <span className="shrink-0">{p.icon}</span>
                           <span>{p.title}</span>
@@ -621,7 +675,20 @@ export default function Docs() {
 
                 {/* Dynamic detailed content block */}
                 <div className="font-sans leading-[1.8] text-white/70 text-sm font-semibold">
-                  {activePage.content}
+                  {filteredCategories.length === 0 && searchQuery ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                      <div className="w-16 h-16 rounded-full bg-[#1b1c2b] border-4 border-black text-[#ff8ba7] flex items-center justify-center mb-6 shadow-[4px_4px_0px_#000000]">
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                      </div>
+                      <h2 className="text-white font-display text-2xl font-black mb-2">No documentation found</h2>
+                      <p className="text-white/60 font-sans text-sm">We couldn't find any articles matching "{searchQuery}".</p>
+                      <button onClick={() => setSearchQuery('')} className="mt-6 px-6 py-2.5 bg-[#c084fc] text-black font-black font-display text-xs rounded-full border-3 border-black shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#000000] transition-all">Clear Search</button>
+                    </div>
+                  ) : (
+                    activePage.content
+                  )}
                 </div>
 
                 {/* Interactive Code Sandbox (Platform/Language Tabs) */}

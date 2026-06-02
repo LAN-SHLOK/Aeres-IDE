@@ -1,8 +1,16 @@
 from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from app.core.security import get_current_user
 from app.core.models import DepScanRequest
+from pydantic import BaseModel
 from app.agents.dep_scanner import scan_npm_deps, scan_python_deps
 import asyncio, os
+
+class NotesRequest(BaseModel):
+    repo_url: str
+    current: str
+    latest: str
+    name: str
+    ecosystem: str
 
 router = APIRouter()
 scan_cache: dict = {}
@@ -59,3 +67,17 @@ async def get_cached(root_path: str, user: dict = Depends(get_current_user)):
 @router.get("/status")
 async def get_status():
     return {"status": "active", "feature": "dependency_drift_radar"}
+
+@router.post("/notes")
+async def get_notes(body: NotesRequest, user: dict = Depends(get_current_user)):
+    """Lazy fetch release notes for a specific package from GitHub."""
+    from app.agents.dep_scanner import fetch_npm_migration_info, fetch_pypi_migration_info
+    import httpx
+    
+    async with httpx.AsyncClient(timeout=10) as client:
+        if body.ecosystem == 'npm':
+            notes, breaks = await fetch_npm_migration_info(client, body.repo_url, body.current, body.latest, body.name)
+        else:
+            notes, breaks = await fetch_pypi_migration_info(client, body.repo_url, body.current, body.latest, body.name)
+            
+    return {"migrationNotes": notes, "breakingChanges": breaks}

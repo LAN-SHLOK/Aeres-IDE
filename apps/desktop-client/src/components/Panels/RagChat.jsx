@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react'
 import { useStore } from '../../store.js'
+import { Map, Rocket, Book, Globe, Settings, AlertTriangle, Palette, FlaskConical, Zap, Hammer, MessageSquare, User, Sparkles } from 'lucide-react'
 
 // ── Simple Markdown Renderer (no external dep) ──────
 
@@ -134,7 +135,7 @@ function AgentStep({ step }) {
           {expanded ? 'Hide tool output' : 'Show tool output'}
         </button>
         {expanded && (
-          <pre className="text-[9px] text-slate-400 bg-slate-950 border border-black rounded-lg p-2.5 mt-1.5 max-h-40 overflow-y-auto whitespace-pre-wrap break-words font-mono shadow-[2px_2px_0px_#000000]">
+          <pre className="text-[9px] text-slate-400 bg-slate-950 border border-black rounded-lg p-2.5 mt-1.5 max-h-40 overflow-y-auto whitespace-pre-wrap break-words font-mono shadow-[2px_2px_0px_#000]">
             {step.result}
           </pre>
         )}
@@ -148,7 +149,7 @@ function AgentStep({ step }) {
   if (step.type === 'artifact_created') {
     const isPlan = step.artifact_type === 'plan'
     return (
-      <div className={`my-1.5 rounded-xl px-3 py-2.5 text-xs border-2 border-black flex items-center gap-2.5 shadow-[2.5px_2.5px_0px_#000000] hover:scale-102 transition ${isPlan ? 'bg-indigo-950/20 border-black text-indigo-300' : 'bg-emerald-950/20 border-black text-emerald-300'}`}>
+      <div className={`my-1.5 rounded-xl px-3 py-2.5 text-xs border-2 border-black flex items-center gap-2.5 shadow-[2px_2px_0px_#000] hover:scale-102 transition ${isPlan ? 'bg-indigo-950/20 border-black text-indigo-300' : 'bg-emerald-950/20 border-black text-emerald-300'}`}>
         <span className="shrink-0 p-1.5 bg-black/25 rounded-lg text-white">
           {isPlan ? (
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -157,7 +158,7 @@ function AgentStep({ step }) {
           )}
         </span>
         <div className="min-w-0">
-          <span className="font-extrabold uppercase tracking-wider text-[8px] block">{isPlan ? '🗺️ Plan Generated' : '🚀 Walkthrough Saved'}</span>
+          <span className="font-extrabold uppercase tracking-wider text-[8px] flex items-center gap-1.5">{isPlan ? <><Map size={10} /> Plan Generated</> : <><Rocket size={10} /> Walkthrough Saved</>}</span>
           <span className="text-slate-300 text-[10px] truncate block font-medium mt-0.5">{step.title}</span>
         </div>
       </div>
@@ -167,10 +168,10 @@ function AgentStep({ step }) {
   // Context saved
   if (step.type === 'context_saved') {
     return (
-      <div className="my-1.5 rounded-xl px-3 py-2.5 text-xs border-2 border-black bg-violet-950/20 border-black text-violet-300 flex items-center gap-2.5 shadow-[2.5px_2.5px_0px_#000000]">
+      <div className="my-1.5 rounded-xl px-3 py-2.5 text-xs border-2 border-black bg-violet-950/20 border-black text-violet-300 flex items-center gap-2.5 shadow-[2px_2px_0px_#000]">
         <span className="p-1.5 bg-black/25 rounded-lg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span>
         <div>
-          <span className="font-extrabold uppercase tracking-wider text-[8px] block">📚 Memory Context Saved</span>
+          <span className="font-extrabold uppercase tracking-wider text-[8px] flex items-center gap-1.5"><Book size={10} /> Memory Context Saved</span>
           <span className="text-slate-300 text-[10px] block mt-0.5 font-medium">{step.topic}</span>
         </div>
       </div>
@@ -182,10 +183,10 @@ function AgentStep({ step }) {
     const url = step.args?.url || step.url || ''
     const reason = step.args?.reason || step.reason || ''
     return (
-      <div className="my-1.5 rounded-xl px-3 py-2.5 text-xs border-2 border-black bg-cyan-950/20 border-black text-cyan-300 flex items-center gap-2.5 shadow-[2.5px_2.5px_0px_#000000]">
+      <div className="my-1.5 rounded-xl px-3 py-2.5 text-xs border-2 border-black bg-cyan-950/20 border-black text-cyan-300 flex items-center gap-2.5 shadow-[2px_2px_0px_#000]">
         <span className="p-1.5 bg-black/25 rounded-lg"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
         <div className="min-w-0 flex-1">
-          <span className="font-extrabold uppercase tracking-wider text-[8px] block">🌐 Browser Session</span>
+          <span className="font-extrabold uppercase tracking-wider text-[8px] flex items-center gap-1.5"><Globe size={10} /> Browser Session</span>
           <span className="text-cyan-400 font-mono text-[9px] truncate block mt-0.5">{url}</span>
           {reason && <span className="text-slate-400 text-[9px] block italic mt-0.5">{reason}</span>}
         </div>
@@ -195,7 +196,7 @@ function AgentStep({ step }) {
   
   if (step.type === 'message') {
     return (
-      <div className="mt-2.5 rounded-2xl bg-slate-950/50 border-2 border-black px-3.5 py-3 text-xs text-slate-200 leading-relaxed shadow-[3px_3px_0px_#000000]">
+      <div className="mt-2.5 rounded-2xl bg-slate-950/50 border-2 border-black px-3.5 py-3 text-xs text-slate-200 leading-relaxed shadow-[2px_2px_0px_#000]">
         <MarkdownContent content={step.content} />
       </div>
     )
@@ -222,14 +223,14 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
   const [showDiff, setShowDiff] = useState(true)
   if (!confirm) return null
   
-  const icon = TOOL_ICONS[confirm.tool] || '⚙️'
+  const icon = TOOL_ICONS[confirm.tool] || <Settings size={14} />
   const fileName = confirm.args?.file_path?.split(/[/\\]/).pop() || 'file'
   
   return (
-    <div className="mx-1 my-2 rounded-2xl border-2 border-black bg-aeres-surface overflow-hidden shadow-[4px_4px_0px_#000000] animate-bounce-subtle">
+    <div className="mx-1 my-2 rounded-2xl border-2 border-black bg-aeres-surface overflow-hidden shadow-[2px_2px_0px_#000] animate-bounce-subtle">
       <div className="flex items-center justify-between px-3 py-2 bg-amber-500 text-black border-b-2 border-black font-extrabold uppercase tracking-wider text-[10px]">
         <div className="flex items-center gap-2">
-          <span>⚠️ {icon}</span>
+          <span className="flex items-center gap-1.5"><AlertTriangle size={14} /> {icon}</span>
           <span>
             {confirm.tool === 'write_file' ? 'Write File' : confirm.tool === 'multi_edit_file' ? 'Multi-Edit' : 'Edit File'}
           </span>
@@ -249,7 +250,7 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
         )}
         
         {showDiff && confirm.tool === 'edit_file' && (
-          <div className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto font-mono text-[9px] shadow-[2px_2px_0px_#000000]">
+          <div className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto font-mono text-[9px] shadow-[2px_2px_0px_#000]">
             <div className="text-red-400 font-bold bg-red-950/20 px-1 py-0.5 rounded mb-1">
               {confirm.args?.find?.split('\n').map((l, i) => <div key={`d${i}`} className="truncate">- {l}</div>)}
             </div>
@@ -260,7 +261,7 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
         )}
 
         {showDiff && confirm.tool === 'multi_edit_file' && confirm.args?.edits?.map((edit, idx) => (
-          <div key={idx} className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto font-mono text-[9px] shadow-[2px_2px_0px_#000000]">
+          <div key={idx} className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto font-mono text-[9px] shadow-[2px_2px_0px_#000]">
             <div className="text-aeres-muted mb-1.5 text-[8px] uppercase font-black tracking-widest border-b border-black/20 pb-1">Chunk {idx + 1}</div>
             <div className="text-red-400 font-bold bg-red-950/20 px-1 py-0.5 rounded mb-1">
               {edit.find?.split('\n').map((l, i) => <div key={`d${i}`} className="truncate">- {l}</div>)}
@@ -272,7 +273,7 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
         ))}
         
         {showDiff && confirm.tool === 'write_file' && (
-          <pre className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto text-[9px] text-white/80 whitespace-pre-wrap break-words font-mono shadow-[2px_2px_0px_#000000]">
+          <pre className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto text-[9px] text-white/80 whitespace-pre-wrap break-words font-mono shadow-[2px_2px_0px_#000]">
             {(confirm.args?.content || '').slice(0, 2000)}
             {(confirm.args?.content || '').length > 2000 ? '\n... (truncated)' : ''}
           </pre>
@@ -281,13 +282,13 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
       
       <div className="flex gap-2.5 px-3.5 pb-3">
         <button onClick={onAccept}
-          className="flex-1 py-1.5 bg-emerald-500 text-black text-[10px] font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] transition flex items-center justify-center gap-1.5 uppercase cursor-pointer"
+          className="flex-1 py-1.5 bg-emerald-500 text-black text-[10px] font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] transition flex items-center justify-center gap-1.5 uppercase cursor-pointer"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><polyline points="20 6 9 17 4 12"/></svg>
           Accept
         </button>
         <button onClick={onReject}
-          className="flex-1 py-1.5 bg-red-500 text-black text-[10px] font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] transition flex items-center justify-center gap-1.5 uppercase cursor-pointer"
+          className="flex-1 py-1.5 bg-red-500 text-black text-[10px] font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] transition flex items-center justify-center gap-1.5 uppercase cursor-pointer"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           Reject
@@ -338,22 +339,26 @@ export default function RagChat() {
 
   const WORKFLOWS = [
     {
-      name: '🎨 React UI',
+      name: 'React UI',
+      icon: <Palette size={10} />,
       desc: 'Build landing pages & UI',
       prompt: 'Create a modern React Landing Page with gorgeous CSS glassmorphism styling, responsive flex layouts, and custom theme tokens.'
     },
     {
-      name: '🧪 Snapshot',
+      name: 'Snapshot',
+      icon: <FlaskConical size={10} />,
       desc: 'Create mock snapshot tests',
       prompt: 'Analyze my file and generate comprehensive mock snapshot unit tests covering all functions and edge cases.'
     },
     {
-      name: '⚡ Optimize',
+      name: 'Optimize',
+      icon: <Zap size={10} />,
       desc: 'Modernize & clean code',
       prompt: 'Refactor this file to implement asynchronous code execution, robust error boundary logic, and ES6+ standards.'
     },
     {
-      name: '🛠️ Build',
+      name: 'Build',
+      icon: <Hammer size={10} />,
       desc: 'Auto compile & run scripts',
       prompt: 'Inspect active file dependency imports, setup build packages, run compiles and fix syntax compilation errors.'
     }
@@ -444,7 +449,7 @@ export default function RagChat() {
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      alert('Speech recognition is not supported in this environment.')
+      appendChatMessage({ role: 'assistant', content: 'Speech recognition is not supported in this environment. Please type your message.' })
       return
     }
     const rec = new SpeechRecognition()
@@ -798,9 +803,9 @@ export default function RagChat() {
         {/* Welcome screen for empty state */}
         {messages.length === 0 && agentSteps.length === 0 && (
           <div className="flex flex-col items-center justify-center mt-6 gap-3 select-none">
-            <div className="w-full max-w-[290px] border-2 border-black bg-aeres-surface/30 p-4 rounded-3xl shadow-[4px_4px_0px_#000000] text-center rotate-[-1deg] hover:rotate-0 transition-transform duration-300">
-              <div className="mx-auto w-11 h-11 mb-3 flex items-center justify-center bg-aeres-violet/20 border-2 border-black rounded-2xl shadow-[2.5px_2.5px_0px_#000000] text-lg">
-                {mode === 'agent' ? '⚡' : '💬'}
+            <div className="w-full max-w-[290px] border-2 border-black bg-aeres-surface/30 p-4 rounded-3xl shadow-[2px_2px_0px_#000] text-center rotate-[-1deg] hover:rotate-0 transition-transform duration-300">
+              <div className="mx-auto w-11 h-11 mb-3 flex items-center justify-center bg-aeres-violet/20 border-2 border-black rounded-2xl shadow-[2px_2px_0px_#000] text-lg text-aeres-violet">
+                {mode === 'agent' ? <Zap size={24} /> : <MessageSquare size={24} />}
               </div>
               <h3 className="text-[11px] font-black uppercase tracking-widest text-white mb-1.5">
                 {mode === 'agent' ? 'Aeres Agent OS v1.0' : 'Aeres AI Assistant'}
@@ -815,28 +820,28 @@ export default function RagChat() {
 
             {mode === 'agent' ? (
               <div className="w-full max-w-[290px] space-y-2.5 mt-4">
-                <p className="text-slate-500 font-extrabold uppercase tracking-widest text-[8px] text-center mb-0.5">⚡ Workspace Quick Commands</p>
+                <p className="text-slate-500 font-extrabold uppercase tracking-widest text-[8px] text-center mb-0.5 flex items-center justify-center gap-1"><Zap size={10} /> Workspace Quick Commands</p>
                 <div className="grid grid-cols-2 gap-2.5">
                   <button onClick={() => handleSend("Explain current git changes")}
-                    className="p-2.5 text-[9px] bg-aeres-surface/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-aeres-text font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] cursor-pointer"
+                    className="p-2.5 text-[9px] bg-aeres-surface/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-aeres-text font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                     <span>Explain Diff</span>
                   </button>
                   <button onClick={() => handleSend("Draft a git commit message for all current staged or unstaged changes")}
-                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] cursor-pointer"
+                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z"/><path d="m9 12 2 2 4-4"/></svg>
                     <span>Draft Commit</span>
                   </button>
                   <button onClick={() => handleSend("Create a new branch, stage all changes, and commit them")}
-                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] cursor-pointer"
+                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
                     <span>Auto Commit</span>
                   </button>
                   <button onClick={() => handleSend("Identify any bugs or quality issues in the active file")}
-                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] cursor-pointer"
+                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><path d="m21 16-4-4 4-4"/><path d="M11 7 7 11l4 4"/><path d="m5 16-4-4 4-4"/></svg>
                     <span>Analyze Quality</span>
@@ -844,7 +849,7 @@ export default function RagChat() {
                 </div>
               </div>
             ) : (
-              <div className="text-left w-full max-w-[290px] text-[10px] text-aeres-muted mt-2 p-3.5 bg-aeres-surface/30 border-2 border-black rounded-2xl shadow-[3px_3px_0px_#000000] space-y-2.5">
+              <div className="text-left w-full max-w-[290px] text-[10px] text-aeres-muted mt-2 p-3.5 bg-aeres-surface/30 border-2 border-black rounded-2xl shadow-[2px_2px_0px_#000] space-y-2.5">
                 <p className="text-slate-500 font-extrabold uppercase tracking-widest text-[8px] mb-1">Aeres Chat Features:</p>
                 <div className="flex items-center gap-2">
                   <svg className="w-3.5 h-3.5 text-aeres-violet shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -863,9 +868,9 @@ export default function RagChat() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} space-y-1 animate-fade-in`}>
             <span className={`text-[9px] font-black uppercase tracking-widest mb-0.5 flex items-center gap-1.5 ${msg.role === 'user' ? 'text-aeres-violet/90' : 'text-slate-400'}`}>
-              {msg.role === 'user' ? 'You 👤' : msg.isAgentResult ? '⚡ Aeres Agent Result' : '✨ Aeres Assistant'}
+              {msg.role === 'user' ? <>You <User size={10} /></> : msg.isAgentResult ? <><Zap size={10} /> Aeres Agent Result</> : <><Sparkles size={10} /> Aeres Assistant</>}
             </span>
-            <div className={`max-w-[95%] rounded-2xl border-2 border-black px-3.5 py-2.5 text-xs leading-relaxed overflow-hidden shadow-[2.5px_2.5px_0px_#000000] hover:scale-[1.01] transition-all ${
+            <div className={`max-w-[95%] rounded-2xl border-2 border-black px-3.5 py-2.5 text-xs leading-relaxed overflow-hidden shadow-[2px_2px_0px_#000] hover:scale-[1.01] transition-all ${
               msg.role === 'user'
                 ? 'bg-aeres-violet/15 text-white border-aeres-violet/40'
                 : msg.isAgentResult
@@ -884,8 +889,8 @@ export default function RagChat() {
         {/* Chat Loading Skeleton */}
         {chatLoading && (
           <div className="flex flex-col items-start space-y-1 animate-pulse relative group">
-            <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 text-slate-400">✨ Aeres Assistant</span>
-            <div className="rounded-2xl bg-slate-950/50 border-2 border-black px-4 py-3 shadow-[2.5px_2.5px_0px_#000000] flex items-center gap-3">
+            <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 text-slate-400 flex items-center gap-1.5"><Sparkles size={10} /> Aeres Assistant</span>
+            <div className="rounded-2xl bg-slate-950/50 border-2 border-black px-4 py-3 shadow-[2px_2px_0px_#000] flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '0ms' }} />
                 <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -898,7 +903,7 @@ export default function RagChat() {
                   setChatLoading(false)
                   window.electron?.rag?.interrupt();
                 }}
-                className="ml-2 px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/40 rounded-full text-[8px] font-black uppercase hover:bg-red-500 hover:text-black transition-all cursor-pointer shadow-[1px_1px_0px_#000000]"
+                className="ml-2 px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/40 rounded-full text-[8px] font-black uppercase hover:bg-red-500 hover:text-black transition-all cursor-pointer shadow-[2px_2px_0px_#000]"
               >
                 Interrupt
               </button>
@@ -910,9 +915,9 @@ export default function RagChat() {
         {agentSteps.length > 0 && (
           <div className="flex flex-col items-start w-full space-y-1.5">
             <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 text-slate-400 flex items-center gap-1.5">
-              <span className="animate-pulse text-aeres-violet">⚡</span> Agent Execution Console
+              <Zap size={12} className="animate-pulse text-aeres-violet" /> Agent Execution Console
             </span>
-            <div className="w-full rounded-2xl border-2 border-black bg-slate-950/30 px-3.5 py-3 shadow-[3px_3px_0px_#000000]">
+            <div className="w-full rounded-2xl border-2 border-black bg-slate-950/30 px-3.5 py-3 shadow-[2px_2px_0px_#000]">
               <div className="border-l-2 border-[#7C3AED]/30 pl-3 space-y-2">
                 {agentSteps.map((step, i) => (
                   <AgentStep key={i} step={step} />
@@ -938,7 +943,7 @@ export default function RagChat() {
                 setAgentRunning(false)
                 window.electron?.rag?.interrupt();
               }}
-              className="px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/40 rounded-full text-[8px] font-black uppercase hover:bg-red-500 hover:text-black transition-all cursor-pointer shadow-[1px_1px_0px_#000000]"
+              className="px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/40 rounded-full text-[8px] font-black uppercase hover:bg-red-500 hover:text-black transition-all cursor-pointer shadow-[2px_2px_0px_#000]"
             >
               Interrupt
             </button>
@@ -995,9 +1000,10 @@ export default function RagChat() {
                 setInput(wf.prompt)
                 handleAgentSend([], wf.prompt)
               }}
-              className="flex-shrink-0 px-3 py-1 rounded-full border-2 border-black bg-slate-950/40 text-[9px] text-slate-400 hover:text-white hover:bg-aeres-violet hover:text-black font-extrabold uppercase transition flex items-center gap-1 hover:scale-105 active:scale-95 shadow-[2px_2px_0px_#000000] cursor-pointer"
+              className="flex-shrink-0 px-3 py-1 rounded-full border-2 border-black bg-slate-950/40 text-[9px] text-slate-400 hover:text-white hover:bg-aeres-violet hover:text-black font-extrabold uppercase transition flex items-center gap-1 hover:scale-105 active:scale-95 shadow-[2px_2px_0px_#000] cursor-pointer"
               title={wf.desc}
             >
+              {wf.icon}
               <span>{wf.name}</span>
             </button>
           ))}
@@ -1009,7 +1015,7 @@ export default function RagChat() {
         
         {/* Pulsing Active Voice visualizer bubble */}
         {listening && (
-          <div className="absolute top-[-36px] left-2 right-2 h-8 rounded-full border-2 border-black bg-red-500 text-black text-[9px] font-black flex items-center justify-between px-4 shadow-[3px_3px_0px_#000000] animate-bounce-subtle z-40">
+          <div className="absolute top-[-36px] left-2 right-2 h-8 rounded-full border-2 border-black bg-red-500 text-black text-[9px] font-black flex items-center justify-between px-4 shadow-[2px_2px_0px_#000] animate-bounce-subtle z-40">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-black animate-ping" />
               <span className="uppercase tracking-widest">Listening... speak now</span>
@@ -1036,7 +1042,7 @@ export default function RagChat() {
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={agentRunning}
-          className="p-1.5 rounded-xl border-2 border-black bg-aeres-surface/20 text-aeres-muted hover:text-white hover:bg-aeres-violet hover:text-black transition shadow-[2px_2px_0px_#000000] focus:outline-none disabled:opacity-50 flex items-center justify-center cursor-pointer active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000]"
+          className="p-1.5 rounded-xl border-2 border-black bg-aeres-surface/20 text-aeres-muted hover:text-white hover:bg-aeres-violet hover:text-black transition shadow-[2px_2px_0px_#000] focus:outline-none disabled:opacity-50 flex items-center justify-center cursor-pointer active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000]"
           title="Upload image"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1051,10 +1057,10 @@ export default function RagChat() {
           type="button"
           onClick={toggleListening}
           disabled={agentRunning}
-          className={`p-1.5 rounded-xl border-2 border-black transition focus:outline-none disabled:opacity-50 flex items-center justify-center cursor-pointer active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] ${
+          className={`p-1.5 rounded-xl border-2 border-black transition focus:outline-none disabled:opacity-50 flex items-center justify-center cursor-pointer active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] ${
             listening
               ? 'bg-red-500 text-black animate-pulse shadow-[0_0_12px_rgba(239,68,68,0.6)]'
-              : 'bg-slate-950/20 text-slate-400 hover:text-white hover:bg-aeres-violet hover:text-black shadow-[2px_2px_0px_#000000]'
+              : 'bg-slate-950/20 text-slate-400 hover:text-white hover:bg-aeres-violet hover:text-black shadow-[2px_2px_0px_#000]'
           }`}
           title={listening ? 'Listening... click to stop' : 'Voice prompt (speech-to-text)'}
         >
@@ -1084,15 +1090,15 @@ export default function RagChat() {
           onPaste={handlePaste}
           disabled={agentRunning}
           placeholder={mode === 'agent' ? 'Tell me what to build...' : 'Ask about your code…'}
-          className="flex-1 rounded-xl border-2 border-black bg-aeres-surface/50 px-3 py-1.5 text-xs text-aeres-text placeholder:text-aeres-muted/60 focus:border-[#7C3AED] focus:outline-none disabled:opacity-50 shadow-[2px_2px_0px_#000000]"
+          className="flex-1 rounded-xl border-2 border-black bg-aeres-surface/50 px-3 py-1.5 text-xs text-aeres-text placeholder:text-aeres-muted/60 focus:border-[#7C3AED] focus:outline-none disabled:opacity-50 shadow-[2px_2px_0px_#000]"
         />
         <button
           type="button"
           onClick={handleSend}
           disabled={agentRunning || (!input.trim() && attachedImages.length === 0)}
-          className="rounded-xl border-2 border-black bg-aeres-violet px-3 py-1.5 text-xs font-black text-black transition hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] disabled:opacity-40 shadow-[2px_2px_0px_#000000] cursor-pointer uppercase tracking-wider"
+          className="rounded-xl border-2 border-black bg-aeres-violet px-3 py-1.5 text-xs font-black text-black transition hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] disabled:opacity-40 shadow-[2px_2px_0px_#000] cursor-pointer uppercase tracking-wider"
         >
-          {mode === 'agent' ? '⚡ Run' : 'Send'}
+          {mode === 'agent' ? <span className="flex items-center gap-1"><Zap size={12} /> Run</span> : 'Send'}
         </button>
       </div>
     </div>

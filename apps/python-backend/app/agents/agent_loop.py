@@ -378,6 +378,8 @@ To guarantee high precision and completely eliminate hallucinations:
 - **NEVER Guess File Paths**: If you are unsure of a file's location, use `search_code` or `list_directory` to find it first. Never target imaginary paths.
 - **NO BOILERPLATE / PLACEHOLDERS**: When editing or writing files, you must output the 100% complete, fully implemented code. Never use `// TODO` or `...` placeholders that truncate code.
 - **Verbatim Exact Matches**: The `find` block in `edit_file` must contain the exact, verbatim text including spaces, indentation, and newlines. Provide enough unique surrounding context lines to ensure the match is unique.
+- **NEVER Output XML Tool Calls**: You must use the native JSON tool calling API provided by the system. Do NOT manually type `<function>` tags. Do NOT put JSON inside the tool name field.
+- **Don't Search For What You Have**: If the file content is already provided in your context, do NOT call `read_file` or `search_code` on it. Just read the context!
 
 ---
 
@@ -637,8 +639,8 @@ def execute_find_symbol(symbol: str, root_path: str) -> str:
     return f"Symbol '{symbol}' not found in codebase."
 
 
-# Global dictionary to track pending user confirmation steps
-PENDING_EDITS: Dict[str, dict] = {}
+# Global dictionary to track pending user confirmation steps (Legacy - now using temp files)
+# PENDING_EDITS: Dict[str, dict] = {}
 
 
 # ──────────────────────────────────────────
@@ -653,6 +655,7 @@ async def run_agent_loop(
     conversation: List[dict] = None,
     images: List[str] = None,
     max_iterations: int = 20,
+    api_key: str = None,
 ) -> AsyncGenerator[dict, None]:
     """
     Run the agentic loop. Yields step events as dicts:
@@ -727,10 +730,33 @@ async def run_agent_loop(
                 tools=AGENT_TOOLS,
                 max_tokens=4000,
                 temperature=0.1,
+                api_key=api_key,
             )
         except Exception as e:
-            yield {"type": "error", "content": f"Groq API error: {str(e)}"}
-            return
+            err_str = str(e)
+            if "tool call validation failed" in err_str or "attempted to call tool" in err_str or "tool_use_failed" in err_str or "Failed to call a function" in err_str:
+                yield {"type": "thinking", "content": "Recovering from formatting error, retrying..."}
+                
+                # Append a strict reminder to the messages history before retrying
+                messages.append({
+                    "role": "user", 
+                    "content": "SYSTEM ALERT: Your previous generation failed because you output raw XML `<function>` tags or malformed tool calls. You MUST use the native JSON function calling schema. Do NOT type `<function>` manually."
+                })
+                
+                try:
+                    response = await groq_tool_complete(
+                        messages=messages,
+                        tools=AGENT_TOOLS,
+                        max_tokens=4000,
+                        temperature=0.1,
+                        api_key=api_key,
+                    )
+                except Exception as e2:
+                    yield {"type": "error", "content": f"Groq API fallback error: {str(e2)}"}
+                    return
+            else:
+                yield {"type": "error", "content": f"Groq API error: {err_str}"}
+                return
         
         choice = response.choices[0] if response.choices else None
         if not choice:
@@ -807,12 +833,19 @@ async def run_agent_loop(
                     result = f"Debug session launched for: {tool_args.get('file_path', '')}"
                     
                 elif tool_name in ("write_file", "edit_file", "multi_edit_file"):
-                    PENDING_EDITS[tc.id] = {
-                        "status": "pending",
-                        "tool": tool_name,
-                        "args": tool_args,
-                        "result": None
-                    }
+                    import tempfile
+                    import json
+                    edit_file_path = os.path.join(tempfile.gettempdir(), f"aeres_edit_{tc.id}.json")
+                    try:
+                        with open(edit_file_path, "w", encoding="utf-8") as f:
+                            json.dump({
+                                "status": "pending",
+                                "tool": tool_name,
+                                "args": tool_args,
+                                "result": None
+                            }, f)
+                    except Exception:
+                        pass
                     
                     yield {
                         "type": "needs_confirm",
@@ -823,26 +856,39 @@ async def run_agent_loop(
                     }
                     
                     # Block and poll until status is no longer "pending"
-                    # Timeout after 120 seconds to prevent hanging
                     import time
                     start_wait = time.time()
-                    while tc.id in PENDING_EDITS and PENDING_EDITS[tc.id]["status"] == "pending":
+                    status = "pending"
+                    final_result = None
+                    
+                    while status == "pending":
                         await asyncio.sleep(0.5)
+                        try:
+                            if os.path.exists(edit_file_path):
+                                with open(edit_file_path, "r", encoding="utf-8") as f:
+                                    data = json.load(f)
+                                    status = data.get("status", "pending")
+                                    final_result = data.get("result")
+                            else:
+                                status = "rejected"
+                        except Exception:
+                            pass
+                            
                         if time.time() - start_wait > 120:
-                            if tc.id in PENDING_EDITS:
-                                PENDING_EDITS[tc.id]["status"] = "rejected"
-                                PENDING_EDITS[tc.id]["result"] = "Timed out waiting for confirmation"
+                            status = "rejected"
+                            final_result = "Timed out waiting for confirmation"
                             break
                             
-                    if tc.id in PENDING_EDITS:
-                        status = PENDING_EDITS[tc.id]["status"]
-                        if status == "approved":
-                            result = PENDING_EDITS[tc.id]["result"] or f"File edit successfully applied: {tool_args.get('file_path', '')}"
-                        else:
-                            result = f"Edit rejected or failed: {PENDING_EDITS[tc.id]['result'] or 'User rejected the edit'}"
-                        del PENDING_EDITS[tc.id]
+                    try:
+                        if os.path.exists(edit_file_path):
+                            os.remove(edit_file_path)
+                    except Exception:
+                        pass
+                        
+                    if status == "approved":
+                        result = final_result or f"File edit successfully applied: {tool_args.get('file_path', '')}"
                     else:
-                        result = "User rejected the edit"
+                        result = f"Edit rejected or failed: {final_result or 'User rejected the edit'}"
                     
                 elif tool_name == "ask_user":
                     yield {

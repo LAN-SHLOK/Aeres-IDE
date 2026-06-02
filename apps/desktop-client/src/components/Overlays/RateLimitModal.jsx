@@ -5,18 +5,22 @@ export default function RateLimitModal({ onClose }) {
   const installExtension = useStore((s) => s.installExtension)
   
   const handleUpgrade = () => {
-    alert('🚀 Redirecting to Secure Stripe Checkout...\n\nThank you for choosing Aeres Pro! Upgrading your account to Pro Plan ($20/mo) instantly...')
+    const store = useStore.getState();
+    store.appendOutputLog('info', '🚀 Redirecting to Secure Stripe Checkout...\n\nThank you for choosing Aeres Pro! Upgrading your account to Pro Plan ($20/mo) instantly...');
+    
     // Simulating instant upgrade by unlocking all premium plugins and settings
     installExtension('aeres-pro-suite')
     installExtension('advanced-scrapers')
     useStore.setState({ theme: 'aeres' }) // Switch to eye-friendly Aeres Pro theme
-    alert('🎉 Upgrade complete! Your Aeres account is now active on the Pro Plan! Rate limits successfully removed.')
+    
+    store.appendOutputLog('success', '🎉 Upgrade complete! Your Aeres account is now active on the Pro Plan! Rate limits successfully removed.');
+    store.setActiveSidebarTab('output');
     onClose()
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md animate-fade-in">
-      <div className="w-[500px] bg-[#130f26] border-4 border-black rounded-[2rem] overflow-hidden shadow-[8px_8px_0px_#000000] animate-in zoom-in-95 duration-200">
+      <div className="w-[500px] bg-[#130f26] border-4 border-black rounded-[2rem] overflow-hidden shadow-[2px_2px_0px_#000] animate-in zoom-in-95 duration-200">
         {/* Retro Windows-95 Title Bar */}
         <div className="bg-[#fef08a] border-b-4 border-black px-4 py-2 flex justify-between items-center">
           <div className="flex items-center gap-2">
@@ -35,7 +39,7 @@ export default function RateLimitModal({ onClose }) {
         {/* Content */}
         <div className="p-8 flex flex-col items-center text-center">
           {/* Animated Warning Icon */}
-          <div className="relative w-16 h-16 mb-6 flex items-center justify-center bg-[#fef08a]/20 border-3 border-black rounded-2xl shadow-[4px_4px_0px_#000000] rotate-[-6deg] hover:rotate-0 transition-transform">
+          <div className="relative w-16 h-16 mb-6 flex items-center justify-center bg-[#fef08a]/20 border-3 border-black rounded-2xl shadow-[2px_2px_0px_#000] rotate-[-6deg] hover:rotate-0 transition-transform">
             <span className="text-3xl">⏳</span>
           </div>
 
@@ -48,7 +52,7 @@ export default function RateLimitModal({ onClose }) {
 
           {/* Premium Plan Card */}
           <div className="w-full bg-[#1c1735] border-3 border-black rounded-2xl p-5 text-left mb-6 relative">
-            <span className="absolute -top-3.5 right-4 inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black tracking-wider uppercase text-black bg-[#ff8ba7] border-2 border-black shadow-[2px_2px_0px_#000000]">
+            <span className="absolute -top-3.5 right-4 inline-flex items-center px-3 py-1 rounded-full text-[9px] font-black tracking-wider uppercase text-black bg-[#ff8ba7] border-2 border-black shadow-[2px_2px_0px_#000]">
               Highly Recommended
             </span>
             <div className="flex items-baseline gap-1 mb-3">
@@ -78,13 +82,13 @@ export default function RateLimitModal({ onClose }) {
           <div className="flex gap-4 w-full">
             <button
               onClick={handleUpgrade}
-              className="flex-1 py-3 bg-[#ff8ba7] text-black font-black uppercase text-xs tracking-wider rounded-xl border-3 border-black shadow-[4px_4px_0px_#000000] hover:bg-[#ff8ba7]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#000000] transition-all"
+              className="flex-1 py-3 bg-[#ff8ba7] text-black font-black uppercase text-xs tracking-wider rounded-xl border-3 border-black shadow-[2px_2px_0px_#000] hover:bg-[#ff8ba7]/90 active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#000] transition-all"
             >
               🚀 Upgrade to Pro ($20)
             </button>
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-[#1c1735] hover:bg-slate-800 text-slate-300 font-black uppercase text-xs tracking-wider rounded-xl border-3 border-black shadow-[4px_4px_0px_#000000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#000000] transition-all"
+              className="px-6 py-3 bg-[#1c1735] hover:bg-slate-800 text-slate-300 font-black uppercase text-xs tracking-wider rounded-xl border-3 border-black shadow-[2px_2px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#000] transition-all"
             >
               Dismiss
             </button>

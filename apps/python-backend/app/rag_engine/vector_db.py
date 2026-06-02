@@ -2,8 +2,6 @@ import hashlib
 import os
 from typing import Any, Optional
 
-import chromadb
-
 from app.core.config import settings
 from app.rag_engine.embedder import generate_embeddings
 
@@ -14,6 +12,7 @@ _collection = None
 def init_local_chroma():
     global _client, _collection
     try:
+        import chromadb
         path = settings.CHROMA_DB_PATH
         os.makedirs(path, exist_ok=True)
         _client = chromadb.PersistentClient(path=path)
@@ -21,13 +20,8 @@ def init_local_chroma():
         return _collection
     except Exception as e:
         print(f"[Chroma] Failed to initialize: {e}")
-        # Create a mock collection to prevent crashing
-        class MockCollection:
-            def query(self, **kwargs): return {"documents": [[]], "metadatas": [[]]}
-            def upsert(self, **kwargs): pass
-            def get_or_create_collection(self, name): return self
-        _collection = MockCollection()
-        return _collection
+        raise RuntimeError(f"Chroma DB failed to initialize: {e}")
+
 
 
 def get_collection():
@@ -76,4 +70,28 @@ def query_relevant_fix(flagged_function: str, n_results: int = 5) -> list:
         return out
     except Exception as e:
         print(f"[VectorDB] Query error: {e}")
+        return []
+
+def get_package_migration_docs(package_name: str) -> list:
+    """Retrieve all migration docs for a specific package from ChromaDB metadata."""
+    try:
+        col = get_collection()
+        results = col.get(where={"function": package_name})
+        
+        docs = results.get("documents") or []
+        metas = results.get("metadatas") or []
+        
+        out = []
+        for d, m in zip(docs, metas):
+            meta = m or {}
+            out.append(
+                {
+                    "document": d,
+                    "source_url": meta.get("source_url", ""),
+                    "package": meta.get("function", ""),
+                }
+            )
+        return out
+    except Exception as e:
+        print(f"[VectorDB] get_package_migration_docs error: {e}")
         return []

@@ -9,6 +9,7 @@ export default function SearchPanel() {
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
   const [caseSensitive, setCaseSensitive] = useState(false)
+  const [useRegex, setUseRegex] = useState(false)
 
   const handleSearch = useCallback(async () => {
     if (!query.trim() || !rootPath) return
@@ -16,7 +17,12 @@ export default function SearchPanel() {
     if (!e) return
     setSearching(true)
     try {
-      const data = await e.fs.searchInProject({ rootPath, query: query.trim(), caseSensitive })
+      const data = await e.fs.searchInProject({ 
+        rootPath, 
+        query: query.trim(), 
+        matchCase: caseSensitive,
+        useRegex 
+      })
       setResults(data.results || [])
     } catch (err) {
       console.error('[SearchPanel] error:', err)
@@ -24,7 +30,7 @@ export default function SearchPanel() {
     } finally {
       setSearching(false)
     }
-  }, [query, rootPath, caseSensitive])
+  }, [query, rootPath, caseSensitive, useRegex])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSearch()
@@ -70,10 +76,18 @@ export default function SearchPanel() {
           <button
             type="button"
             onClick={() => setCaseSensitive(!caseSensitive)}
-            className={`rounded px-1.5 py-1 text-[10px] transition ${caseSensitive ? 'bg-aeres-violet/20 text-aeres-violet' : 'text-aeres-muted hover:text-aeres-text'}`}
-            title="Case Sensitive"
+            className={`rounded px-1.5 py-1 text-[10px] font-mono transition ${caseSensitive ? 'bg-aeres-violet/20 text-aeres-violet' : 'text-aeres-muted hover:text-aeres-text'}`}
+            title="Match Case"
           >
             Aa
+          </button>
+          <button
+            type="button"
+            onClick={() => setUseRegex(!useRegex)}
+            className={`rounded px-1.5 py-1 text-[10px] font-mono transition ${useRegex ? 'bg-aeres-violet/20 text-aeres-violet' : 'text-aeres-muted hover:text-aeres-text'}`}
+            title="Use Regular Expression"
+          >
+            .*
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Quicksand:wght@300..700&display=swap');
+/* Fonts loaded asynchronously via main.jsx to prevent render-blocking */
 
 @tailwind base;
 @tailwind components;
@@ -149,6 +149,18 @@ body,
 .text-zinc-400,
 .text-zinc-500 {
   color: var(--aeres-muted) !important;
+}
+
+/* Custom Highlight for Deprecated Code Usages */
+.monaco-editor .aeres-deprecated-highlight {
+  background-color: rgba(239, 68, 68, 0.25) !important; /* Red 500 with 25% opacity */
+}
+
+.aeres-deprecated-margin {
+  background: #ef4444 !important;
+  width: 4px !important;
+  height: 100% !important;
+  margin-left: 2px;
 }
 
 .bg-white\/5 {

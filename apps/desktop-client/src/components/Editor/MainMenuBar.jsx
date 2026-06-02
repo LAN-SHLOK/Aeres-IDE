@@ -61,17 +61,22 @@ export default function MainMenuBar() {
             { label: 'Settings', shortcut: 'Ctrl+,', action: () => document.dispatchEvent(new CustomEvent('aeres:open-settings')) },
             {
               label: 'Color Theme',
-              submenu: [
-                { label: 'Aeres Pastel (Default)', action: () => useStore.getState().setTheme('aeres') },
-                { label: 'Cutie Dark', action: () => useStore.getState().setTheme('cutie-dark') },
-                { label: 'Cutie Light', action: () => useStore.getState().setTheme('cutie-light') },
-                { label: 'Deep Dark Slate', action: () => useStore.getState().setTheme('dark') },
-                { label: 'Cyberpunk Neon', action: () => useStore.getState().setTheme('cyberpunk') },
-                { label: 'Nordic Frost', action: () => useStore.getState().setTheme('nord') },
-                { label: 'Retro Hacker Green', action: () => useStore.getState().setTheme('retro') },
-                { label: 'Solarized Ocean', action: () => useStore.getState().setTheme('solarized') },
-                { label: 'Deep Amethyst', action: () => useStore.getState().setTheme('amethyst') },
-              ]
+              shortcut: 'Ctrl+K Ctrl+T',
+              action: () => {
+                document.dispatchEvent(new CustomEvent('aeres:open-settings', { detail: { category: 'themes', tab: 'color' } }))
+              }
+            },
+            {
+              label: 'File Icon Theme',
+              action: () => {
+                document.dispatchEvent(new CustomEvent('aeres:open-settings', { detail: { category: 'themes', tab: 'fileIcons' } }))
+              }
+            },
+            {
+              label: 'Product Icon Theme',
+              action: () => {
+                document.dispatchEvent(new CustomEvent('aeres:open-settings', { detail: { category: 'themes', tab: 'productIcons' } }))
+              }
             },
             { label: 'Keyboard Shortcuts', shortcut: 'Ctrl+K Ctrl+S', action: () => document.dispatchEvent(new CustomEvent('aeres:open-shortcuts')) },
             { label: 'Configure User Snippets', action: () => document.dispatchEvent(new CustomEvent('aeres:open-snippets')) },
@@ -124,12 +129,7 @@ export default function MainMenuBar() {
               }
             } },
             { label: 'Toggle Zen Mode', action: () => {
-              const store = useStore.getState()
-              if (store.rightPanelOpen || store.activeSidebarTab) {
-                useStore.setState({ rightPanelOpen: false, activeSidebarTab: null })
-              } else {
-                useStore.setState({ rightPanelOpen: true, activeSidebarTab: 'files' })
-              }
+              useStore.getState().toggleZenMode()
             } },
             { label: 'Toggle Centered Layout', action: () => window.dispatchEvent(new CustomEvent('aeres:editor-centered-layout')) }
           ]
@@ -287,7 +287,10 @@ export default function MainMenuBar() {
         { label: 'Welcome', action: () => {} },
         { label: 'Show All Commands', shortcut: 'Ctrl+Shift+P', action: () => useStore.setState({ paletteOpen: true }) },
         { label: 'Documentation', action: () => openLink('https://docs.aeres.ai') },
-        { label: 'Editor Playground', action: () => alert('Playground coming soon!') },
+        { label: 'Editor Playground', action: () => {
+          const store = useStore.getState()
+          store.openTab({ name: 'Playground.js', path: 'playground_' + Date.now() + '.js', content: '// Welcome to Aeres Editor Playground!\n// Try out some code here.\n\nconsole.log("Hello, World!");\n', language: 'javascript' })
+        } },
         { label: 'Open Walkthrough...', action: () => {} },
         { label: 'Show Release Notes', action: () => openLink('https://github.com/aeres/ide/releases') },
         { label: 'Get Started with Accessibility Features', action: () => openLink('https://docs.aeres.ai/accessibility') },
@@ -311,9 +314,9 @@ export default function MainMenuBar() {
         } },
         { label: 'Open Process Explorer', action: () => {} },
         { type: 'separator' },
-        { label: 'Check for Updates...', action: () => alert('Aeres IDE is up to date!') },
+        { label: 'Check for Updates...', action: () => { const store = useStore.getState(); store.appendOutputLog('info', 'Aeres IDE is up to date!'); store.setActiveSidebarTab('output'); } },
         { type: 'separator' },
-        { label: 'About Aeres IDE', action: () => alert('Aeres IDE\\nBuilt for the Future.') }
+        { label: 'About Aeres IDE', action: () => { const store = useStore.getState(); store.appendOutputLog('info', 'Aeres IDE\nBuilt for the Future.'); store.setActiveSidebarTab('output'); } }
       ]
     }
   ]
@@ -414,15 +417,8 @@ export default function MainMenuBar() {
          </span>
       </div>
 
-      {/* Right-Side Action Bar: Agentic AI & Focus Sessions */}
+      {/* Right-Side Action Bar: Focus Sessions */}
       <div className="flex items-center gap-2 h-full px-2">
-        <button 
-          onClick={() => window.dispatchEvent(new CustomEvent('aeres:modernize'))}
-          className="flex items-center gap-1.5 px-3 h-6 rounded-sm bg-[#7C3AED]/20 text-[#7C3AED] text-[10px] font-bold uppercase tracking-wider border border-[#7C3AED]/30 hover:bg-[#7C3AED]/30 transition-all"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-          Agentic AI
-        </button>
         <button 
           onClick={() => useStore.setState({ activeRightTab: 'focus', rightPanelOpen: true })}
           className="flex items-center gap-1.5 px-3 h-6 rounded-sm border border-slate-700/50 text-slate-400 text-[10px] font-bold uppercase tracking-wider hover:bg-white/5 transition-all"

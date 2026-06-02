@@ -9,9 +9,21 @@ from app.core.config import settings
 
 import logging
 
-async def stream_modernized_code(prompt: str) -> AsyncGenerator[str, None]:
+async def generate_modernize_rule(prompt: str, api_key: str = None) -> str:
+    logging.info(f"[Groq] Generating AST transformation rule...")
+    client = AsyncGroq(api_key=api_key or settings.GROQ_API_KEY)
+    resp = await client.chat.completions.create(
+        model=settings.GROQ_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=4000,
+        temperature=0.1,
+    )
+    msg = resp.choices[0].message
+    return (msg.content or "") if msg else ""
+
+async def stream_modernized_code(prompt: str, api_key: str = None) -> AsyncGenerator[str, None]:
     logging.info(f"[Groq] Starting stream completion...")
-    client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+    client = AsyncGroq(api_key=api_key or settings.GROQ_API_KEY)
     stream = await client.chat.completions.create(
         model=settings.GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
@@ -64,9 +76,10 @@ async def groq_complete(
     temperature: float = 0.2,
     stop: Optional[Union[str, Sequence[str]]] = None,
     model: Optional[str] = None,
+    api_key: str = None,
 ) -> str:
     selected_model = model or settings.GROQ_CHAT_MODEL
-    client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+    client = AsyncGroq(api_key=api_key or settings.GROQ_API_KEY)
     kwargs = dict(
         model=selected_model,
         messages=[
@@ -88,6 +101,7 @@ async def groq_tool_complete(
     tools: list = None,
     max_tokens: int = 4000,
     temperature: float = 0.1,
+    api_key: str = None,
 ):
     """Groq completion with tool-use (function-calling) support.
     Returns the raw response object so callers can access tool_calls.
@@ -106,7 +120,7 @@ async def groq_tool_complete(
 
     model = "llama-3.2-90b-vision-preview" if has_image else settings.GROQ_MODEL
 
-    client = AsyncGroq(api_key=settings.GROQ_API_KEY)
+    client = AsyncGroq(api_key=api_key or settings.GROQ_API_KEY)
     kwargs = dict(
         model=model,
         messages=messages,
@@ -148,23 +162,25 @@ def enforce_syntax_only(raw: str) -> str:
     return "\n".join(cleaned).strip()
 
 
-def assemble_strict_prompt(ast_block: str, scraped_docs: str, flagged_function: str) -> str:
-    return f"""You are a code modernization engine. You ONLY output raw code. No explanations. No markdown. No preamble.
+def assemble_strict_prompt(file_content: str, scraped_docs: str, flagged_function: str, folder_structure: str = "") -> str:
+    folder_context = f"\nWORKSPACE FOLDER STRUCTURE:\n```\n{folder_structure}\n```\n(Use this to ensure your imports and relative paths remain correct.)\n" if folder_structure else ""
+    return f"""You are an elite code modernization engine. Your job is to rewrite the provided file to remove the deprecated function and modernize it according to the official documentation.
 
 DEPRECATED FUNCTION DETECTED: {flagged_function}
-
-OFFICIAL MIGRATION DOCUMENTATION:
+{folder_context}
+OFFICIAL MIGRATION DOCUMENTATION (Read carefully):
 {scraped_docs}
 
-USER'S CODE TO REWRITE:
-{ast_block}
+USER'S FULL FILE CONTENT:
+```
+{file_content}
+```
 
 RULES:
-1. Rewrite ONLY the deprecated pattern. Change nothing else.
-2. Follow ONLY the patterns shown in the migration documentation above.
-3. Output ONLY the rewritten code block. No commentary.
-4. Preserve all variable names, imports, and surrounding logic.
-5. If the documentation is unclear, output the original code unchanged.
+1. Locate the deprecated function `{flagged_function}` in the user's code.
+2. Read the official migration documentation to determine the new standard.
+3. Completely rewrite the user's code to fix the deprecation. Ensure all imports match the user's provided Folder Structure.
+4. Output ONLY the raw, completely modernized source code. Do NOT output markdown, do NOT output explanations, do NOT wrap it in ```. Just the raw text of the file.
 """
 
 

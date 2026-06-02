@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Editor, { DiffEditor } from '@monaco-editor/react'
+import { Camera, Clipboard } from 'lucide-react'
 import EditorTabs from './EditorTabs.jsx'
 import { useStore } from '../../store.js'
+import { emmetHTML, emmetCSS, emmetJSX } from 'emmet-monaco-es'
 
 import WelcomeScreen from './WelcomeScreen.jsx'
 
@@ -16,8 +18,11 @@ export default function CodeCanvas() {
   const closeTab = useStore((s) => s.closeTab)
   const addTerminal = useStore((s) => s.addTerminal)
   const setTerminalPanelOpen = useStore((s) => s.setTerminalPanelOpen)
-  const editorSettings = useStore((s) => s.editorSettings)
-  const theme = useStore((s) => s.theme)
+  const editorSettings = useStore(s => s.editorSettings)
+  const isAeresMode = useStore(s => s.isAeresMode)
+  const openTab = useStore(s => s.openTab)
+
+  //  Keyboard Shortcuts & IPC
   const installedExtensions = useStore((s) => s.installedExtensions || [])
   const disabledExtensions = useStore((s) => s.disabledExtensions || [])
 
@@ -32,19 +37,54 @@ export default function CodeCanvas() {
   const activeTerminalId = useStore((s) => s.activeTerminalId)
   const typewriterMode = useStore((s) => s.typewriterMode)
   const zenMode = useStore((s) => s.zenMode)
+  const theme = useStore((s) => s.theme)
 
   const activeTab = tabs.find((t) => t.id === activeTabId)
+  const isHTML = activeTab?.name?.toLowerCase().endsWith('.html') || activeTab?.name?.toLowerCase().endsWith('.htm')
   const [localContent, setLocalContent] = useState('')
   const editorRef = useRef(null)
   const monacoRef = useRef(null)
+  const lastOnChangeValue = useRef('')
+  const pendingUserEdits = useRef(new Set())
+  const highlightDecorationsRef = useRef([])
   const [editorLoaded, setEditorLoaded] = useState(false)
   const showTemporal = useStore((s) => s.showTemporal)
 
-  useTemporalLens(editorRef.current, activeTab?.path, showTemporal && editorLoaded)
+  const [editorInstance, setEditorInstance] = useState(null)
+  useTemporalLens(editorInstance, activeTab?.path, showTemporal && editorLoaded)
 
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 })
   const [codeSnapData, setCodeSnapData] = useState({ visible: false, code: '', fileName: '' })
   const [activePeekSubmenu, setActivePeekSubmenu] = useState(false)
+
+  // Sync editor value when activeTab.content changes externally (e.g. from AI)
+  useEffect(() => {
+    if (!editorLoaded || !activeTab) return
+    const monaco = window.monaco
+    if (!monaco) return
+    const model = monaco.editor.getModel(monaco.Uri.parse(`file:///${activeTab.path.replace(/\\/g, '/')}`))
+    if (model && activeTab.content !== undefined) {
+      const currentVal = model.getValue()
+      // Normalize to handle CR/LF mismatch
+      const normCurrent = currentVal.replace(/\r\n/g, '\n')
+      const normNew = activeTab.content.replace(/\r\n/g, '\n')
+      
+      // If the store is just catching up to a value the user typed, ignore it
+      if (pendingUserEdits.current.has(normNew)) {
+        pendingUserEdits.current.delete(normNew)
+        return
+      }
+
+      if (normCurrent !== normNew) {
+        // Use pushEditOperations to preserve undo stack and cursor position
+        model.pushEditOperations(
+          [],
+          [{ range: model.getFullModelRange(), text: activeTab.content }],
+          () => null
+        )
+      }
+    }
+  }, [activeTab?.content, activeTab?.path, editorLoaded])
 
   useEffect(() => {
     const hideMenu = () => {
@@ -200,8 +240,66 @@ export default function CodeCanvas() {
     }))
   }
 
+  const handleReview = () => {
+    if (!activeTab) return
+    const sel = getSelectedTextOrAll()
+    const prompt = sel.length < 200 
+      ? `Review this file for bugs, quality issues, or refactoring: @${activeTab.name}`
+      : `Review this specific code snippet for bugs, quality issues, or refactoring:\n\`\`\`${activeTab.language || 'javascript'}\n${sel}\n\`\`\``
+    document.dispatchEvent(new CustomEvent('aeres:send-agent-prompt', { detail: prompt }))
+    document.dispatchEvent(new CustomEvent('aeres:focus-chat'))
+  }
+
   const handleOpenInlineChat = () => {
     document.dispatchEvent(new CustomEvent('aeres:focus-chat'))
+  }
+
+
+  const handleRunJupyter = async () => {
+    if (activeTab?.language !== 'python') {
+      const store = useStore.getState();
+      store.appendOutputLog('error', "Jupyter execution is only available for Python files.");
+      store.setActiveSidebarTab('output');
+      return
+    }
+    // Open terminal panel to show output
+    setTerminalPanelOpen(true)
+    const backendPort = useStore.getState().backendUrl?.split(':').pop() || 8008
+    try {
+      const sessionId = 'jupyter-' + Date.now()
+      const appendOutput = useStore.getState().appendOutputLog
+      appendOutput('info', 'Executing Jupyter cell...')
+      document.dispatchEvent(new CustomEvent('aeres:select-terminal-tab', { detail: 'output' }))
+      
+      const res = await fetch(`${useStore.getState().backendUrl}/api/jupyter/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ session_id: sessionId, code: activeTab.content || localContent })
+      })
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const lines = decoder.decode(value).split('\n')
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const dataStr = line.slice(6)
+            if (dataStr === '[DONE]') break
+            try {
+              const parsed = JSON.parse(dataStr)
+              if (parsed.text) appendOutput('info', parsed.text.trim())
+              if (parsed.data && parsed.data['text/plain']) appendOutput('info', parsed.data['text/plain'].trim())
+              if (parsed.evalue) appendOutput('error', `${parsed.ename}: ${parsed.evalue}`)
+            } catch (e) {}
+          }
+        }
+      }
+      appendOutput('success', 'Jupyter execution complete.')
+    } catch (e) {
+      console.error("Jupyter execution failed:", e)
+      useStore.getState().appendOutputLog('error', 'Jupyter execution failed: ' + e.message)
+    }
   }
 
   const handleExplain = () => {
@@ -213,14 +311,6 @@ export default function CodeCanvas() {
     document.dispatchEvent(new CustomEvent('aeres:send-chat-prompt', { detail: prompt }))
   }
 
-  const handleReview = () => {
-    if (!activeTab) return
-    const sel = getSelectedTextOrAll()
-    const prompt = sel.length < 200
-      ? `Identify any bugs or quality issues in @${activeTab.name}`
-      : `Identify any bugs, quality issues, or refactorings in this snippet:\n\`\`\`${activeTab.language || 'javascript'}\n${sel}\n\`\`\``
-    document.dispatchEvent(new CustomEvent('aeres:send-agent-prompt', { detail: prompt }))
-  }
 
   // Ctrl+W to close tab
   const breakpoints = useStore((s) => s.breakpoints[activeTab?.path] || [])
@@ -245,13 +335,22 @@ export default function CodeCanvas() {
     const editor = editorRef.current
     if (!editor || !activeTab?.line || !editorLoaded) return
     
-    // Smooth scroll to the line with a small delay for layout sync
-    setTimeout(() => {
-      editor.revealLineInCenter(activeTab.line)
-      editor.setPosition({ lineNumber: activeTab.line, column: 1 })
-      useStore.setState({ cursorLine: activeTab.line, cursorColumn: 1 })
-      editor.focus()
-    }, 100)
+    // Smooth scroll to the line with a retry mechanism for layout/model sync
+    let attempts = 0
+    const tryScroll = () => {
+      const model = editor.getModel()
+      if (model && model.getLineCount() >= activeTab.line) {
+        editor.revealLineInCenter(activeTab.line)
+        editor.setPosition({ lineNumber: activeTab.line, column: 1 })
+        useStore.setState({ cursorLine: activeTab.line, cursorColumn: 1 })
+        editor.focus()
+      } else if (attempts < 10) {
+        attempts++
+        setTimeout(tryScroll, 50)
+      }
+    }
+    
+    tryScroll()
     
   }, [activeTab?.id, activeTab?.line, editorLoaded])
 
@@ -264,10 +363,31 @@ export default function CodeCanvas() {
       } else {
         useStore.setState({ cursorLine: 1, cursorColumn: 1 })
       }
-    } else {
-      useStore.setState({ cursorLine: 1, cursorColumn: 1 })
     }
   }, [activeTabId, editorLoaded])
+
+  // Custom highlights
+  useEffect(() => {
+    const editor = editorRef.current
+    const monaco = monacoRef.current
+    if (!editor || !monaco || !activeTab?.highlightLines || !editorLoaded) {
+      if (editor && highlightDecorationsRef.current.length > 0) {
+        highlightDecorationsRef.current = editor.deltaDecorations(highlightDecorationsRef.current, [])
+      }
+      return
+    }
+
+    const decs = activeTab.highlightLines.map(line => ({
+      range: new monaco.Range(line, 1, line, 1),
+      options: {
+        isWholeLine: true,
+        className: 'aeres-deprecated-highlight',
+        linesDecorationsClassName: 'aeres-deprecated-margin',
+        stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+      }
+    }))
+    highlightDecorationsRef.current = editor.deltaDecorations(highlightDecorationsRef.current, decs)
+  }, [activeTab?.id, activeTab?.highlightLines, editorLoaded])
 
   useEffect(() => {
     const handler = (e) => {
@@ -284,55 +404,92 @@ export default function CodeCanvas() {
     return () => window.removeEventListener('keydown', handler)
   }, [activeTabId, closeTab, tabs])
 
-  const handleChange = useCallback(
-    (value) => {
-      setLocalContent(value || '')
-      if (activeTabId) {
-        setTabDirty(activeTabId, true)
-        setTabContent(activeTabId, value || '')
-      }
-    },
-    [activeTabId, setTabDirty, setTabContent]
-  )
+    const documentVersions = useRef({})
+
+    const handleChange = useCallback(
+      (value) => {
+        setLocalContent(value || '')
+        lastOnChangeValue.current = value || ''
+        
+        // Record this value so the sync effect knows it came from the user typing
+        const normVal = (value || '').replace(/\r\n/g, '\n')
+        pendingUserEdits.current.add(normVal)
+        
+        // Prevent memory leak if user types incredibly fast and effect is delayed
+        if (pendingUserEdits.current.size > 50) {
+          const arr = Array.from(pendingUserEdits.current)
+          pendingUserEdits.current = new Set(arr.slice(arr.length - 20))
+        }
+
+        if (activeTabId) {
+          setTabDirty(activeTabId, true)
+          setTabContent(activeTabId, value || '')
+          
+          // --- Real-time LSP Synchronization ---
+          const tab = useStore.getState().tabs.find(t => t.id === activeTabId)
+          if (tab && window.electron?.lsp) {
+            const uri = `file:///${tab.path.replace(/\\/g, '/')}`
+            const activeLang = tab.language === 'javascriptreact' ? 'javascript' : tab.language === 'typescriptreact' ? 'typescript' : tab.language
+            documentVersions.current[uri] = (documentVersions.current[uri] || 1) + 1
+            
+            window.electron.lsp.notify(activeLang, 'textDocument/didChange', {
+              textDocument: { uri, version: documentVersions.current[uri] },
+              contentChanges: [{ text: value || '' }]
+            })
+          }
+        }
+      },
+      [activeTabId, setTabDirty, setTabContent]
+    )
 
   const handleModernize = useCallback(async () => {
     if (!activeTab || !window.electron) return
     const store = useStore.getState()
-    if (!store.installedExtensions.includes('aeres-ai-core') || store.disabledExtensions.includes('aeres-ai-core')) {
-      alert('The Aeres AI Core extension must be installed and enabled in order to run code scans or modernization optimizations. Please navigate to the Extensions sidebar panel to install or enable it.')
-      return
-    }
-    store.setModernizeState('scanning')
-    useStore.setState({ originalCode: localContent, fixedCode: '' })
-
-    window.electron.analyze.onStream((chunk) => {
-      try {
-        const data = typeof chunk === 'string' ? JSON.parse(chunk) : chunk
-        if (data.type === 'code_chunk') {
-          useStore.getState().appendFixedCode(data.content || '')
-          useStore.getState().setModernizeState('streaming')
-        } else if (data.type === 'flag_found') {
-          if (data.source_url) useStore.setState({ sourceUrl: data.source_url })
-        } else if (data.type === 'done') {
-          useStore.getState().setModernizeState('done')
-          window.electron.analyze.offStream()
-        } else if (data.type === 'no_deprecations') {
-          useStore.getState().setModernizeState('idle')
-          window.electron.analyze.offStream()
-        }
-      } catch {
-        /* ignore parse errors */
-      }
-    })
-
+    const setModernizeState = store.setModernizeState
+    const appendFixedCode = store.appendFixedCode
+    
+    store.resetModernize()
+    useStore.setState({ originalCode: activeTab.content })
+    setModernizeState('scanning')
+    
     try {
-      await window.electron.analyze.modernize(localContent, activeTab.path)
+      window.electron.analyze.onStream((chunk) => {
+        if (!chunk) return
+        
+        if (chunk.status === 'done') {
+          setModernizeState('done')
+          if (!chunk.content) {
+            const store = useStore.getState();
+            store.appendOutputLog('info', 'No deprecations found in this file.');
+            store.setActiveSidebarTab('output');
+          }
+        } else if (chunk.status === 'error') {
+          setModernizeState('error')
+          const store = useStore.getState();
+          store.appendOutputLog('error', chunk.message || 'Error occurred during modernization');
+          store.setActiveSidebarTab('output');
+        } else if (chunk.status === 'streaming') {
+          if (useStore.getState().modernizeState !== 'streaming') {
+            setModernizeState('streaming')
+          }
+          // The backend sends the full updated code when swapping AST nodes
+          useStore.setState({ fixedCode: chunk.content })
+        } else if (chunk.type === 'flag_found') {
+          if (chunk.source_url) {
+            useStore.setState({ sourceUrl: chunk.source_url })
+          }
+        }
+      })
+      
+      await window.electron.analyze.modernize(activeTab.content, activeTab.path)
     } catch (err) {
-      console.error('[CodeCanvas] modernize error:', err)
-      useStore.getState().setModernizeState('error')
-      window.electron.analyze.offStream()
+      console.error('Modernize stream error:', err)
+      const store = useStore.getState();
+      store.appendOutputLog('error', 'Failed to modernize code.');
+      store.setActiveSidebarTab('output');
+      useStore.setState({ modernizeState: 'error' })
     }
-  }, [activeTab, localContent])
+  }, [activeTab])
 
   const handleAccept = useCallback(async () => {
     if (!activeTab || !window.electron) return
@@ -343,6 +500,22 @@ export default function CodeCanvas() {
     setLocalContent(code)
     resetModernize()
   }, [activeTab, activeTabId, setTabContent, setTabDirty, resetModernize])
+
+  const handleOpenLiveServer = useCallback(async () => {
+    if (!activeTab || !window.electron) return
+    const name = activeTab.name.toLowerCase()
+    if (!name.endsWith('.html') && !name.endsWith('.htm')) return
+    const store = useStore.getState()
+    const { id } = await window.electron.terminal.create({ cwd: store.rootPath || undefined })
+    addTerminal({ id, name: `Server: ${activeTab.name}` })
+    setTerminalPanelOpen(true)
+    useStore.setState({ activeTerminalId: id })
+    setTimeout(() => {
+      const isMac = window.electron.isMac
+      const openCmd = isMac ? 'open' : 'start ""'
+      window.electron.terminal.write(id, `npx -y live-server "${activeTab.path}" || ${openCmd} "${activeTab.path}"\r`)
+    }, 500)
+  }, [activeTab, addTerminal, setTerminalPanelOpen])
 
   const handleRunFile = useCallback(async () => {
     if (!activeTab || !window.electron) return
@@ -358,8 +531,10 @@ export default function CodeCanvas() {
       const projectCmd = await detectProjectCommand(store.rootPath)
       if (projectCmd) {
         cmd = projectCmd
-      } else if (activeTab.path.endsWith('.jsx')) {
-        alert('JSX files cannot be run directly. Please open a project with a package.json to run this component.')
+      } else if (activeTab.path.endsWith('.jsx') || activeTab.path.endsWith('.tsx')) {
+        const store = useStore.getState();
+        store.appendOutputLog('error', 'JSX files cannot be run directly. Please open a project with a package.json to run this component.');
+        store.setActiveSidebarTab('output');
         return
       }
     }
@@ -383,10 +558,11 @@ export default function CodeCanvas() {
     let finalCmd = cmd
     if (activeTab.path.endsWith('.py') && window.electron.temporal) {
       try {
-        const lastSlash = Math.max(activeTab.path.lastIndexOf('/'), activeTab.path.lastIndexOf('\\'))
-        const fileDir = lastSlash !== -1 ? activeTab.path.substring(0, lastSlash) : '.'
+        const normalizedPath = activeTab.path.replace(/\\/g, '/')
+        const lastSlash = Math.max(normalizedPath.lastIndexOf('/'), normalizedPath.lastIndexOf('\\'))
+        const fileDir = lastSlash !== -1 ? normalizedPath.substring(0, lastSlash) : '.'
         const wrapperPath = `${fileDir}/.aeres_profile_wrapper.py`
-        const wrapperCode = await window.electron.temporal.wrapPython(activeTab.path)
+        const wrapperCode = await window.electron.temporal.wrapPython(normalizedPath)
         await window.electron.fs.writeFile(wrapperPath, wrapperCode)
         const pythonBin = cmd.startsWith('python3') ? 'python3' : 'python'
         finalCmd = `${pythonBin} "${wrapperPath}"`
@@ -415,6 +591,16 @@ export default function CodeCanvas() {
       try {
         await window.electron.fs.writeFile(activeTab.path, localContent)
         setTabDirty(activeTabId, false)
+        
+        // Trigger diagnostics after save if LSP is available
+        if (window.electron.lsp && window.electron.lsp.checkDiagnostics) {
+          window.electron.lsp.checkDiagnostics(activeTab.path)
+        }
+        
+        // Trigger extension host
+        import('../../utils/extensionHost.js').then(({ extensionHost }) => {
+          extensionHost.triggerSave(activeTab.path)
+        })
       } catch (err) {
         console.error('[CodeCanvas] Save error:', err)
       }
@@ -466,9 +652,12 @@ export default function CodeCanvas() {
     const handleDebugStart = async () => {
       if (!activeTab || !window.electron) return
       useStore.setState({ activeSidebarTab: 'debug' })
-      const res = await window.electron.debug.launch(activeTab.path, false)
-      if (res.error) {
-        alert('Launch error: ' + res.error)
+      const res = await window.electron.debug.launch({ filePath: activeTab.path, breakOnStart: false })
+      if (res && res.error) {
+        const store = useStore.getState();
+        store.appendOutputLog('error', 'Launch error: ' + res.error);
+        store.setActiveSidebarTab('output');
+        return
       }
     }
 
@@ -503,7 +692,16 @@ export default function CodeCanvas() {
       { name: 'aeres:debug-stop', handler: handleDebugStop },
       { name: 'aeres:debug-step-over', handler: handleDebugStepOver },
       { name: 'aeres:debug-step-into', handler: handleDebugStepInto },
-      { name: 'aeres:debug-step-out', handler: handleDebugStepOut }
+      { name: 'aeres:debug-step-out', handler: handleDebugStepOut },
+      { name: 'aeres:editor-back', handler: () => editor?.trigger('keyboard', 'cursorUndo') },
+      { name: 'aeres:editor-forward', handler: () => editor?.trigger('keyboard', 'cursorRedo') },
+      { name: 'aeres:editor-goto-line', handler: () => editor?.trigger('keyboard', 'editor.action.gotoLine') },
+      { name: 'aeres:open-live-server', handler: handleOpenLiveServer },
+      { name: 'aeres:run-active-file', handler: handleRunFile },
+      { name: 'aeres:new-terminal', handler: () => {
+          useStore.setState({ terminalPanelOpen: true })
+          setTimeout(() => window.dispatchEvent(new CustomEvent('aeres:select-terminal-tab', { detail: 'terminal' })), 50)
+      } }
     ]
 
     events.forEach(e => {
@@ -517,7 +715,7 @@ export default function CodeCanvas() {
         document.removeEventListener(e.name, e.handler)
       })
     }
-  }, [editorLoaded, activeTab, activeTabId, localContent, setTabDirty])
+  }, [editorLoaded, activeTab, activeTabId, localContent, setTabDirty, handleCut, handleCopy, handlePaste, handleRunFile, handleOpenLiveServer])
 
   useEffect(() => {
     const handler = () => handleModernize()
@@ -529,30 +727,97 @@ export default function CodeCanvas() {
     }
   }, [handleModernize])
 
-  // ── ESLint Extension Mock Diagnostics ──
+  // ── ESLint Extension Diagnostics ──
+  // Real diagnostics are provided by the LSP listener in App.jsx.
+  // If the ESLint extension is toggled off, clear any stale markers for the active file.
+  const hasEslint = installedExtensions.includes('eslint') && !disabledExtensions.includes('eslint')
+  const fileDiagnostics = useStore(s => activeTab?.path ? s.diagnostics[activeTab.path] : null)
+  
   useEffect(() => {
     if (!activeTab) return
-    const store = useStore.getState()
-    if (installedExtensions.includes('eslint') && !disabledExtensions.includes('eslint')) {
-      // Mock elegant linting warnings in the Problems drawer
-      const markers = [
-        { line: 3, message: "eslint(semi): Missing semicolon.", severity: "warning" },
-        { line: 5, message: "eslint(no-unused-vars): 'data' is declared but never used.", severity: "warning" }
-      ]
-      store.setDiagnostics(activeTab.path, markers)
-    } else {
-      store.setDiagnostics(activeTab.path, [])
+    if (!hasEslint) {
+      // Clear any eslint markers when the extension is disabled
+      const store = useStore.getState()
+      const existing = store.diagnostics[activeTab.path] || []
+      const nonEslint = existing.filter(m => !m.message?.startsWith('eslint('))
+      store.setDiagnostics(activeTab.path, nonEslint)
     }
-  }, [activeTab?.path, installedExtensions.includes('eslint'), disabledExtensions.includes('eslint')])
+  }, [activeTab?.path, hasEslint])
+
+  // ── Apply LSP Diagnostics to Monaco ──
+  useEffect(() => {
+    if (!activeTab?.path || !editorLoaded || !window.electron?.lsp) return
+    const editor = editorRef.current
+    if (!editor) return
+
+    const uri = `file:///${activeTab.path.replace(/\\/g, '/')}`
+    documentVersions.current[uri] = 1
+    const activeLang = activeTab.language === 'javascriptreact' ? 'javascript' : activeTab.language === 'typescriptreact' ? 'typescript' : activeTab.language
+
+    window.electron.lsp.notify(activeLang, 'textDocument/didOpen', {
+      textDocument: { 
+        uri, 
+        languageId: activeTab.language, 
+        version: documentVersions.current[uri], 
+        text: editor.getModel()?.getValue() || ''
+      }
+    })
+  }, [activeTab?.path, activeTab?.language, editorLoaded])
+
+  // ── Auto Save ──
+  useEffect(() => {
+    if (!activeTab?.path || !activeTab?.isDirty || !window.electron) return
+    
+    const timeoutId = setTimeout(async () => {
+      try {
+        await window.electron.fs.writeFile(activeTab.path, localContent)
+        const store = useStore.getState()
+        if (store.activeTabId === activeTab.id) {
+          store.setTabDirty(activeTab.id, false)
+        }
+      } catch (err) {
+        console.error('[CodeCanvas] Auto-save error:', err)
+      }
+    }, 1000)
+    
+    return () => clearTimeout(timeoutId)
+  }, [localContent, activeTab?.path, activeTab?.isDirty, activeTab?.id])
+
+  useEffect(() => {
+    const editor = editorRef.current
+    const monaco = monacoRef.current
+    if (!editor || !monaco || !activeTab?.path || !editorLoaded) return
+    const model = editor.getModel()
+    if (!model) return
+
+    const markers = (fileDiagnostics || []).map(d => {
+      let severity = monaco.MarkerSeverity.Error
+      if (d.severity === 'warning') severity = monaco.MarkerSeverity.Warning
+      else if (d.severity === 'info') severity = monaco.MarkerSeverity.Info
+
+      return {
+        startLineNumber: d.line,
+        startColumn: d.startColumn || 1,
+        endLineNumber: d.endLine || d.line,
+        endColumn: d.endColumn || 1000,
+        message: d.message,
+        severity: severity,
+        source: 'LSP'
+      }
+    })
+    
+    monaco.editor.setModelMarkers(model, 'aeres-lsp', markers)
+  }, [activeTab?.path, fileDiagnostics, editorLoaded])
 
   // ── GitLens Elite Blame Annotations ──
+  const hasGitLens = installedExtensions.includes('gitlens-elite') && !disabledExtensions.includes('gitlens-elite')
   useEffect(() => {
     const editor = editorRef.current
     const monaco = monacoRef.current
     if (!editor || !monaco || !activeTab || !editorLoaded) return
 
     let decs = []
-    if (installedExtensions.includes('gitlens-elite') && !disabledExtensions.includes('gitlens-elite')) {
+    if (hasGitLens) {
       const position = editor.getPosition()
       if (position) {
         const line = position.lineNumber
@@ -595,7 +860,7 @@ export default function CodeCanvas() {
     })
 
     return () => disposable.dispose()
-  }, [activeTab?.path, installedExtensions.includes('gitlens-elite'), disabledExtensions.includes('gitlens-elite'), editorLoaded])
+  }, [activeTab?.path, hasGitLens, editorLoaded])
 
   if (!activeTab) {
     return (
@@ -639,30 +904,26 @@ export default function CodeCanvas() {
           </button>
         </div>
 
-        <div className="flex-1" />
         <button
           type="button"
-          disabled={modernizeState !== 'idle'}
           onClick={handleModernize}
-          title="Modernize Code: Uses Aeres AI Core to scan this file for deprecated/legacy patterns and stream modernized replacements side-by-side."
-          className="flex items-center gap-1.5 rounded-md bg-aeres-violet px-3 py-1 text-[11px] font-medium text-white transition hover:opacity-90 disabled:opacity-40 shadow-sm"
+          disabled={modernizeState === 'scanning' || modernizeState === 'streaming'}
+          title="Modernize Code: Ask the AI Agent to scan this file for deprecations and suggest small snippet replacements."
+          className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium text-white shadow-sm transition ${
+            modernizeState === 'scanning' || modernizeState === 'streaming'
+              ? 'bg-aeres-violet/60 cursor-not-allowed animate-pulse'
+              : 'bg-aeres-violet hover:opacity-90'
+          }`}
         >
-          {modernizeState === 'idle' ? (
-            <>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Modernize
-            </>
-          ) : modernizeState === 'scanning' || modernizeState === 'streaming' ? (
-            <>
-              <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-              {modernizeState === 'scanning' ? 'Scanning…' : 'Streaming…'}
-            </>
+          {modernizeState === 'scanning' || modernizeState === 'streaming' ? (
+             <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
           ) : (
-            <>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Done
-            </>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
           )}
+          {modernizeState === 'scanning' ? 'Scanning DB...' : modernizeState === 'streaming' ? 'Modernizing...' : 'Modernize'}
         </button>
       </div>
 
@@ -682,14 +943,15 @@ export default function CodeCanvas() {
             original={originalCode}
             modified={fixedCode}
             language={activeTab.language}
-            theme={theme || 'dark'}
+            theme={theme?.includes('light') ? 'vs' : 'vs-dark'}
             options={{
               readOnly: true,
               minimap: { enabled: false },
               fontSize: editorSettings.fontSize,
               fontFamily: editorSettings.fontFamily,
               lineHeight: editorSettings.lineHeight,
-              renderSideBySide: true
+              renderSideBySide: true,
+              fixedOverflowWidgets: true
             }}
           />
         ) : (
@@ -697,13 +959,89 @@ export default function CodeCanvas() {
             height="100%"
             path={activeTab.path}
             language={activeTab.language}
-            value={localContent}
-            theme={theme || 'dark'}
+            defaultValue={activeTab.content || ''}
+            theme={theme?.includes('light') ? 'vs' : 'vs-dark'}
             onChange={handleChange}
             onMount={(editor, monaco) => {
               editorRef.current = editor
               monacoRef.current = monaco
+              setEditorInstance(editor)
               setEditorLoaded(true)
+
+              // Setup Emmet for rapid boilerplate and element creation
+              try {
+                emmetHTML(monaco)
+                emmetCSS(monaco)
+                emmetJSX(monaco)
+              } catch (err) {
+                console.warn('Failed to initialize Emmet:', err)
+              }
+
+              // ── Register LSP WebSocket Completion Provider ──
+              let lspWs = null
+              const backendPort = useStore.getState().backendUrl?.split(':').pop() || 8008
+              try {
+                const backendUrl = useStore.getState().backendUrl || 'http://127.0.0.1:8008'
+                const wsUrl = backendUrl.replace('http://', 'ws://').replace('https://', 'wss://')
+                lspWs = new WebSocket(`${wsUrl}/api/lsp/ws`)
+                lspWs.onopen = () => console.log('[LSP WS] Connected')
+              } catch (e) {
+                console.warn('[LSP WS] Connection failed', e)
+              }
+
+              let lspCompletionResolvers = {}
+              let messageCounter = 0
+
+              if (lspWs) {
+                lspWs.onmessage = (e) => {
+                  try {
+                    const msg = JSON.parse(e.data)
+                    if (msg.type === 'completion_result' && lspCompletionResolvers[msg.id]) {
+                      lspCompletionResolvers[msg.id](msg.completions)
+                      delete lspCompletionResolvers[msg.id]
+                    }
+                  } catch (err) {}
+                }
+
+                monaco.languages.registerCompletionItemProvider(['javascript', 'python', 'typescript'], {
+                  provideCompletionItems: (model, position) => {
+                    return new Promise((resolve) => {
+                      if (lspWs.readyState !== WebSocket.OPEN) {
+                        resolve({ suggestions: [] })
+                        return
+                      }
+                      
+                      const reqId = ++messageCounter
+                      lspCompletionResolvers[reqId] = (completions) => {
+                        const suggestions = completions.map(c => ({
+                          label: c.label,
+                          kind: monaco.languages.CompletionItemKind[c.kind === 'function' ? 'Function' : 'Variable'] || monaco.languages.CompletionItemKind.Text,
+                          insertText: c.insertText,
+                          detail: c.detail
+                        }))
+                        resolve({ suggestions })
+                      }
+                      
+                      lspWs.send(JSON.stringify({
+                        type: 'completion',
+                        id: reqId,
+                        path: model.uri.toString().replace('file://', ''),
+                        content: model.getValue(),
+                        line: position.lineNumber,
+                        column: position.column
+                      }))
+                      
+                      // Timeout
+                      setTimeout(() => {
+                        if (lspCompletionResolvers[reqId]) {
+                          resolve({ suggestions: [] })
+                          delete lspCompletionResolvers[reqId]
+                        }
+                      }, 2000)
+                    })
+                  }
+                })
+              }
 
               // ── Register debounced AI Inline Completion Provider ──
               let autocompleteTimer = null
@@ -1117,7 +1455,9 @@ export default function CodeCanvas() {
                 }
               })
 
-              // Disable semantic validation to hide unresolved import errors in the browser worker and configure JSX/TSX support!
+              // Disable both semantic and syntax validation from Monaco's built-in TypeScript worker.
+              // Real diagnostics are provided by the actual LSP server running in the main process.
+              // Monaco's built-in checker produces false positives on comments, incomplete code, and non-standard patterns.
               if (monaco.languages.typescript) {
                 monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
                   jsx: 1, // 1 = JsxEmit.Preserve (highly standard for Monaco TSX syntax checks)
@@ -1127,11 +1467,11 @@ export default function CodeCanvas() {
                 
                 monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
                   noSemanticValidation: true,
-                  noSyntaxValidation: false,
+                  noSyntaxValidation: true,
                 })
                 monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
                   noSemanticValidation: true,
-                  noSyntaxValidation: false,
+                  noSyntaxValidation: true,
                 })
               }
 
@@ -1217,7 +1557,9 @@ export default function CodeCanvas() {
                   if (!activeTab || !activeTab.path) return
                   const isHTML = activeTab.name.endsWith('.html') || activeTab.name.endsWith('.htm')
                   if (!isHTML) {
-                    alert("Live Server only supports HTML files!")
+                    const store = useStore.getState();
+                    store.appendOutputLog('error', "Live Server only supports HTML files!");
+                    store.setActiveSidebarTab('output');
                     return
                   }
                   if (!window.electron) return
@@ -1227,7 +1569,7 @@ export default function CodeCanvas() {
                   useStore.setState({ activeTerminalId: id })
                   
                   // live-server defaults to 8080. We track it in store for the "Copy Link" feature.
-                  store.setServerUrl('http://127.0.0.1:8080')
+                  store.setbackendUrl('http://127.0.0.1:8080')
                   
                   setTimeout(() => {
                     const isMac = window.electron.isMac
@@ -1266,16 +1608,22 @@ export default function CodeCanvas() {
                 if (lang === 'typescriptreact') return 'typescript'
                 return lang
               }
-              const lspLanguages = ['python', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact']
+              const lspLanguages = [
+                'python', 'javascript', 'typescript', 'javascriptreact', 'typescriptreact',
+                'html', 'css', 'json', 'go', 'rust', 'java', 'cpp', 'c', 'yaml', 
+                'dart', 'ruby', 'php', 'lua', 'kotlin', 'csharp', 'swift', 'elixir', 
+                'haskell', 'zig'
+              ]
               const language = activeTab.language
 
-              if (lspLanguages.includes(language)) {
+              if (lspLanguages.includes(language) && window.electron?.lsp) {
                 const activeLang = getLspLanguage(language)
                 // Ensure server is started
-                window.electron.lsp.start(activeLang, useStore.getState().rootPath)
+                const storeState = useStore.getState()
+                window.electron.lsp.start(activeLang, storeState.rootPath, storeState.activeEnvironment?.binPath)
 
                 monaco.languages.registerCompletionItemProvider(language, {
-                  triggerCharacters: ['.', '/', '@'],
+                  triggerCharacters: ['.', '/', '@', '<', '>', ':', '"', "'", '=', '-'],
                   provideCompletionItems: async (model, position) => {
                     const res = await window.electron.lsp.request(activeLang, 'textDocument/completion', {
                       textDocument: { uri: `file:///${activeTab.path.replace(/\\/g, '/')}` },
@@ -1373,22 +1721,65 @@ export default function CodeCanvas() {
                   }
                 })
 
-                // --- LSP Synchronization ---
-                const model = editor.getModel()
-                const uri = `file:///${activeTab.path.replace(/\\/g, '/')}`
-                
-                window.electron.lsp.notify(activeLang, 'textDocument/didOpen', {
-                  textDocument: { uri, languageId: activeLang, version: 1, text: model.getValue() }
-                })
-
-                model.onDidChangeContent(() => {
-                   window.electron.lsp.notify(activeLang, 'textDocument/didChange', {
-                     textDocument: { uri, version: Date.now() },
-                     contentChanges: [{ text: model.getValue() }]
-                   })
-                })
+                // --- LSP Synchronization moved to useEffect and handleChange ---
               }
               
+              // --- VS Code Boilerplate Snippets ---
+              const snippets = {
+                'javascript': [
+                  { label: 'clg', detail: 'console.log', insertText: 'console.log($1)' }
+                ],
+                'typescript': [
+                  { label: 'clg', detail: 'console.log', insertText: 'console.log($1)' }
+                ],
+                'javascriptreact': [
+                  { label: 'rfce', detail: 'React Functional Component', insertText: 'import React from "react"\n\nexport default function ${1:ComponentName}() {\n  return (\n    <div>\n      $2\n    </div>\n  )\n}' },
+                  { label: 'usee', detail: 'useEffect', insertText: 'useEffect(() => {\n  $1\n  return () => {\n    $2\n  }\n}, [$3])' },
+                  { label: 'uses', detail: 'useState', insertText: 'const [${1:state}, set${1/(.*)/${1:/capitalize}/}] = useState(${2:initialState})' },
+                  { label: 'clg', detail: 'console.log', insertText: 'console.log($1)' }
+                ],
+                'typescriptreact': [
+                  { label: 'rfce', detail: 'React Functional Component', insertText: 'import React from "react"\n\nexport default function ${1:ComponentName}() {\n  return (\n    <div>\n      $2\n    </div>\n  )\n}' },
+                  { label: 'usee', detail: 'useEffect', insertText: 'useEffect(() => {\n  $1\n  return () => {\n    $2\n  }\n}, [$3])' },
+                  { label: 'uses', detail: 'useState', insertText: 'const [${1:state}, set${1/(.*)/${1:/capitalize}/}] = useState(${2:initialState})' },
+                  { label: 'clg', detail: 'console.log', insertText: 'console.log($1)' }
+                ],
+                'html': [
+                  { label: '!', detail: 'HTML Boilerplate', insertText: '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${1:Document}</title>\n</head>\n<body>\n  $2\n</body>\n</html>' }
+                ],
+                'python': [
+                  { label: 'for', detail: 'For Loop', insertText: 'for ${1:item} in ${2:iterable}:\n    $3' },
+                  { label: 'def', detail: 'Function Definition', insertText: 'def ${1:function_name}($2):\n    $3' },
+                  { label: 'class', detail: 'Class Definition', insertText: 'class ${1:ClassName}:\n    def __init__(self, $2):\n        $3' },
+                  { label: 'ifm', detail: 'if __name__ == "__main__"', insertText: 'if __name__ == "__main__":\n    ${1:main()}' }
+                ]
+              }
+              
+              const mySnippets = snippets[language] || []
+              if (mySnippets.length > 0) {
+                monaco.languages.registerCompletionItemProvider(language, {
+                  provideCompletionItems: (model, position) => {
+                    const word = model.getWordUntilPosition(position)
+                    const range = {
+                      startLineNumber: position.lineNumber,
+                      endLineNumber: position.lineNumber,
+                      startColumn: word.startColumn,
+                      endColumn: word.endColumn
+                    }
+                    return {
+                      suggestions: mySnippets.map(s => ({
+                        label: s.label,
+                        kind: monaco.languages.CompletionItemKind.Snippet,
+                        documentation: s.detail,
+                        insertText: s.insertText,
+                        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                        range
+                      }))
+                    }
+                  }
+                })
+              }
+
               // --- Breakpoint Management ---
               editor.onMouseDown((e) => {
                 if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
@@ -1406,7 +1797,33 @@ export default function CodeCanvas() {
               wordWrap: editorSettings.wordWrap,
               minimap: { enabled: editorSettings.minimap },
               automaticLayout: true,
-              contextmenu: false,
+              contextmenu: true,
+              fixedOverflowWidgets: true,
+              formatOnType: true,
+              formatOnPaste: true,
+              wordBasedSuggestions: 'allDocuments',
+              suggest: {
+                showWords: true,
+                snippetsPreventQuickSuggestions: false,
+              },
+              bracketPairColorization: { enabled: true },
+              autoClosingBrackets: 'always',
+              autoClosingQuotes: 'always',
+              renderLineHighlight: 'all',
+              guides: { bracketPairs: true, indentation: true },
+              cursorBlinking: 'smooth',
+              cursorSmoothCaretAnimation: 'on',
+              smoothScrolling: true,
+              folding: true,
+              links: true,
+              mouseWheelZoom: true,
+              acceptSuggestionOnCommitCharacter: true,
+              acceptSuggestionOnEnter: 'smart',
+              snippetSuggestions: 'inline',
+              inlineSuggest: { enabled: true },
+              matchBrackets: 'always',
+              showUnused: true,
+              showDeprecated: true
             }}
           />
         )}
@@ -1438,14 +1855,36 @@ export default function CodeCanvas() {
       {/* Custom Y2K Neo-Brutalist Context Menu */}
       {contextMenu.visible && createPortal(
         <div 
-          className="fixed z-[9999] w-64 rounded-2xl border-2 border-black bg-[#13141f] text-white p-1.5 shadow-[4px_4px_0px_#000000] select-none font-sans max-h-[80vh] overflow-y-auto scrollbar-hide"
+          className="fixed z-[9999] w-64 rounded-2xl border-2 border-black bg-[#13141f] text-white p-1.5 shadow-[2px_2px_0px_#000] select-none font-sans max-h-[80vh] overflow-y-auto scrollbar-hide"
           style={{ 
             left: `${Math.min(contextMenu.x, window.innerWidth - 270)}px`, 
-            top: `${Math.min(contextMenu.y, Math.max(0, window.innerHeight - 500))}px` 
+            top: `${Math.min(contextMenu.y, Math.max(0, window.innerHeight - 550))}px` 
           }}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Live Server for HTML */}
+          {isHTML && (
+            <>
+              <button onClick={() => { handleOpenLiveServer(); setContextMenu({ visible: false }) }}
+                className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-violet-400 hover:bg-aeres-violet hover:text-black hover:font-bold rounded-xl transition-all font-bold border border-dashed border-violet-500/30 hover:border-solid hover:border-black mb-1.5"
+              >
+                <span className="flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  Open with Live Server
+                </span>
+                <span className="text-[9px] opacity-65 font-mono">Alt+L</span>
+              </button>
+              <div className="h-[1px] bg-black/25 my-1" />
+            </>
+          )}
+
           {/* Group 1: Navigation */}
+          <button onClick={() => { document.dispatchEvent(new CustomEvent('aeres:git-blame')); setContextMenu({ visible: false }) }}
+            className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-amber-400 hover:bg-amber-400 hover:text-black hover:font-bold rounded-xl transition-all border border-dashed border-amber-400/30 hover:border-solid hover:border-black mb-1.5"
+          >
+            <span>Trace cause chain (Git Blame)</span>
+          </button>
+          
           <button onClick={() => { triggerMonacoAction('editor.action.revealDefinition'); setContextMenu({ visible: false }) }}
             className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-slate-200 hover:bg-aeres-violet hover:text-black hover:font-bold rounded-xl transition-all"
           >
@@ -1480,24 +1919,23 @@ export default function CodeCanvas() {
           </button>
 
           {/* Peek Submenu */}
-          <div className="relative">
+          <div>
             <button 
-              onMouseEnter={() => setActivePeekSubmenu(true)}
               onClick={() => setActivePeekSubmenu(!activePeekSubmenu)}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-slate-200 hover:bg-aeres-violet hover:text-black hover:font-bold rounded-xl transition-all"
+              className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-xl transition-all ${activePeekSubmenu ? 'bg-aeres-violet/20 text-violet-400 font-bold' : 'text-slate-200 hover:bg-aeres-violet hover:text-black hover:font-bold'}`}
             >
               <span>Peek</span>
-              <span className="text-[9px] opacity-65">▸</span>
+              <span className={`text-[9px] opacity-65 transition-transform ${activePeekSubmenu ? 'rotate-90' : ''}`}>▸</span>
             </button>
             {activePeekSubmenu && (
-              <div className="absolute left-[95%] top-0 w-44 rounded-xl border-2 border-black bg-[#13141f] p-1 shadow-[4px_4px_0px_#000000] z-[10000]">
+              <div className="pl-3 pr-1 py-1 flex flex-col gap-1 border-l-2 border-violet-500/20 ml-3.5 my-1 bg-black/10 rounded-r-xl animate-in slide-in-from-top-1 duration-100">
                 <button onClick={() => { triggerMonacoAction('editor.action.peekDefinition'); setContextMenu({ visible: false }) }}
-                  className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-aeres-violet hover:text-black hover:font-bold rounded-lg transition-all"
+                  className="w-full text-left px-2 py-1.5 text-[11px] text-slate-300 hover:bg-aeres-violet hover:text-black hover:font-bold rounded-lg transition-all"
                 >
                   Peek Definition
                 </button>
                 <button onClick={() => { triggerMonacoAction('editor.action.peekReferences'); setContextMenu({ visible: false }) }}
-                  className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-aeres-violet hover:text-black hover:font-bold rounded-lg transition-all"
+                  className="w-full text-left px-2 py-1.5 text-[11px] text-slate-300 hover:bg-aeres-violet hover:text-black hover:font-bold rounded-lg transition-all"
                 >
                   Peek References
                 </button>
@@ -1555,6 +1993,15 @@ export default function CodeCanvas() {
           >
             <span>Review</span>
           </button>
+
+          {activeTab?.language === 'python' && (
+            <button onClick={() => { handleRunJupyter(); setContextMenu({ visible: false }) }}
+              className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-emerald-400 hover:bg-emerald-400 hover:text-black hover:font-bold rounded-xl transition-all border border-dashed border-emerald-400/30 hover:border-solid hover:border-black mt-1.5"
+            >
+              <span>Run in Jupyter</span>
+              <span className="text-[9px] opacity-65 font-mono">Shift+Enter</span>
+            </button>
+          )}
 
           <div className="h-[1px] bg-black/25 my-1" />
 
@@ -1634,7 +2081,7 @@ export default function CodeCanvas() {
           <button onClick={() => { handleCodeSnap(); setContextMenu({ visible: false }) }}
             className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-aeres-violet hover:bg-aeres-violet hover:text-black hover:font-black rounded-xl transition-all border border-dashed border-aeres-violet/40 hover:border-solid hover:border-black"
           >
-            <span>CodeSnap 📸</span>
+            <span className="flex items-center gap-1.5">CodeSnap <Camera size={14} /></span>
           </button>
         </div>,
         document.body
@@ -1643,9 +2090,9 @@ export default function CodeCanvas() {
       {/* CodeSnap Modal */}
       {codeSnapData.visible && (
         <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-md p-6">
-          <div className="relative max-w-2xl w-full bg-[#13141f] border-2 border-black rounded-3xl overflow-hidden shadow-[8px_8px_0px_#000000] p-6 animate-scale-up">
+          <div className="relative max-w-2xl w-full bg-[#13141f] border-2 border-black rounded-3xl overflow-hidden shadow-[2px_2px_0px_#000] p-6 animate-scale-up">
             <h3 className="text-sm font-extrabold uppercase tracking-wider text-aeres-violet mb-4 flex items-center gap-2">
-              📸 Aeres CodeSnap
+              <Camera size={18} /> Aeres CodeSnap
             </h3>
             
             {/* The Snap Card with Vibrant Gradient Backdrop */}
@@ -1669,17 +2116,14 @@ export default function CodeCanvas() {
             {/* Controls */}
             <div className="flex gap-3 justify-end mt-5">
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(codeSnapData.code)
-                  alert("Code copied to clipboard!")
-                }}
-                className="px-4 py-1.5 bg-aeres-violet text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] hover:scale-105 transition cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(codeSnapData.code); const store = useStore.getState(); store.appendOutputLog('success', "Code copied to clipboard!"); store.setActiveSidebarTab('output'); }}
+                className="px-4 py-1.5 bg-aeres-violet text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] hover:scale-105 transition cursor-pointer"
               >
-                📋 Copy Code
+                <div className="flex items-center gap-1.5 justify-center"><Clipboard size={14} /> Copy Code</div>
               </button>
               <button
                 onClick={() => setCodeSnapData({ visible: false, code: '', fileName: '' })}
-                className="px-4 py-1.5 bg-red-500 text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] hover:scale-105 transition cursor-pointer"
+                className="px-4 py-1.5 bg-red-500 text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] hover:scale-105 transition cursor-pointer"
               >
                 Close
               </button>

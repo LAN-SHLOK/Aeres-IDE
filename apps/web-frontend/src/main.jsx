@@ -43,7 +43,7 @@ if (!publishableKey || publishableKey === 'pk_test_placeholder' || publishableKe
       <div className="flex min-h-screen flex-col items-center justify-center bg-[#fdf5ee] text-[#3b2314] p-8 text-center font-sans">
         
         <div className="kawaii-card max-w-md p-8 bg-white">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
             🖳 config_error
           </span>
           <h1 className="font-display text-2xl font-black mb-4">Auth Configuration Required</h1>

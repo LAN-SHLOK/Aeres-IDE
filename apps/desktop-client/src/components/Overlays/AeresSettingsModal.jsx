@@ -13,6 +13,20 @@ const THEME_OPTIONS = [
   { id: 'aeres', name: 'Aeres Cyber' }
 ]
 
+const FILE_ICON_OPTIONS = [
+  { id: 'material-icons', name: 'Material Icon Theme' },
+  { id: 'minimal', name: 'Minimalistic Icons' },
+  { id: 'vs-standard', name: 'VS Code Standard' },
+  { id: 'none', name: 'None' }
+]
+
+const PRODUCT_ICON_OPTIONS = [
+  { id: 'default', name: 'Aeres Default' },
+  { id: 'fluent', name: 'Fluent Design' },
+  { id: 'codicons', name: 'VS Codicons' },
+  { id: 'pixel', name: 'Retro Pixel UI' }
+]
+
 const FONT_OPTIONS = [
   { id: "'JetBrains Mono', monospace", name: 'JetBrains Mono' },
   { id: "'Fira Code', monospace", name: 'Fira Code' },
@@ -22,6 +36,7 @@ const FONT_OPTIONS = [
 
 const sidebarCategories = [
   { id: 'commonlyUsed', name: 'Commonly Used', hasSub: false },
+  { id: 'themes', name: 'Themes', hasSub: false },
   { id: 'textEditor', name: 'Text Editor', hasSub: true },
   { id: 'workbench', name: 'Workbench', hasSub: true },
   { id: 'window', name: 'Window', hasSub: true },
@@ -32,15 +47,22 @@ const sidebarCategories = [
   { id: 'extensions', name: 'Extensions', hasSub: true }
 ]
 
-export default function AeresSettingsModal({ onClose }) {
+export default function AeresSettingsModal({ onClose, initialCategory, initialTab }) {
   const [activeTab, setActiveTab] = useState('user') // 'user' | 'workspace'
-  const [selectedCategory, setSelectedCategory] = useState('commonlyUsed')
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory || 'commonlyUsed')
   const [searchQuery, setSearchQuery] = useState('')
 
   const activeTheme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
+  const activeFileIconTheme = useStore((s) => s.fileIconTheme)
+  const setFileIconTheme = useStore((s) => s.setFileIconTheme)
+  const activeProductIconTheme = useStore((s) => s.productIconTheme)
+  const setProductIconTheme = useStore((s) => s.setProductIconTheme)
+  
   const settings = useStore((s) => s.editorSettings)
   const setSetting = useStore((s) => s.setEditorSetting)
+  
+  const [themeTab, setThemeTab] = useState(initialTab || 'color') // 'color' | 'fileIcons' | 'productIcons'
 
   // Master definition of all settings fields
   const allSettings = [
@@ -142,15 +164,39 @@ export default function AeresSettingsModal({ onClose }) {
       onChange: (val) => setSetting('minimap', val)
     },
     // Workbench Category
+    // Themes Category
     {
       id: 'workbenchTheme',
-      category: 'workbench',
+      category: 'themes',
       label: 'Workbench: Color Theme',
       description: 'Specifies the color theme used in the workbench.',
       type: 'select',
       options: THEME_OPTIONS,
       value: activeTheme,
-      onChange: (val) => setTheme(val)
+      onChange: (val) => setTheme(val),
+      sub: 'color'
+    },
+    {
+      id: 'fileIconTheme',
+      category: 'themes',
+      label: 'Workbench: File Icon Theme',
+      description: 'Specifies the file icon theme used in the workbench.',
+      type: 'select',
+      options: FILE_ICON_OPTIONS,
+      value: activeFileIconTheme,
+      onChange: (val) => setFileIconTheme(val),
+      sub: 'fileIcons'
+    },
+    {
+      id: 'productIconTheme',
+      category: 'themes',
+      label: 'Workbench: Product Icon Theme',
+      description: 'Specifies the product icon theme used in the workbench.',
+      type: 'select',
+      options: PRODUCT_ICON_OPTIONS,
+      value: activeProductIconTheme,
+      onChange: (val) => setProductIconTheme(val),
+      sub: 'productIcons'
     },
     {
       id: 'startupEditor',
@@ -198,6 +244,15 @@ export default function AeresSettingsModal({ onClose }) {
       type: 'checkbox',
       value: settings.chatSuggestions !== false,
       onChange: (val) => setSetting('chatSuggestions', val)
+    },
+    {
+      id: 'groqApiKey',
+      category: 'chat',
+      label: 'AI: Groq API Key',
+      description: 'Set your Groq API Key for the RAG and AI features. Overrides the backend .env default.',
+      type: 'text',
+      value: settings.groqApiKey || '',
+      onChange: (val) => setSetting('groqApiKey', val)
     },
     // Features Category
     {
@@ -256,6 +311,9 @@ export default function AeresSettingsModal({ onClose }) {
         item.description.toLowerCase().includes(query)
       )
     }
+    if (item.category === 'themes') {
+      return item.category === selectedCategory && item.sub === themeTab
+    }
     return item.category === selectedCategory
   })
 
@@ -278,7 +336,16 @@ export default function AeresSettingsModal({ onClose }) {
               type="button"
               title="Open Settings (JSON)"
               onClick={() => {
-                alert('Opening settings.json configuration...');
+                const state = useStore.getState();
+                const settingsContent = JSON.stringify(state.editorSettings || {}, null, 2);
+                state.openTab({
+                  path: 'settings.json',
+                  name: 'settings.json',
+                  content: settingsContent,
+                  language: 'json',
+                  virtual: true
+                });
+                onClose();
               }}
               className="hover:text-white transition flex items-center justify-center"
             >
@@ -365,6 +432,32 @@ export default function AeresSettingsModal({ onClose }) {
               {searchQuery.trim() !== '' ? 'Search Results' : currentCategoryName}
             </h2>
 
+            {selectedCategory === 'themes' && searchQuery === '' && (
+              <div className="flex gap-4 border-b border-[#2d2d2d] mb-4 select-none">
+                <button 
+                  className={`pb-2 px-1 relative text-[11px] uppercase tracking-wider font-bold transition-all ${themeTab === 'color' ? 'text-aeres-violet' : 'text-[#969696] hover:text-white'}`}
+                  onClick={() => setThemeTab('color')}
+                >
+                  Color Themes
+                  {themeTab === 'color' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-aeres-violet" />}
+                </button>
+                <button 
+                  className={`pb-2 px-1 relative text-[11px] uppercase tracking-wider font-bold transition-all ${themeTab === 'fileIcons' ? 'text-aeres-violet' : 'text-[#969696] hover:text-white'}`}
+                  onClick={() => setThemeTab('fileIcons')}
+                >
+                  File Icon Themes
+                  {themeTab === 'fileIcons' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-aeres-violet" />}
+                </button>
+                <button 
+                  className={`pb-2 px-1 relative text-[11px] uppercase tracking-wider font-bold transition-all ${themeTab === 'productIcons' ? 'text-aeres-violet' : 'text-[#969696] hover:text-white'}`}
+                  onClick={() => setThemeTab('productIcons')}
+                >
+                  Product Icon Themes
+                  {themeTab === 'productIcons' && <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-aeres-violet" />}
+                </button>
+              </div>
+            )}
+
             {filteredSettings.length === 0 ? (
               <div className="text-[#969696] py-4">No settings found.</div>
             ) : (
@@ -401,6 +494,15 @@ export default function AeresSettingsModal({ onClose }) {
                             className="accent-[#007acc] w-3.5 h-3.5 cursor-pointer bg-[#3c3c3c] border border-[#3c3c3c] rounded"
                           />
                         </label>
+                      )}
+
+                      {item.type === 'text' && (
+                        <input
+                          type="text"
+                          value={item.value}
+                          onChange={(e) => item.onChange(e.target.value)}
+                          className="w-full max-w-sm bg-[#3c3c3c] text-white border border-[#3c3c3c] focus:border-[#007acc] rounded px-2 py-1 text-xs outline-none transition-colors"
+                        />
                       )}
 
                       {item.type === 'select' && (

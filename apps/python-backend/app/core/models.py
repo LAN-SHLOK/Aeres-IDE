@@ -10,6 +10,45 @@ class Language(str, Enum):
     javascript = "javascript"
     typescript = "typescript"
     python = "python"
+    go = "go"
+    rust = "rust"
+    java = "java"
+    kotlin = "kotlin"
+    csharp = "csharp"
+    cpp = "cpp"
+    c = "c"
+    ruby = "ruby"
+    php = "php"
+    dart = "dart"
+    swift = "swift"
+    lua = "lua"
+    elixir = "elixir"
+    haskell = "haskell"
+    scala = "scala"
+    r = "r"
+    perl = "perl"
+    shell = "shell"
+    powershell = "powershell"
+    nim = "nim"
+    zig = "zig"
+    fsharp = "fsharp"
+    clojure = "clojure"
+    erlang = "erlang"
+    sql = "sql"
+    graphql = "graphql"
+    yaml = "yaml"
+    toml = "toml"
+    xml = "xml"
+    markdown = "markdown"
+    html = "html"
+    css = "css"
+    scss = "scss"
+    json = "json"
+    protobuf = "protobuf"
+    hcl = "hcl"
+    verilog = "verilog"
+    vhdl = "vhdl"
+    asm = "asm"
     unknown = "unknown"
 
 
@@ -36,6 +75,10 @@ class ModernizeRequest(BaseModel):
 
 class ProjectScanRequest(BaseModel):
     file_paths: List[str] = Field(..., max_length=500)
+
+
+class HealthScanRequest(BaseModel):
+    root_path: str
 
 
 class RagQueryRequest(BaseModel):

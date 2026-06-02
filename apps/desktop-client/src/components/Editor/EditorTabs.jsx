@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useStore } from '../../store.js'
+import { getFileIcon } from '../../utils/getFileIcon.jsx'
 
 function SortableTab({ tab, isActive, onClose, onPin }) {
   const {
@@ -33,6 +34,9 @@ function SortableTab({ tab, isActive, onClose, onPin }) {
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 20 : 1,
   }
+
+  const theme = useStore((s) => s.theme)
+  const fileIconTheme = useStore((s) => s.fileIconTheme)
 
   return (
     <div
@@ -52,7 +56,12 @@ function SortableTab({ tab, isActive, onClose, onPin }) {
         <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-aeres-violet" />
       )}
       
-      {!tab.isPinned && <span className="max-w-[140px] truncate py-2.5 font-medium">{tab.name}</span>}
+      {!tab.isPinned && (
+        <div className="flex items-center gap-1.5 py-2.5 min-w-0 flex-1">
+          {getFileIcon(tab.name, theme, fileIconTheme)}
+          <span className="truncate font-medium">{tab.name}</span>
+        </div>
+      )}
       
       {tab.isPinned && (
         <div className="flex items-center justify-center py-2.5">
@@ -96,6 +105,8 @@ export default function EditorTabs() {
   const setActiveSidebarTab = useStore((s) => s.setActiveSidebarTab)
   const terminalPanelOpen = useStore((s) => s.terminalPanelOpen)
   const rightPanelOpen = useStore((s) => s.rightPanelOpen)
+  const theme = useStore((s) => s.theme)
+  const fileIconTheme = useStore((s) => s.fileIconTheme)
   const [showDropdown, setShowDropdown] = useState(false)
 
   const sensors = useSensors(
@@ -214,6 +225,7 @@ export default function EditorTabs() {
                     }}
                     className={`flex items-center gap-2 px-3 py-1.5 text-[12px] cursor-pointer hover:bg-aeres-violet hover:text-white transition-colors ${t.id === activeTabId ? 'text-aeres-blue font-semibold' : 'text-aeres-text'}`}
                   >
+                    {getFileIcon(t.name, theme, fileIconTheme)}
                     <span className="truncate flex-1">{t.name}</span>
                     {t.isDirty && <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />}
                   </div>

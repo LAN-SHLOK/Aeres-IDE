@@ -1,5 +1,6 @@
 import { useStore } from '../../store.js'
 import { openFolderAndResetTerminals } from '../../utils/workspaceActions.js'
+import { Flower, Sparkles, Cat, Heart } from 'lucide-react'
 
 export default function WelcomeScreen() {
   const rootPath = useStore((s) => s.rootPath)
@@ -25,7 +26,7 @@ export default function WelcomeScreen() {
         <div className="flex flex-col items-center max-w-sm w-full">
           
           {/* Retro Y2K Window Card */}
-          <div className="w-full bg-[#fffdf9] border-3 border-black rounded-2xl shadow-[5px_5px_0px_#000] overflow-hidden text-black">
+          <div className="w-full bg-[#fffdf9] border-3 border-black rounded-2xl shadow-[2px_2px_0px_#000] overflow-hidden text-black">
             
             {/* Window Header */}
             <div className="h-8 flex items-center justify-between border-b-3 border-black px-3"
@@ -34,8 +35,8 @@ export default function WelcomeScreen() {
                    backgroundImage: 'linear-gradient(to right, rgba(255, 179, 193, 0.15) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 179, 193, 0.15) 1px, transparent 1px)',
                    backgroundColor: theme === 'cutie-dark' ? '#ffb3c1' : '#ff8ba7'
                  }}>
-              <span className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
-                🌸 Aeres Cutie OS v1.0
+              <span className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5">
+                <Flower size={12} className="text-pink-500" /> Aeres Cutie OS v1.0
               </span>
               <div className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56] border border-black" />
@@ -47,29 +48,29 @@ export default function WelcomeScreen() {
             {/* Window Content */}
             <div className="p-5 space-y-5 flex flex-col items-center text-center">
               
-              {/* Cute Floating Bouncing Emoji Sticker */}
-              <div className="text-4xl animate-bounce duration-1000 my-1">
-                😺✨
+              <div className="text-4xl animate-bounce duration-1000 my-1 flex justify-center items-center gap-2 text-pink-500">
+                <Cat size={36} />
+                <Sparkles size={36} />
               </div>
               
               <div>
                 <h1 className="text-xl font-black text-black tracking-tight mb-1 font-mono">Welcome, Cute Coder!</h1>
-                <p className="text-[11px] text-black/70 max-w-xs mx-auto leading-relaxed">
-                  Let's write beautiful, error-free code today with absolute zero eye strain! 🧁🌸
+                <p className="text-[11px] text-black/70 max-w-xs mx-auto leading-relaxed flex items-center justify-center gap-1 mt-1">
+                  Let's write beautiful, error-free code today with absolute zero eye strain! <Heart size={12} className="text-pink-500 fill-current" />
                 </p>
               </div>
 
               <div className="w-full space-y-4">
                 <button
                   onClick={handleOpenFolder}
-                  className="w-full py-2 bg-[#a7f3d0] border-2.5 border-black rounded-full shadow-[3px_3px_0px_#000] font-black text-xs uppercase tracking-wider hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[2px_2px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#000] transition-all flex items-center justify-center gap-2"
+                  className="w-full py-2 bg-[#a7f3d0] border-2.5 border-black rounded-full shadow-[2px_2px_0px_#000] font-black text-xs uppercase tracking-wider hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#000] transition-all flex items-center justify-center gap-2"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
                   Open Folder
                 </button>
                 <button
                   onClick={() => window.electron?.window?.newWindow()}
-                  className="w-full py-2 bg-[#c4b5fd]/30 border-2 border-black rounded-full shadow-[2px_2px_0px_#000] font-black text-xs uppercase tracking-wider hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1.5px_1.5px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] transition-all flex items-center justify-center gap-2 text-black/70"
+                  className="w-full py-2 bg-[#c4b5fd]/30 border-2 border-black rounded-full shadow-[2px_2px_0px_#000] font-black text-xs uppercase tracking-wider hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] transition-all flex items-center justify-center gap-2 text-black/70"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="13" height="13" rx="1"/>
@@ -100,8 +101,8 @@ export default function WelcomeScreen() {
             </div>
           </div>
           
-          <div className="mt-6 text-[8px] font-black tracking-widest uppercase opacity-45 text-slate-500">
-            🍡 SYSTEM IS SO COZY RIGHT NOW 🍡
+          <div className="mt-6 text-[8px] font-black tracking-widest uppercase opacity-45 text-slate-500 flex items-center justify-center gap-1.5">
+            <Heart size={10} className="text-pink-500" /> SYSTEM IS SO COZY RIGHT NOW <Heart size={10} className="text-pink-500" />
           </div>
         </div>
       </div>

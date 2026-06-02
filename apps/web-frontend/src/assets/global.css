@@ -283,3 +283,27 @@ body::after {
   0% { opacity: 0; transform: translateY(12px) rotate(8deg); }
   100% { opacity: 1; transform: translateY(0) rotate(0); }
 }
+
+/* Scrollbar that only appears on hover */
+.hover-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.hover-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+  border-color: transparent;
+}
+.hover-scrollbar:hover::-webkit-scrollbar-track {
+  background: var(--kawaii-cream);
+  border-left: 3px solid #000000;
+}
+.hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--kawaii-pink);
+  border: 3px solid #000000;
+  border-radius: 9999px;
+  box-shadow: 2px 2px 0px #000000;
+}
+.hover-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background: var(--kawaii-purple);
+}

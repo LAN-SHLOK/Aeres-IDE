@@ -271,11 +271,19 @@ def run_mutation_testing(
     test_command: str,
     repo_path: str,
     max_mutations: int = 20,
-) -> List[Dict]:
+    skip_baseline: bool = False,
+) -> Tuple[List[Dict], int]:
     """
     Run mutation testing on a file or recursively scan an entire directory.
-    Returns list of survived mutations (weak test spots).
+    Returns tuple of (list of survived mutations, total tested).
     """
+    test_cwd = os.path.dirname(file_path) if os.path.isfile(file_path) else file_path
+    if not skip_baseline:
+        # Baseline check: ensure tests currently pass before mutating
+        baseline_pass = run_tests(test_command, test_cwd)
+        if not baseline_pass:
+            raise RuntimeError(f"Baseline tests failed! Ensure '{test_command}' passes on the unmodified code before running mutations.")
+
     # ── Folder/Directory Scan mode ──────────────────────────────────────────
     if os.path.isdir(file_path):
         target_files = []
@@ -291,34 +299,35 @@ def run_mutation_testing(
                 if ext in supported_exts:
                     target_files.append(os.path.join(root, f))
                     
-        if not target_files:
-            return []
-            
-        all_survived = []
-        # Distribute maximum mutations count evenly across discovered files
-        mutations_per_file = max(1, max_mutations // len(target_files))
-        
-        for tf in target_files:
-            try:
-                with open(tf, 'r', encoding='utf-8') as f:
-                    source_content = f.read()
-                file_survived = run_mutation_testing(
-                    file_path=tf,
-                    source=source_content,
-                    test_command=test_command,
-                    repo_path=repo_path,
-                    max_mutations=mutations_per_file
-                )
-                # Decorate survived mutations with relative file paths
-                for s in file_survived:
-                    rel_path = os.path.relpath(tf, file_path)
-                    s["description"] = f"[{rel_path}] L{s['line']}: {s['description']}"
-                    s["file_path"] = tf
-                    all_survived.append(s)
-            except Exception:
-                pass
+            if not target_files:
+                return [], 0
                 
-        return all_survived
+            all_survived = []
+            total_tested = 0
+            mutations_per_file = max(1, max_mutations // len(target_files))
+            
+            for tf in target_files:
+                try:
+                    with open(tf, 'r', encoding='utf-8') as f:
+                        source_content = f.read()
+                    file_survived, file_tested = run_mutation_testing(
+                        file_path=tf,
+                        source=source_content,
+                        test_command=test_command,
+                        repo_path=repo_path,
+                        max_mutations=mutations_per_file,
+                        skip_baseline=True
+                    )
+                    total_tested += file_tested
+                    for s in file_survived:
+                        rel_path = os.path.relpath(tf, file_path)
+                        s["description"] = f"[{rel_path}] L{s['line']}: {s['description']}"
+                        s["file_path"] = tf
+                        all_survived.append(s)
+                except Exception:
+                    pass
+                    
+            return all_survived, total_tested
 
     # ── Single File Scan mode ───────────────────────────────────────────────
     mutable_lines = get_mutable_lines(source)
@@ -328,7 +337,7 @@ def run_mutation_testing(
         is_python = False
 
     if not mutable_lines:
-        return []
+        return [], 0
 
     import tempfile
     import shutil
@@ -374,24 +383,21 @@ def run_mutation_testing(
                 shutil.copy(file_path, backup_path)
                 shutil.copy(tmp_path, file_path)
 
-                tests_pass = run_tests(test_command, repo_path)
+                tests_pass = run_tests(test_command, test_cwd)
                 tested += 1
 
                 if tests_pass:
-                    # Survival detected: tests still passed, proving weakness
+                    # Survived!
                     survived.append({
                         "line": line,
                         "mutator": mutator_name,
-                        "description": desc,
+                        "description": desc
                     })
-            except Exception:
-                pass
             finally:
-                # Critical restoration step to prevent workspace corruption
+                # Always restore original file immediately after testing
                 if os.path.exists(backup_path):
                     shutil.copy(backup_path, file_path)
-                    os.unlink(backup_path)
                 if os.path.exists(tmp_path):
                     os.unlink(tmp_path)
 
-    return survived
+    return survived, tested

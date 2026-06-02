@@ -35,7 +35,8 @@ export default function FocusSessionManager() {
         terminalPanelHeight: s.terminalPanelHeight,
         activeSidebarTab: s.activeSidebarTab,
         activeRightTab: s.activeRightTab,
-        chatMessages: s.chatMessages
+        chatMessages: s.chatMessages,
+        savedAt: Date.now()
       }
       
       const result = await Promise.race([
@@ -50,7 +51,9 @@ export default function FocusSessionManager() {
       }
     } catch (err) {
       console.error('[FocusSession] save error:', err)
-      alert(`Failed to save session: ${err.message}`)
+      const store = useStore.getState();
+      store.appendOutputLog('error', `Failed to save session: ${err.message}`);
+      store.setActiveSidebarTab('output');
     } finally {
       setIsSaving(false)
     }

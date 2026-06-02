@@ -40,7 +40,7 @@ export default function Dashboard() {
         
         {/* Welcome Header Badge */}
         <div className="text-center mb-12 font-display">
-          <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
             control_panel
           </span>
           <h1 className="text-3xl md:text-5xl font-black text-white leading-tight">

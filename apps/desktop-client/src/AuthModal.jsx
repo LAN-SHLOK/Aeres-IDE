@@ -1,20 +1,22 @@
+import { useEffect } from 'react'
+
 export default function AuthModal({ onCheckAgain }) {
   const e = typeof window !== 'undefined' ? window.electron : null
 
   const handleOpenBrowser = async () => {
     if (e?.auth?.openBrowser) {
-      // Opens the web portal URL (localhost or configured URL) in the user's default browser
       await e.auth.openBrowser('ide')
     } else if (e?.fs?.openExternal) {
-      // Fallback: open directly via shell
-      const webUrl = 'http://localhost:5173'
+      const webUrl = import.meta.env.VITE_WEB_URL || 'https://app.aeres.ai'
       await e.fs.openExternal(webUrl)
     }
   }
 
+  // Removed useEffect to prevent automatic redirect on load
+
   const handleOpenWebApp = async () => {
     // Opens the web app directly in the default browser so the user can log in there
-    const webUrl = 'http://localhost:5173'
+    const webUrl = import.meta.env.VITE_WEB_URL || 'https://app.aeres.ai'
     if (e?.fs?.openExternal) {
       await e.fs.openExternal(webUrl)
     } else {
@@ -48,7 +50,7 @@ export default function AuthModal({ onCheckAgain }) {
             <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
-          Open Web App (localhost:5173)
+          Open Web App
         </button>
         <button
           type="button"

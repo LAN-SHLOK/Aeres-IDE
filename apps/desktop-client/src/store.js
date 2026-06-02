@@ -19,8 +19,10 @@ export const useStore = create(
       // ── WORKSPACE ─────────────────────────────────────
       rootPath: null,
       fileTree: null,
+      comparePath: null,
       setRootPath: (p) => set({ rootPath: p }),
       setFileTree: (t) => set({ fileTree: t }),
+      setComparePath: (p) => set({ comparePath: p }),
 
       // ── OVERLAYS ──────────────────────────────────────
       quickOpenOpen: false,
@@ -45,12 +47,12 @@ export const useStore = create(
         if (existing) {
           // Update the line number even for existing tabs
           const updatedTabs = state.tabs.map(t => 
-            t.id === existing.id ? { ...t, line: file.line || 1 } : t
+            t.id === existing.id ? { ...t, line: file.line || 1, highlightLines: file.highlightLines } : t
           )
           set({ tabs: updatedTabs, activeTabId: existing.id })
           return existing.id
         }
-        const id = `tab_${++_tabIdCounter}`
+        const id = `tab_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
         const tab = { id, ...file, isDirty: false, isPinned: false, line: file.line || 1 }
         set({ tabs: [...state.tabs, tab], activeTabId: id })
         return id
@@ -73,7 +75,20 @@ export const useStore = create(
       closeAllTabs: () => {
         const state = get()
         const pinned = state.tabs.filter((t) => t.isPinned)
-        set({ tabs: pinned, activeTabId: pinned.length > 0 ? pinned[0].id : null })
+        const unpinned = state.tabs.filter((t) => !t.isPinned)
+        const closed = [...unpinned, ...state.recentlyClosedTabs].slice(0, 10)
+        set({ tabs: pinned, activeTabId: pinned.length > 0 ? pinned[0].id : null, recentlyClosedTabs: closed })
+      },
+
+      closeOtherTabs: () => {
+        const state = get()
+        const active = state.tabs.find(t => t.id === state.activeTabId)
+        if (active) {
+          const keepTabs = state.tabs.filter((t) => t.isPinned || t.id === active.id)
+          const toClose = state.tabs.filter((t) => !t.isPinned && t.id !== active.id)
+          const closed = [...toClose, ...state.recentlyClosedTabs].slice(0, 10)
+          set({ tabs: keepTabs, recentlyClosedTabs: closed })
+        }
       },
 
       setTabDirty: (id, dirty) =>
@@ -163,6 +178,13 @@ export const useStore = create(
 
       setTerminalPanelOpen: (open) => set({ terminalPanelOpen: open }),
       setTerminalPanelHeight: (h) => set({ terminalPanelHeight: h }),
+      setActiveTerminalId: (id) => set({ activeTerminalId: id }),
+      
+      outputLog: [],
+      appendOutputLog: (type, msg) => set((s) => ({
+        outputLog: [...s.outputLog, { id: Date.now() + Math.random(), type, msg, time: new Date().toLocaleTimeString() }].slice(-500)
+      })),
+      clearOutputLog: () => set({ outputLog: [] }),
 
       // ── DEBUGGER ──────────────────────────────────────
       debugSession: null,
@@ -229,6 +251,13 @@ export const useStore = create(
       showMutations: true,
       setShowMutations: (val) => set({ showMutations: val }),
 
+      // ── HEALTH DASHBOARD ──────────────────────────────
+      healthScore: null,
+      healthIssues: [],
+      isScanningHealth: false,
+      setHealthData: (score, issues) => set({ healthScore: score, healthIssues: issues }),
+      setIsScanningHealth: (scanning) => set({ isScanningHealth: scanning }),
+
       // ── LAYOUT ────────────────────────────────────────
       sidebarWidth: 260,
       rightPanelOpen: true,
@@ -236,6 +265,8 @@ export const useStore = create(
       activeSidebarTab: 'files', // files | search | git | debug
       activeRightTab: 'chat', // chat | problems
       theme: 'cutie-dark',
+      fileIconTheme: 'material-icons',
+      productIconTheme: 'default',
       installedExtensions: ['aeres-ai-core'], // Aeres AI Core is installed by default
       disabledExtensions: [],
 
@@ -252,18 +283,35 @@ export const useStore = create(
 
       toggleTheme: () => set((s) => ({ theme: s.theme.includes('light') ? 'cutie-dark' : 'cutie-light' })),
       setTheme: (theme) => set({ theme }),
+      setFileIconTheme: (theme) => set({ fileIconTheme: theme }),
+      setProductIconTheme: (theme) => set({ productIconTheme: theme }),
       serverUrl: null,
       setServerUrl: (url) => set({ serverUrl: url }),
       installExtension: (id) => set((s) => {
         if (s.installedExtensions.includes(id)) return {}
+        import('./utils/extensionHost.js').then(({ extensionHost }) => {
+          extensionHost.loadExtension(id)
+        })
         return { installedExtensions: [...s.installedExtensions, id] }
       }),
-      uninstallExtension: (id) => set((s) => ({
-        installedExtensions: s.installedExtensions.filter(x => x !== id),
-        disabledExtensions: s.disabledExtensions.filter(x => x !== id)
-      })),
+      uninstallExtension: (id) => set((s) => {
+        import('./utils/extensionHost.js').then(({ extensionHost }) => {
+          extensionHost.unloadExtension(id)
+        })
+        return {
+          installedExtensions: s.installedExtensions.filter(x => x !== id),
+          disabledExtensions: s.disabledExtensions.filter(x => x !== id)
+        }
+      }),
       toggleDisableExtension: (id) => set((s) => {
         const isCurrentlyDisabled = s.disabledExtensions.includes(id)
+        import('./utils/extensionHost.js').then(({ extensionHost }) => {
+          if (isCurrentlyDisabled) {
+            extensionHost.loadExtension(id)
+          } else {
+            extensionHost.unloadExtension(id)
+          }
+        })
         return {
           disabledExtensions: isCurrentlyDisabled
             ? s.disabledExtensions.filter(x => x !== id)
@@ -307,6 +355,7 @@ export const useStore = create(
         if (!state) return
         
         set({
+          rootPath: state.rootPath || get().rootPath,
           tabs: state.tabs || [],
           activeTabId: state.activeTabId,
           sidebarWidth: state.sidebarWidth || 260,
@@ -355,7 +404,7 @@ export const useStore = create(
         }
         if (step.type === 'tool_result') {
           const newSteps = s.agentSteps.map(st => 
-            (st.id === step.id || (st.tool === step.tool && st.status !== 'done')) 
+            st.id === step.id
               ? { ...st, status: 'done', result: step.result } 
               : st
           )
@@ -373,12 +422,39 @@ export const useStore = create(
       appendAgentMessage: (msg) => set((s) => ({ agentMessages: [...s.agentMessages, msg] })),
       setAgentMessages: (msgs) => set({ agentMessages: msgs }),
 
+      // ── ENVIRONMENTS ──────────────────────────────────
+      activeEnvironment: null,
+      availableEnvironments: [],
+      envSelectorOpen: false,
+      setEnvSelectorOpen: (open) => set({ envSelectorOpen: open }),
+      setActiveEnvironment: (env) => set({ activeEnvironment: env }),
+      setAvailableEnvironments: (envs) => set({ availableEnvironments: envs }),
+      refreshEnvironments: async () => {
+        const state = get()
+        if (state.rootPath && window.electron && window.electron.env) {
+          try {
+            const envs = await window.electron.env.scan(state.rootPath)
+            set({ availableEnvironments: envs })
+            // Auto-select first non-system environment if none selected
+            if (!state.activeEnvironment && envs.length > 1) {
+              set({ activeEnvironment: envs[1] })
+            } else if (!state.activeEnvironment && envs.length === 1) {
+              set({ activeEnvironment: envs[0] })
+            }
+          } catch (err) {
+            console.error('[Store] Failed to scan environments:', err)
+          }
+        }
+      },
+
     }),
     {
       name: 'aeres-ide-state',
       partialize: (state) => ({
         editorSettings: state.editorSettings,
         theme: state.theme,
+        fileIconTheme: state.fileIconTheme,
+        productIconTheme: state.productIconTheme,
         sidebarWidth: state.sidebarWidth,
         rightPanelWidth: state.rightPanelWidth,
         terminalPanelHeight: state.terminalPanelHeight,

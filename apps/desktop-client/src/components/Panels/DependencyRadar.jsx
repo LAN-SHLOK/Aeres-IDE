@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
+import { AlertOctagon, AlertTriangle, PackageSearch, CheckCircle2, HelpCircle, Brain, Zap, Terminal } from 'lucide-react'
 import { useStore } from '../../store.js'
 
 const STATUS_COLORS = {
-  critical: { bg: '#ef4444', label: 'CVE Found', icon: '🔴' },
-  abandoned: { bg: '#f59e0b', label: 'Deprecated/Abandoned', icon: '🟡' },
-  outdated: { bg: '#3b82f6', label: 'Update Available', icon: '🔵' },
-  healthy: { bg: '#22c55e', label: 'Healthy', icon: '🟢' },
-  unknown: { bg: '#6b7280', label: 'Unknown', icon: '⚪' },
+  critical: { bg: '#ef4444', label: 'CVE Found', icon: <AlertOctagon size={10} /> },
+  abandoned: { bg: '#f59e0b', label: 'Deprecated/Abandoned', icon: <AlertTriangle size={10} /> },
+  outdated: { bg: '#3b82f6', label: 'Update Available', icon: <PackageSearch size={10} /> },
+  healthy: { bg: '#22c55e', label: 'Healthy', icon: <CheckCircle2 size={10} /> },
+  unknown: { bg: '#6b7280', label: 'Unknown', icon: <HelpCircle size={10} /> },
 }
 
 function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
@@ -15,6 +16,72 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
   const statusInfo = STATUS_COLORS[dep.status] || STATUS_COLORS.unknown
   const [usages, setUsages] = useState([])
   const [searchingUsages, setSearchingUsages] = useState(false)
+  const [migrationNotes, setMigrationNotes] = useState('')
+  const [breakingChanges, setBreakingChanges] = useState([])
+  const [fetchingNotes, setFetchingNotes] = useState(false)
+
+  const handleOpenFile = async (fileMatch) => {
+    try {
+      const content = await window.electron.fs.readFile(fileMatch.file)
+      useStore.getState().openTab({
+        path: fileMatch.file,
+        name: fileMatch.file.split(/[\\/]/).pop(),
+        content: content,
+        line: fileMatch.lines[0],
+        highlightLines: fileMatch.lines
+      })
+      useStore.getState().setActiveSidebarTab('files')
+    } catch (err) {
+      console.error('Failed to open file:', err)
+    }
+  }
+
+  useEffect(() => {
+    if (!dep || !window.electron || !window.electron.radar || dep.status === 'healthy') return
+    
+    // Reset state
+    setMigrationNotes('')
+    setBreakingChanges([])
+    
+    if (!dep.repoUrl || !dep.repoUrl.includes('github.com')) return
+
+    let isMounted = true
+    setFetchingNotes(true)
+    
+    const cacheKey = `${dep.name}@${dep.current}`
+    if (window._radarNotesCache && window._radarNotesCache[cacheKey]) {
+      const cached = window._radarNotesCache[cacheKey]
+      setMigrationNotes(cached.migrationNotes || '')
+      setBreakingChanges(cached.breakingChanges || [])
+      setFetchingNotes(false)
+      return
+    }
+    
+    window.electron.radar.getNotes({
+      repo_url: dep.repoUrl,
+      current: dep.current,
+      latest: dep.latest,
+      name: dep.name,
+      ecosystem: dep.ecosystem
+    }).then((res) => {
+      if (!isMounted) return
+      if (res && !res.error) {
+        if (!window._radarNotesCache) window._radarNotesCache = {}
+        window._radarNotesCache[cacheKey] = {
+          migrationNotes: res.migrationNotes,
+          breakingChanges: res.breakingChanges
+        }
+        setMigrationNotes(res.migrationNotes || '')
+        setBreakingChanges(res.breakingChanges || [])
+      }
+      setFetchingNotes(false)
+    }).catch(err => {
+      console.error('Error fetching notes:', err)
+      if (isMounted) setFetchingNotes(false)
+    })
+    
+    return () => { isMounted = false }
+  }, [dep])
 
   useEffect(() => {
     if (!dep || !window.electron || !window.electron.fs) return
@@ -22,13 +89,32 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
     setSearchingUsages(true)
     setUsages([])
     
+    const cacheKey = dep.name
+    if (window._radarUsagesCache && window._radarUsagesCache[cacheKey]) {
+      setUsages(window._radarUsagesCache[cacheKey])
+      setSearchingUsages(false)
+      return
+    }
+    
     window.electron.fs.searchInProject({
       rootPath: useStore.getState().rootPath,
       query: dep.name
     }).then((res) => {
       if (!isMounted) return
-      const uniqueFiles = Array.from(new Set((res?.results || []).map(r => r.file)))
-      setUsages(uniqueFiles)
+      const grouped = {}
+      ;(res?.results || []).forEach(r => {
+        if (!grouped[r.file]) grouped[r.file] = []
+        // Avoid duplicate lines if multiple matches on same line
+        if (!grouped[r.file].includes(r.line)) grouped[r.file].push(r.line)
+      })
+      const groupedArray = Object.keys(grouped).map(f => ({ file: f, lines: grouped[f] }))
+      // Sort by number of usages
+      groupedArray.sort((a, b) => b.lines.length - a.lines.length)
+      
+      if (!window._radarUsagesCache) window._radarUsagesCache = {}
+      window._radarUsagesCache[cacheKey] = groupedArray
+      
+      setUsages(groupedArray)
       setSearchingUsages(false)
     }).catch(err => {
       console.error('Error finding usages:', err)
@@ -39,7 +125,7 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
   }, [dep])
 
   return (
-    <div className="border-t border-slate-800 bg-slate-950/80 overflow-y-auto max-h-[50%] animate-in slide-in-from-bottom-2 duration-200">
+    <div className="border-t border-slate-800 bg-slate-950/95 overflow-y-auto max-h-[75%] animate-in slide-in-from-bottom-2 duration-200">
       {/* Header */}
       <div className="flex justify-between items-start p-3 border-b border-slate-800/50">
         <div className="flex-1 min-w-0">
@@ -91,30 +177,38 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
       )}
 
       {/* Breaking Changes - Auto-fetched */}
-      {dep.breakingChanges?.length > 0 && (
+      {(fetchingNotes || breakingChanges.length > 0) && (
         <div className="mx-3 mt-2">
           <div className="text-[9px] font-bold text-orange-400 uppercase mb-1 flex items-center gap-1">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             Breaking Changes (Auto-Detected)
           </div>
-          {dep.breakingChanges.map((bc, i) => (
-            <div key={i} className="text-[10px] text-orange-200/80 bg-orange-950/20 p-1.5 mb-1 border border-orange-900/30 rounded">
-              {bc}
-            </div>
-          ))}
+          {fetchingNotes ? (
+            <div className="text-[9px] text-slate-500 italic py-1 animate-pulse">Scanning GitHub releases for breaking changes...</div>
+          ) : (
+            breakingChanges.map((bc, i) => (
+              <div key={i} className="text-[10px] text-orange-200/80 bg-orange-950/20 p-1.5 mb-1 border border-orange-900/30 rounded">
+                {bc}
+              </div>
+            ))
+          )}
         </div>
       )}
 
       {/* Migration Notes - Auto-fetched from GitHub */}
-      {dep.migrationNotes && (
+      {(fetchingNotes || migrationNotes) && (
         <div className="mx-3 mt-2">
           <div className="text-[9px] font-bold text-[#7C3AED] uppercase mb-1 flex items-center gap-1">
             <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             Release Notes (Auto-Fetched)
           </div>
-          <div className="text-[10px] text-slate-300 bg-slate-900/60 p-2 border border-slate-700/30 rounded whitespace-pre-wrap break-words max-h-28 overflow-y-auto font-mono leading-relaxed">
-            {dep.migrationNotes}
-          </div>
+          {fetchingNotes ? (
+            <div className="text-[9px] text-slate-500 italic py-1 animate-pulse">Fetching latest migration guides...</div>
+          ) : (
+            <div className="text-[10px] text-slate-300 bg-slate-900/60 p-2 border border-slate-700/30 rounded whitespace-pre-wrap break-words max-h-40 overflow-y-auto font-mono leading-relaxed">
+              {migrationNotes}
+            </div>
+          )}
         </div>
       )}
 
@@ -172,12 +266,12 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
         )}
       </div>
 
-      {/* AI Code Migration Usages */}
+      {/* Codebase Usages */}
       {dep.status !== 'healthy' && (
-        <div className="mx-3 mt-1 mb-3 p-2 bg-[#7C3AED]/5 border border-[#7C3AED]/20 rounded-lg">
-          <div className="text-[9px] font-bold text-[#A78BFA] uppercase mb-1.5 flex items-center gap-1">
+        <div className="mx-3 mt-1 mb-3 p-2 bg-slate-900/50 border border-slate-700/50 rounded-lg">
+          <div className="text-[9px] font-bold text-slate-300 uppercase mb-1.5 flex items-center gap-1">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            🧠 AI Code Migration Usages
+            Codebase Usages
           </div>
           
           {searchingUsages ? (
@@ -186,56 +280,30 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
             <div className="text-[9px] text-slate-500 py-1 italic">No active codebase usages found for '{dep.name}'.</div>
           ) : (
             <div className="space-y-1.5 mt-1">
-              <div className="text-[9px] text-slate-400 mb-1">Found in {usages.length} file(s). Select AI actions:</div>
-              <div className="flex flex-col gap-1 max-h-24 overflow-y-auto pr-1">
-                {usages.map((file) => {
-                  const baseName = file.split(/[\\/]/).pop()
+              <div className="text-[9px] text-slate-400 mb-1">Found in {usages.length} file(s):</div>
+              <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1">
+                {usages.map((u) => {
+                  const baseName = u.file.split(/[\\/]/).pop()
                   return (
-                    <div key={file} className="flex justify-between items-center bg-slate-900/50 p-1 rounded border border-slate-800/40 text-[9px]">
-                      <span className="text-slate-300 truncate max-w-[65%] font-mono" title={file}>{baseName}</span>
-                      <button
-                        onClick={() => {
-                          useStore.setState({ activeRightTab: 'rag', rightPanelOpen: true })
-                          const instruction = `We are upgrading the library '${dep.name}' from ${dep.current} to ${dep.latest} in this project. Please review and refactor the code usages inside the file '${baseName}' to be compatible with ${dep.latest} and resolve any breaking changes:\n\nBreaking changes detailed:\n${dep.breakingChanges?.join('\n') || dep.deprecationMsg || 'N/A'}`
-                          
-                          if (useStore.getState().installedExtensions.includes('aeres-pro-suite')) {
-                            window.dispatchEvent(new CustomEvent('aeres:trigger-agent-migration', {
-                              detail: { instruction, filePath: file }
-                            }))
-                          } else {
-                            window.dispatchEvent(new CustomEvent('aeres:rate-limit-hit'))
-                          }
-                        }}
-                        className="px-1.5 py-0.5 bg-[#7C3AED]/20 hover:bg-[#7C3AED]/40 text-[#A78BFA] border border-[#7C3AED]/30 rounded text-[8px] font-bold transition-colors active:scale-95"
-                      >
-                        ⚡ Migrate File
-                      </button>
+                    <div 
+                      key={u.file} 
+                      onClick={() => handleOpenFile(u)}
+                      className="group flex justify-between items-center bg-slate-950/50 p-1.5 rounded border border-slate-800/60 text-[9px] hover:bg-slate-800/60 hover:border-slate-600/60 cursor-pointer transition-colors"
+                    >
+                      <span className="text-slate-300 truncate font-mono flex-1 group-hover:text-white" title={u.file}>{baseName}</span>
+                      <span className="text-slate-500 font-mono ml-2 text-[8px] bg-slate-900 px-1 rounded border border-slate-800 flex-shrink-0 group-hover:bg-slate-800 group-hover:border-slate-600 group-hover:text-slate-300">
+                        Line: {u.lines.slice(0, 3).join(', ')}{u.lines.length > 3 ? ', ...' : ''}
+                      </span>
                     </div>
                   )
                 })}
               </div>
-
-              <button
-                onClick={() => {
-                  useStore.setState({ activeRightTab: 'rag', rightPanelOpen: true })
-                  const instruction = `We are upgrading the library '${dep.name}' from version ${dep.current} to ${dep.latest} in this workspace. Please act as a RAG developer agent, scan our entire project codebase for any and all usages of '${dep.name}', detect deprecated API calls or breaking changes, and modernize our source code files to fully and safely support '${dep.name}@${dep.latest}'.\n\nUpgrade details:\n- Package: ${dep.name}\n- Current: ${dep.current}\n- Target: ${dep.latest}\n- Breaking Changes:\n${dep.breakingChanges?.join('\n') || 'N/A'}\n- Release Notes:\n${dep.migrationNotes || 'N/A'}`
-                  
-                  if (useStore.getState().installedExtensions.includes('aeres-pro-suite')) {
-                    window.dispatchEvent(new CustomEvent('aeres:trigger-agent-migration', {
-                      detail: { instruction }
-                    }))
-                  } else {
-                    window.dispatchEvent(new CustomEvent('aeres:rate-limit-hit'))
-                  }
-                }}
-                className="w-full mt-1 py-1 bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#A78BFA] hover:bg-[#7C3AED]/40 text-[9px] font-bold rounded flex items-center justify-center gap-1 transition-colors active:scale-95"
-              >
-                🧠 Auto-Migrate All Usages (AI Agent)
-              </button>
             </div>
           )}
         </div>
       )}
+
+
 
       {/* Update Buttons */}
       <div className="px-3 pb-3 flex flex-col gap-1.5">
@@ -252,19 +320,23 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
                 window.electron.terminal.write(id, `${cmd}\r`)
               }, 600)
             } catch (err) {
-              alert('Failed to launch update: ' + err.message)
+              const store = useStore.getState();
+              store.appendOutputLog('error', 'Failed to launch update: ' + err.message);
+              store.setActiveSidebarTab('output');
             }
           }}
           className="w-full py-1.5 bg-[#7C3AED] text-white text-[10px] font-bold rounded border border-[#7C3AED] hover:bg-[#7C3AED]/80 transition-colors flex items-center justify-center gap-1 shadow-md shadow-[#7C3AED]/20 active:scale-[0.98]"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          ⚡ Install Update (Run in Terminal)
+          <Terminal size={10} /> Install Update (Run in Terminal)
         </button>
         <button
           onClick={() => {
             const cmd = dep.ecosystem === 'npm' ? `npm install ${dep.name}@latest` : `pip install ${dep.name} --upgrade`
             navigator.clipboard.writeText(cmd)
-            alert('Terminal update command copied to clipboard!')
+            const store = useStore.getState();
+            store.appendOutputLog('success', 'Terminal update command copied to clipboard!');
+            store.setActiveSidebarTab('output');
           }}
           className="w-full py-1 bg-slate-800 text-slate-300 text-[9px] font-bold rounded border border-slate-700 hover:bg-slate-700 transition-colors flex items-center justify-center gap-1"
         >
@@ -311,7 +383,7 @@ function ListView({ deps, onSelect, selectedDep }) {
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {dep.deprecated && <span className="text-[8px] text-amber-500">DEP</span>}
-                  {dep.breakingChanges?.length > 0 && <span className="text-[8px] text-orange-500">⚡</span>}
+                  {dep.breakingChanges?.length > 0 && <span className="text-[8px] text-orange-500"><Zap size={8} /></span>}
                   {dep.cves?.length > 0 && <span className="text-[8px] text-red-500">{dep.cves.length} CVE</span>}
                   <span className="text-[9px] text-slate-600">{dep.ecosystem}</span>
                 </div>
@@ -332,19 +404,31 @@ export default function DependencyRadar() {
   const [loading, setLoading] = useState(false)
   const [selectedDep, setSelectedDep] = useState(null)
   const [viewMode, setViewMode] = useState('list') // 'list' | 'treemap'
+  const [filterStatus, setFilterStatus] = useState('all') // 'all' | 'critical' | 'abandoned' | 'outdated' | 'healthy'
   const [scanError, setScanError] = useState(null)
   const svgRef = useRef(null)
 
-  const scan = async () => {
+  const scan = async (force = false) => {
     if (!rootPath) return
+    
+    if (!force && window._radarMainCache && window._radarMainCache.rootPath === rootPath) {
+      setData(window._radarMainCache.data)
+      return
+    }
+
     setLoading(true)
-    setSelectedDep(null)
+    if (force) {
+        // preserve selected dep if possible, otherwise null
+    } else {
+        setSelectedDep(null)
+    }
     setScanError(null)
     try {
-      const res = await window.electron.radar.scan({ rootPath })
+      const res = await window.electron.radar.scan({ root_path: rootPath })
       if (res?.error) {
         setScanError(res.error)
       } else {
+        window._radarMainCache = { rootPath, data: res }
         setData(res)
       }
     } catch (err) {
@@ -355,6 +439,17 @@ export default function DependencyRadar() {
   }
 
   useEffect(() => { scan() }, [rootPath])
+
+  // Automatically refresh when file structure changes (e.g. package.json edit)
+  useEffect(() => {
+    if (!window.electron || !window.electron.fs) return
+    const cleanup = window.electron.fs.onChanged(() => {
+      window._radarMainCache = null
+      window._radarUsagesCache = null
+      scan(true) // force refresh
+    })
+    return cleanup
+  }, [rootPath])
 
   // Treemap rendering
   useEffect(() => {
@@ -449,7 +544,7 @@ export default function DependencyRadar() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <div>
               <span className="font-bold block mb-0.5">Scan Failed</span>
-              {scanError}
+              {typeof scanError === 'object' ? JSON.stringify(scanError) : scanError}
             </div>
           </div>
         </div>
@@ -458,18 +553,30 @@ export default function DependencyRadar() {
       {/* Stats bar */}
       {data && (
         <div className="flex items-center gap-0 border-b border-slate-800/30 text-[9px]">
-          <div className="flex-1 flex items-center gap-1 px-2 py-1 border-r border-slate-800/30">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500" /><span className="text-slate-400">{counts.critical} CVE</span>
-          </div>
-          <div className="flex-1 flex items-center gap-1 px-2 py-1 border-r border-slate-800/30">
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-500" /><span className="text-slate-400">{counts.abandoned} Dep</span>
-          </div>
-          <div className="flex-1 flex items-center gap-1 px-2 py-1 border-r border-slate-800/30">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" /><span className="text-slate-400">{counts.outdated} Out</span>
-          </div>
-          <div className="flex-1 flex items-center gap-1 px-2 py-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500" /><span className="text-slate-400">{counts.healthy} OK</span>
-          </div>
+          <button 
+            onClick={() => setFilterStatus(filterStatus === 'critical' ? 'all' : 'critical')}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border-r border-slate-800/30 transition-colors ${filterStatus === 'critical' ? 'bg-red-900/40 border-b-2 border-b-red-500' : 'hover:bg-slate-900/40 border-b-2 border-b-transparent'}`}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_4px_#ef4444]" /><span className={`font-bold ${filterStatus === 'critical' ? 'text-red-400' : 'text-slate-400'}`}>{counts.critical} CVE</span>
+          </button>
+          <button 
+            onClick={() => setFilterStatus(filterStatus === 'abandoned' ? 'all' : 'abandoned')}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border-r border-slate-800/30 transition-colors ${filterStatus === 'abandoned' ? 'bg-amber-900/40 border-b-2 border-b-amber-500' : 'hover:bg-slate-900/40 border-b-2 border-b-transparent'}`}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_4px_#f59e0b]" /><span className={`font-bold ${filterStatus === 'abandoned' ? 'text-amber-400' : 'text-slate-400'}`}>{counts.abandoned} Dep</span>
+          </button>
+          <button 
+            onClick={() => setFilterStatus(filterStatus === 'outdated' ? 'all' : 'outdated')}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border-r border-slate-800/30 transition-colors ${filterStatus === 'outdated' ? 'bg-blue-900/40 border-b-2 border-b-blue-500' : 'hover:bg-slate-900/40 border-b-2 border-b-transparent'}`}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_4px_#3b82f6]" /><span className={`font-bold ${filterStatus === 'outdated' ? 'text-blue-400' : 'text-slate-400'}`}>{counts.outdated} Out</span>
+          </button>
+          <button 
+            onClick={() => setFilterStatus(filterStatus === 'healthy' ? 'all' : 'healthy')}
+            className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 transition-colors ${filterStatus === 'healthy' ? 'bg-green-900/40 border-b-2 border-b-green-500' : 'hover:bg-slate-900/40 border-b-2 border-b-transparent'}`}
+          >
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_4px_#22c55e]" /><span className={`font-bold ${filterStatus === 'healthy' ? 'text-green-400' : 'text-slate-400'}`}>{counts.healthy} OK</span>
+          </button>
         </div>
       )}
 
@@ -483,7 +590,7 @@ export default function DependencyRadar() {
           <p className="text-[10px] text-slate-500">This feature scans package.json (NPM) or requirements.txt (Python) configurations.</p>
         </div>
       ) : viewMode === 'list' ? (
-        <ListView deps={allDeps} onSelect={setSelectedDep} selectedDep={selectedDep} />
+        <ListView deps={filterStatus === 'all' ? allDeps : allDeps.filter(d => d.status === filterStatus)} onSelect={setSelectedDep} selectedDep={selectedDep} />
       ) : (
         <div className="flex-1 overflow-hidden p-2 relative">
           <svg ref={svgRef} className="w-full h-full" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" />

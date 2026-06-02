@@ -10,8 +10,11 @@ def trace_calls(frame, event, arg):
     code = frame.f_code
     func_name = code.co_name
     
-    # Only trace functions in the target file
-    if frame.f_code.co_filename != FILE_PATH:
+    # Only trace functions in the target file - use normalized comparison for Windows
+    target_norm = os.path.normpath(FILE_PATH).lower().replace('\\', '/')
+    current_norm = os.path.normpath(frame.f_code.co_filename).lower().replace('\\', '/')
+    
+    if current_norm != target_norm:
         return
         
     # Capture arguments
@@ -21,14 +24,17 @@ def trace_calls(frame, event, arg):
     def trace_return(frame, event, arg):
         if event == 'return':
             try:
+                # Use normalized target path for the API call
+                target_norm = os.path.normpath(FILE_PATH).lower().replace('\\', '/')
                 requests.post(f"{BACKEND_URL}/api/contracts/observe", json={
-                    "file_path": FILE_PATH,
+                    "file_path": target_norm,
                     "function_name": func_name,
                     "inputs": args,
                     "output": arg,
                     "error": None
                 }, timeout=0.1)
-            except: pass
+            except Exception as e:
+                print(f"[Contract Tracer] Error sending observation: {e}", file=sys.stderr)
         return trace_return
         
     return trace_return

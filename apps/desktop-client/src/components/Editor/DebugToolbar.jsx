@@ -7,11 +7,16 @@ export default function DebugToolbar() {
 
   if (debugState === 'idle') return null
 
-  const handleContinue = () => window.electron.debug.continue()
-  const handleStepOver = () => window.electron.debug.stepOver()
-  const handleStepInto = () => window.electron.debug.stepInto()
-  const handleStepOut = () => window.electron.debug.stepOut()
-  const handleStop = () => window.electron.debug.stop()
+  const handleContinue = () => window.electron?.debug?.continue()
+  const handleStepOver = () => window.electron?.debug?.stepOver()
+  const handleStepInto = () => window.electron?.debug?.stepInto()
+  const handleStepOut = () => window.electron?.debug?.stepOut()
+  const handleStop = () => {
+    const session = useStore.getState().debugSession
+    window.electron?.debug?.stop(session)
+    useStore.getState().setDebugState('idle')
+    useStore.getState().setDebugSession(null)
+  }
 
   return (
     <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[4000] flex items-center gap-1 bg-aeres-surface border border-aeres-border rounded-lg shadow-2xl p-1 animate-in fade-in slide-in-from-top-4">

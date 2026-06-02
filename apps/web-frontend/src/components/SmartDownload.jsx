@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import useOSDetection from '../hooks/useOSDetection.js'
 import { redirectToAuthForDownload } from '../utils/authRedirect.js'
 
-const BASE = (import.meta.env.VITE_DOWNLOAD_BASE_URL || '').replace(/\/$/, '')
+const BASE = (import.meta.env.VITE_DOWNLOAD_BASE_URL || 'https://github.com/Aeres-IDE/releases/latest/download').replace(/\/$/, '')
 
 const ARTIFACTS = {
   mac: 'Aeres-IDE-mac-universal.dmg',

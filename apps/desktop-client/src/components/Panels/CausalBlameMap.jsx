@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { useStore } from '../../store.js'
+import { Link } from 'lucide-react'
 
 export default function CausalBlameMap() {
   const target = useStore((s) => s.causalTarget)
@@ -163,7 +164,7 @@ export default function CausalBlameMap() {
 
   if (!target) return (
     <div className="flex flex-col items-center justify-center h-full p-8 text-center text-aeres-muted">
-      <div className="text-4xl mb-4 opacity-20">🔗</div>
+      <div className="flex justify-center mb-4 opacity-20"><Link size={36} /></div>
       <p className="text-sm">Right-click a function name or error and select<br/><b>"Trace cause chain"</b> to visualize its history.</p>
     </div>
   )

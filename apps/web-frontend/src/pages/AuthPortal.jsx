@@ -59,7 +59,7 @@ export default function AuthPortal() {
       </div>
 
       <div className="mb-10 text-center font-display relative z-10">
-        <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
+        <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
           login_manager
         </span>
         <div className="text-3xl md:text-5xl font-black tracking-tight text-white leading-tight">
@@ -71,7 +71,7 @@ export default function AuthPortal() {
       <div className="relative z-10 w-full max-w-sm">
         {isSignedIn && source === 'ide' ? (
           <div className="kawaii-card bg-[#13141f] p-8 text-center border-4 border-black shadow-[6px_6px_0px_#000000] rounded-[24px]">
-            <span className="inline-flex items-center gap-1.5 px-4.5 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
+            <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-6 font-mono">
               ★ launch_daemon
             </span>
             <h2 className="font-display text-2xl font-black text-white mb-2">Authenticated!</h2>

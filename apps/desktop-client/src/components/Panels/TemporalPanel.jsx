@@ -104,6 +104,7 @@ export default function TemporalPanel() {
   const activeTab = tabs.find(t => t.id === activeTabId)
 
   const [timings, setTimings] = useState([])
+  const [callGraph, setCallGraph] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const containerRef = useRef(null)
@@ -139,6 +140,16 @@ export default function TemporalPanel() {
       } catch (err) {
         setError(err.message || 'Failed to load temporal data')
         setTimings([])
+      }
+      
+      try {
+        if (window.electron.analyze?.callGraph) {
+          const rootPath = useStore.getState().rootPath || activeTab.path
+          const cg = await window.electron.analyze.callGraph(activeTab.path, rootPath)
+          setCallGraph(cg?.functions || [])
+        }
+      } catch (err) {
+        console.error("Failed to load call graph:", err)
       } finally {
         setLoading(false)
       }
@@ -154,14 +165,14 @@ export default function TemporalPanel() {
     if (!timings || timings.length === 0) return []
     return timings.slice(0, 30).map(t => ({
       label: t.name || t.function_name || `L${t.line || '?'}`,
-      value: Math.round(t.duration_ms || t.avg_ms || 0),
+      value: Math.round(t.duration_ms || t.avg_ms || t.durationMs || 0),
     }))
   }, [timings])
 
   // Aggregate stats
   const stats = useMemo(() => {
     if (!timings || timings.length === 0) return null
-    const values = timings.map(t => t.duration_ms || t.avg_ms || 0)
+    const values = timings.map(t => t.duration_ms || t.avg_ms || t.durationMs || 0)
     const total = values.reduce((a, b) => a + b, 0)
     const avg = total / values.length
     const max = Math.max(...values)
@@ -247,12 +258,14 @@ export default function TemporalPanel() {
         </div>
       )}
 
-      {/* Bar chart */}
-      <div className="flex-1 overflow-hidden p-2">
+      {/* Bar chart and Call Graph */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 scrollbar-thin">
         {barData.length > 0 ? (
-          <BarChart data={barData} width={containerWidth - 16} height={200} />
+          <div className="mb-4">
+            <BarChart data={barData} width={containerWidth - 16} height={200} />
+          </div>
         ) : !loading && !error ? (
-          <div className="flex flex-col items-center justify-center h-full text-center p-4">
+          <div className="flex flex-col items-center justify-center h-48 text-center p-4">
             <div className="relative mb-3">
               <div className="absolute inset-0 bg-violet-600/10 blur-xl rounded-full" />
               <div className="relative flex items-center justify-center w-10 h-10 rounded-full border border-slate-800 bg-slate-900/80 text-slate-400">
@@ -261,10 +274,70 @@ export default function TemporalPanel() {
             </div>
             <p className="text-[11px] text-slate-400 font-medium mb-1">No Performance Data</p>
             <p className="text-[10px] text-slate-500 max-w-[200px] leading-relaxed">
-              Run or debug your code to capture function-level latency timings. The Temporal Lens records execution durations automatically.
+              Run or debug your code to capture function-level latency timings.
             </p>
           </div>
         ) : null}
+
+        {/* Call Graph Section */}
+        {callGraph && callGraph.length > 0 && (
+          <div className="mt-2 border-t border-slate-800/30 pt-3 mb-2">
+            <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-1">Call Graph ({callGraph.length} fn)</h4>
+            <div className="flex flex-col gap-2">
+              {callGraph.map((fn, idx) => (
+                <div key={idx} className="bg-slate-900/40 rounded border border-slate-800/50 p-2 text-[11px]">
+                  <div className="flex justify-between items-center mb-1.5 border-b border-slate-800/50 pb-1.5">
+                    <span className="font-mono text-violet-300 font-bold">{fn.name} <span className="text-slate-600 text-[9px] font-sans font-normal ml-1">L{fn.line}</span></span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-400 text-[10px] flex items-center gap-1">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
+                        Outbound Calls
+                      </span>
+                      <span className="text-slate-500 font-mono text-[10px]">{fn.outbound_count}</span>
+                    </div>
+                    {fn.outbound_calls && fn.outbound_calls.length > 0 && (
+                      <div className="pl-4 text-[9px] text-slate-500 font-mono flex flex-wrap gap-1">
+                        {fn.outbound_calls.map((c, i) => (
+                          <span key={i} className="bg-slate-800/50 px-1 py-0.5 rounded">{c}()</span>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-slate-400 text-[10px] flex items-center gap-1">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+                        Inbound Calls
+                      </span>
+                      <span className="text-slate-500 font-mono text-[10px]">{fn.inbound_count}</span>
+                    </div>
+                    {fn.inbound_locations && fn.inbound_locations.length > 0 && (
+                      <div className="pl-4 flex flex-col gap-1 mt-0.5">
+                        {fn.inbound_locations.slice(0, 5).map((loc, i) => {
+                          const fileName = loc.file.split(/[/\\]/).pop()
+                          return (
+                            <button 
+                              key={i}
+                              onClick={() => useStore.getState().openTab({ path: loc.file, line: loc.line })}
+                              className="text-left text-[9px] text-blue-400/80 hover:text-blue-300 transition-colors truncate font-mono"
+                            >
+                              {fileName}:{loc.line}
+                            </button>
+                          )
+                        })}
+                        {fn.inbound_locations.length > 5 && (
+                          <span className="text-[9px] text-slate-600 pl-1">...and {fn.inbound_locations.length - 5} more</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

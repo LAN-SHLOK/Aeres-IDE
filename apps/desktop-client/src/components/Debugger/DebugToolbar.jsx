@@ -20,7 +20,7 @@ export default function DebugToolbar() {
     const activeTab = store.tabs.find((t) => t.id === store.activeTabId)
     await window.electron.debug.stop(debugSession)
     if (activeTab) {
-      await window.electron.debug.launch(activeTab.path, false)
+      await window.electron.debug.launch({ filePath: activeTab.path, cwd: store.rootPath })
     }
   }
 

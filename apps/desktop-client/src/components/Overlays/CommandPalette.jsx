@@ -3,6 +3,8 @@ import { useStore } from '../../store.js'
 
 const COMMANDS = [
   { id: 'openFolder', label: 'Open Folder', key: 'Ctrl+O', action: 'openFolder' },
+  { id: 'newProject', label: 'New Project (Scaffold)...', key: '', action: 'newProject' },
+  { id: 'runTerminalCmd', label: 'Run Terminal Command...', key: '', action: 'runTerminalCmd' },
   { id: 'toggleTerminal', label: 'Toggle Terminal', key: 'Ctrl+`', action: 'toggleTerminal' },
   { id: 'sourceControl', label: 'Open Source Control', key: '', action: 'sourceControl' },
   { id: 'modernize', label: 'Modernize Current File', key: 'Ctrl+Shift+M', action: 'modernize' },
@@ -12,7 +14,9 @@ const COMMANDS = [
   { id: 'gitCommit', label: 'Git: Commit', key: '', action: 'gitCommit' },
   { id: 'gitPush', label: 'Git: Push', key: '', action: 'gitPush' },
   { id: 'gitPull', label: 'Git: Pull', key: '', action: 'gitPull' },
-  { id: 'changeTheme', label: 'Change Color Theme', key: 'Ctrl+K Ctrl+T', action: 'changeTheme' },
+  { id: 'changeTheme', label: 'Preferences: Color Theme', key: 'Ctrl+K Ctrl+T', action: 'changeTheme' },
+  { id: 'changeFileIconTheme', label: 'Preferences: File Icon Theme', key: '', action: 'changeFileIcons' },
+  { id: 'changeProductIconTheme', label: 'Preferences: Product Icon Theme', key: '', action: 'changeProductIcons' },
   { id: 'zenMode', label: 'Toggle Zen Mode (Distraction Free)', key: 'Alt+Z', action: 'zenMode' },
   { id: 'sunburst', label: 'Visualize Workspace Structure (Sunburst)', key: '', action: 'sunburst' },
   { id: 'typewriter', label: 'Toggle Typewriter Mode', key: '', action: 'typewriter' },
@@ -29,13 +33,31 @@ const THEMES = [
   { id: 'nord', label: 'Nord Ice' }
 ]
 
+const FILE_ICONS = [
+  { id: 'material-icons', label: 'Material Icon Theme' },
+  { id: 'minimal', label: 'Minimalistic Icons' },
+  { id: 'vs-standard', label: 'VS Code Standard' },
+  { id: 'none', label: 'None' }
+]
+
+const PRODUCT_ICONS = [
+  { id: 'default', label: 'Aeres Default' },
+  { id: 'fluent', label: 'Fluent Design' },
+  { id: 'codicons', label: 'VS Codicons' },
+  { id: 'pixel', label: 'Retro Pixel UI' }
+]
+
 export default function CommandPalette({ onClose }) {
-  const [mode, setMode] = useState('commands') // 'commands' | 'themes'
+  const [mode, setMode] = useState('commands') // 'commands' | 'themes' | 'fileIcons' | 'productIcons' | 'runCommand'
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   const inputRef = useRef(null)
 
-  const currentList = mode === 'commands' ? COMMANDS : THEMES
+  const currentList = 
+    mode === 'commands' ? COMMANDS : 
+    mode === 'themes' ? THEMES : 
+    mode === 'fileIcons' ? FILE_ICONS : 
+    mode === 'productIcons' ? PRODUCT_ICONS : []
 
   const filtered = currentList.filter((c) =>
     c.label.toLowerCase().includes(query.toLowerCase())
@@ -60,6 +82,16 @@ export default function CommandPalette({ onClose }) {
         onClose()
         return
       }
+      if (mode === 'fileIcons') {
+        useStore.getState().setFileIconTheme(cmd.id)
+        onClose()
+        return
+      }
+      if (mode === 'productIcons') {
+        useStore.getState().setProductIconTheme(cmd.id)
+        onClose()
+        return
+      }
 
       const store = useStore.getState()
       switch (cmd.action) {
@@ -72,6 +104,15 @@ export default function CommandPalette({ onClose }) {
               window.electron.fs.getTree(p).then((t) => store.setFileTree(t))
             }
           })
+          break
+        case 'newProject':
+          onClose()
+          document.dispatchEvent(new CustomEvent('aeres:open-new-project'))
+          break
+        case 'runTerminalCmd':
+          setMode('runCommand')
+          setQuery('')
+          setSelected(0)
           break
         case 'modernize':
           onClose()
@@ -96,6 +137,16 @@ export default function CommandPalette({ onClose }) {
           setQuery('')
           setSelected(0)
           break
+        case 'changeFileIcons':
+          setMode('fileIcons')
+          setQuery('')
+          setSelected(0)
+          break
+        case 'changeProductIcons':
+          setMode('productIcons')
+          setQuery('')
+          setSelected(0)
+          break
         case 'zenMode':
           onClose()
           store.toggleZenMode()
@@ -114,11 +165,7 @@ export default function CommandPalette({ onClose }) {
           break
         case 'closeOtherTabs':
           onClose()
-          const active = store.tabs.find(t => t.id === store.activeTabId)
-          if (active) {
-            const pinned = store.tabs.filter(t => t.isPinned && t.id !== active.id)
-            useStore.setState({ tabs: [...pinned, active] })
-          }
+          store.closeOtherTabs()
           break
         case 'signOut':
           onClose()
@@ -135,7 +182,7 @@ export default function CommandPalette({ onClose }) {
 
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
-      if (mode === 'themes') {
+      if (mode !== 'commands') {
         setMode('commands')
         setQuery('')
       } else {
@@ -149,7 +196,28 @@ export default function CommandPalette({ onClose }) {
       setSelected((s) => Math.max(s - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      if (filtered[selected]) executeCommand(filtered[selected])
+      if (mode === 'runCommand') {
+        const cmdString = query.trim()
+        if (cmdString) {
+          const store = useStore.getState()
+          const electron = window.electron
+          if (electron) {
+            let termId = store.activeTerminalId
+            if (!termId && store.terminals.length > 0) termId = store.terminals[0].id
+            
+            if (termId) {
+              store.setTerminalPanelOpen(true)
+              electron.terminal.write(termId, cmdString + (electron.platform === 'win32' ? '\r\n' : '\n'))
+            } else {
+              // Fallback to spawning a new scaffold terminal if none exist
+              document.dispatchEvent(new CustomEvent('aeres:scaffold-project', { detail: { command: cmdString } }))
+            }
+          }
+        }
+        onClose()
+      } else {
+        if (filtered[selected]) executeCommand(filtered[selected])
+      }
     }
   }
 
@@ -172,7 +240,13 @@ export default function CommandPalette({ onClose }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={mode === 'themes' ? "Select Color Theme" : "Type a command…"}
+            placeholder={
+              mode === 'runCommand' ? "Type command and press Enter..." :
+              mode === 'themes' ? "Select Color Theme" : 
+              mode === 'fileIcons' ? "Select File Icon Theme" : 
+              mode === 'productIcons' ? "Select Product Icon Theme" : 
+              "Type a command…"
+            }
             className="w-full bg-transparent py-2.5 text-[12px] text-aeres-text placeholder:text-aeres-muted focus:outline-none"
           />
         </div>
@@ -193,8 +267,13 @@ export default function CommandPalette({ onClose }) {
               )}
             </div>
           ))}
-          {filtered.length === 0 && (
+          {filtered.length === 0 && mode !== 'runCommand' && (
             <div className="px-4 py-3 text-sm text-aeres-muted italic">No results found</div>
+          )}
+          {mode === 'runCommand' && (
+            <div className="px-4 py-3 text-xs text-aeres-muted italic">
+              Press Enter to run in active terminal
+            </div>
           )}
         </div>
       </div>

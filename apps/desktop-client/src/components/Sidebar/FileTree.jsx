@@ -3,83 +3,9 @@ import { createPortal } from 'react-dom'
 import { useStore } from '../../store.js'
 import { detectLanguage } from '../../utils/langDetect.js'
 import { openFolderAndResetTerminals } from '../../utils/workspaceActions.js'
+import { getFileIcon } from '../../utils/getFileIcon.jsx'
+import { Trash2, FolderOpen, Folder } from 'lucide-react'
 
-function getFileIcon(name, theme) {
-  const ext = name.split('.').pop().toLowerCase()
-  const isCutie = theme?.includes('cutie')
-  const isNeon = theme === 'cyberpunk'
-
-  // Special files
-  if (name === 'package.json') return <span className="text-[13px] shrink-0">📦</span>
-  if (name === 'package-lock.json') return <span className="text-[13px] shrink-0">🔒</span>
-  if (name.includes('config') || name.includes('.env')) return <span className="text-[13px] shrink-0">⚙️</span>
-  if (name === '.gitignore') return <span className="text-[12px] shrink-0 text-orange-600">🙈</span>
-  if (name === 'README.md') return <span className="text-[13px] shrink-0 text-blue-400">ℹ️</span>
-
-  if (isCutie) {
-    switch (ext) {
-      case 'js': case 'jsx': return <span className="text-[12px] shrink-0">✨</span>
-      case 'ts': case 'tsx': return <span className="text-[12px] shrink-0">💎</span>
-      case 'html': case 'htm': return <span className="text-[12px] shrink-0">🌸</span>
-      case 'css': return <span className="text-[12px] shrink-0">🎀</span>
-      case 'json': return <span className="text-[12px] shrink-0">🧸</span>
-      case 'md': return <span className="text-[12px] shrink-0">📖</span>
-      default: return <span className="text-[12px] shrink-0">📄</span>
-    }
-  }
-
-  if (isNeon) {
-    let neonColor = '#ff007f';
-    if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) neonColor = '#00ffff';
-    if (ext === 'css') neonColor = '#7C3AED';
-    return <span className="shrink-0 font-black font-mono text-[8px] w-4 h-4 inline-flex items-center justify-center tracking-tighter" style={{ color: neonColor, textShadow: `0 0 5px ${neonColor}` }}>{ext.substring(0,3).toUpperCase()}</span>
-  }
-
-  // Standard Meaningful Icons (SVG)
-  const icons = {
-    js: { color: '#F7DF1E', char: 'JS' },
-    jsx: { color: '#61DAFB', char: 'React' },
-    ts: { color: '#3178C6', char: 'TS' },
-    tsx: { color: '#3178C6', char: 'React' },
-    html: { color: '#E34F26', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2zm1 16h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> },
-    css: { color: '#1572B6', icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2zm1 16h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg> },
-    json: { color: '#FBBF24', char: '{ }' },
-    md: { color: '#0086D4', char: 'M↓' },
-    py: { color: '#3776AB', char: 'Py' },
-    go: { color: '#00ADD8', char: 'Go' },
-    rs: { color: '#DEA584', char: 'Rs' },
-    java: { color: '#007396', char: '☕' },
-    cpp: { color: '#00599C', char: 'C++' },
-    php: { color: '#777BB4', char: 'PHP' },
-    rb: { color: '#CC342D', char: 'Rb' },
-    sql: { color: '#336791', char: 'SQL' },
-    sh: { color: '#4EAA25', char: '$_' },
-    yml: { color: '#CB171E', char: 'YML' },
-    yaml: { color: '#CB171E', char: 'YML' },
-    lock: { color: '#888888', char: '🔒' }
-  }
-
-  const spec = icons[ext]
-  if (spec) {
-    if (spec.icon) return <span style={{ color: spec.color }} className="shrink-0">{spec.icon}</span>
-    return (
-      <span 
-        className="shrink-0 flex items-center justify-center rounded-[3px] text-[7.5px] font-black p-0.5 leading-none overflow-hidden" 
-        style={{ backgroundColor: spec.color, color: (ext === 'js' || ext === 'jsx') ? '#000' : '#fff', width: '14px', height: '14px' }}
-      >
-        {spec.char}
-      </span>
-    )
-  }
-
-  // Fallback
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-40">
-      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-  )
-}
 
 function InlineInputRow({ depth, type, value, onChange, onKeyDown, onBlur }) {
   return (
@@ -111,7 +37,7 @@ function InlineInputRow({ depth, type, value, onChange, onKeyDown, onBlur }) {
 function ConfirmDeleteModal({ node, onConfirm, onCancel }) {
   return createPortal(
     <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-96 bg-[#13141f] border-2 border-black rounded-3xl p-6 shadow-[8px_8px_0px_#000000] text-center animate-scale-up font-sans select-none">
+      <div className="w-96 bg-[#13141f] border-2 border-black rounded-3xl p-6 shadow-[2px_2px_0px_#000] text-center animate-scale-up font-sans select-none">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-500/20 text-red-500 mb-4">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         </div>
@@ -122,13 +48,13 @@ function ConfirmDeleteModal({ node, onConfirm, onCancel }) {
         <div className="flex gap-3 justify-center">
           <button
             onClick={onConfirm}
-            className="px-5 py-2 bg-red-500 text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] hover:scale-105 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-5 py-2 bg-red-500 text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] hover:scale-105 transition cursor-pointer"
           >
-            🔥 Yes, Delete
+            <Trash2 size={14} className="shrink-0" /> Yes, Delete
           </button>
           <button
             onClick={onCancel}
-            className="px-5 py-2 bg-emerald-400 text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000000] hover:scale-105 transition cursor-pointer"
+            className="px-5 py-2 bg-emerald-400 text-black text-xs font-black rounded-full border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] hover:scale-105 transition cursor-pointer"
           >
             Cancel
           </button>
@@ -158,6 +84,7 @@ function TreeRow({
   toggleOpen
 }) {
   const theme = useStore((s) => s.theme)
+  const fileIconTheme = useStore((s) => s.fileIconTheme)
   const open = openPaths.has(node.path)
   const isDir = node.type === 'dir'
   const isSelected = selectedNode && selectedNode.path === node.path
@@ -216,7 +143,9 @@ function TreeRow({
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           {isDir ? (
             theme?.includes('cutie') ? (
-              <span className="shrink-0 text-[13px] inline-flex items-center justify-center w-4 h-4">{open ? '📂' : '📁'}</span>
+              <span className="shrink-0 text-[13px] inline-flex items-center justify-center w-4 h-4 text-pink-400">
+                {open ? <FolderOpen size={14} /> : <Folder size={14} />}
+              </span>
             ) : theme === 'cyberpunk' ? (
               <span className="shrink-0 text-[#ff007f] font-black font-mono text-[10px] w-4 h-4 inline-flex items-center justify-center" style={{ textShadow: `0 0 5px #ff007f` }}>{open ? '[-]' : '[+]'}</span>
             ) : (
@@ -225,7 +154,7 @@ function TreeRow({
               </span>
             )
           ) : (
-            getFileIcon(node.name, theme)
+            getFileIcon(node.name, theme, fileIconTheme)
           )}
           <span className="truncate flex-1">{node.name}</span>
         </div>
@@ -316,13 +245,17 @@ function FileContextMenu({
   setInlineInput,
   setRenamingNode,
   setInputValue,
-  setConfirmDeleteNode
+  setConfirmDeleteNode,
+  toggleOpen
 }) {
   const rootPath = useStore((s) => s.rootPath)
   const addTerminal = useStore((s) => s.addTerminal)
   const setTerminalPanelOpen = useStore((s) => s.setTerminalPanelOpen)
+  const comparePath = useStore((s) => s.comparePath)
+  const setComparePath = useStore((s) => s.setComparePath)
+  const openTab = useStore((s) => s.openTab)
   
-  const isHTML = node.name.endsWith('.html') || node.name.endsWith('.htm')
+  const isHTML = node.name.toLowerCase().endsWith('.html') || node.name.toLowerCase().endsWith('.htm')
 
   // Adjust positioning to stay within window boundaries
   const adjustedX = Math.min(x, window.innerWidth - 240)
@@ -345,6 +278,43 @@ function FileContextMenu({
   const handleReveal = async () => {
     if (window.electron?.fs?.reveal) {
       await window.electron.fs.reveal(node.path)
+    }
+    onClose()
+  }
+
+  const handleOpenWithOther = () => {
+    if (window.electron?.fs?.openExternal) {
+      window.electron.fs.openExternal(`file://${node.path.replace(/\\/g, '/')}`)
+    }
+    onClose()
+  }
+
+  const handleSelectForCompare = () => {
+    setComparePath(node.path)
+    onClose()
+  }
+
+  const handleCompareWithSelected = async () => {
+    if (!window.electron || !comparePath) return
+    try {
+      const original = await window.electron.fs.readFile(comparePath)
+      const current = await window.electron.fs.readFile(node.path)
+      
+      const lang = detectLanguage(node.name)
+      openTab({ path: node.path, name: `Compare: ${node.name}`, language: lang, content: current })
+      
+      setTimeout(() => {
+        useStore.setState({
+          originalCode: original,
+          fixedCode: current,
+          modernizeState: 'done',
+          sourceUrl: `Comparing: ${comparePath.split(/[/\\]/).pop()} ↔ ${node.name}`
+        })
+      }, 50)
+    } catch (err) {
+      const store = useStore.getState();
+      store.appendOutputLog('error', `Compare failed: ${err.message}`);
+      store.setActiveSidebarTab('output');
     }
     onClose()
   }
@@ -372,6 +342,7 @@ function FileContextMenu({
 
   const triggerCreateFile = () => {
     const parentPath = node.type === 'dir' ? node.path : (node.path.substring(0, Math.max(node.path.lastIndexOf('/'), node.path.lastIndexOf('\\'))) || rootPath)
+    if (parentPath && toggleOpen) toggleOpen(parentPath, true)
     setInlineInput({ type: 'file', parentPath })
     setInputValue('')
     onClose()
@@ -379,6 +350,7 @@ function FileContextMenu({
 
   const triggerCreateFolder = () => {
     const parentPath = node.type === 'dir' ? node.path : (node.path.substring(0, Math.max(node.path.lastIndexOf('/'), node.path.lastIndexOf('\\'))) || rootPath)
+    if (parentPath && toggleOpen) toggleOpen(parentPath, true)
     setInlineInput({ type: 'dir', parentPath })
     setInputValue('')
     onClose()
@@ -432,7 +404,7 @@ function FileContextMenu({
           <span className="text-[9px] opacity-40">Ctrl+Enter</span>
         </button>
 
-        <button onClick={() => { alert("Open with other applications..."); onClose(); }} className="w-full text-left px-2.5 py-1.2 hover:bg-[#2c2c3d] hover:text-white rounded transition-colors">
+        <button onClick={handleOpenWithOther} className="w-full text-left px-2.5 py-1.2 hover:bg-[#2c2c3d] hover:text-white rounded transition-colors">
           Open With...
         </button>
 
@@ -459,9 +431,15 @@ function FileContextMenu({
 
         <div className="my-1 border-t border-[#2b2b3a]/50" />
 
-        <button onClick={() => { alert("Selected for comparison!"); onClose(); }} className="w-full text-left px-2.5 py-1.2 hover:bg-[#2c2c3d] hover:text-white rounded transition-colors">
+        <button onClick={handleSelectForCompare} className="w-full text-left px-2.5 py-1.2 hover:bg-[#2c2c3d] hover:text-white rounded transition-colors">
           Select for Compare
         </button>
+
+        {comparePath && comparePath !== node.path && node.type !== 'dir' && (
+          <button onClick={handleCompareWithSelected} className="w-full text-left px-2.5 py-1.2 hover:bg-[#2c2c3d] hover:text-white rounded transition-colors">
+            Compare with Selected
+          </button>
+        )}
 
         <button onClick={() => { useStore.setState({ activeSidebarTab: 'git' }); onClose(); }} className="w-full text-left px-2.5 py-1.2 hover:bg-[#2c2c3d] hover:text-white rounded transition-colors">
           Open Timeline
@@ -544,7 +522,12 @@ export default function FileTree() {
     if (!rootPath || !window.electron) return
     setIsLoading(true)
     try {
-      const tree = await window.electron.fs.getTree(rootPath)
+      let tree = await window.electron.fs.getTree(rootPath)
+      // Normalize: if Rust returns a single root object, extract its children
+      if (tree && !Array.isArray(tree) && tree.children) {
+        tree = tree.children
+      }
+      if (!Array.isArray(tree)) tree = []
       setFileTree(tree)
     } finally {
       setIsLoading(false)
@@ -563,6 +546,11 @@ export default function FileTree() {
   useEffect(() => {
     if (!window.electron?.fs?.onChanged || !rootPath) return
     
+    // Tell the backend to start watching this directory
+    if (window.electron.fs.watchProject) {
+      window.electron.fs.watchProject(rootPath)
+    }
+
     let throttleTimeout = null
     const unsubscribe = window.electron.fs.onChanged(() => {
       if (throttleTimeout) clearTimeout(throttleTimeout)
@@ -605,27 +593,29 @@ export default function FileTree() {
     [openTab]
   )
 
-  const handleCreateFile = useCallback(() => {
+  const handleCreateFile = useCallback((forceRoot = false) => {
     let parentPath = rootPath
-    if (selectedNode) {
+    if (!forceRoot && selectedNode) {
       parentPath = selectedNode.type === 'dir'
         ? selectedNode.path
         : (selectedNode.path.substring(0, Math.max(selectedNode.path.lastIndexOf('/'), selectedNode.path.lastIndexOf('\\'))) || rootPath)
+      if (parentPath !== rootPath) toggleOpen(parentPath, true)
     }
     setInlineInput({ type: 'file', parentPath })
     setInputValue('')
-  }, [rootPath, selectedNode])
+  }, [rootPath, selectedNode, toggleOpen])
 
-  const handleCreateFolder = useCallback(() => {
+  const handleCreateFolder = useCallback((forceRoot = false) => {
     let parentPath = rootPath
-    if (selectedNode) {
+    if (!forceRoot && selectedNode) {
       parentPath = selectedNode.type === 'dir'
         ? selectedNode.path
         : (selectedNode.path.substring(0, Math.max(selectedNode.path.lastIndexOf('/'), selectedNode.path.lastIndexOf('\\'))) || rootPath)
+      if (parentPath !== rootPath) toggleOpen(parentPath, true)
     }
     setInlineInput({ type: 'dir', parentPath })
     setInputValue('')
-  }, [rootPath, selectedNode])
+  }, [rootPath, selectedNode, toggleOpen])
 
   const handleInlineSubmit = async () => {
     if (!inputValue.trim() || !window.electron || !inlineInput) {
@@ -639,16 +629,42 @@ export default function FileTree() {
     
     try {
       if (inlineInput.type === 'file') {
-        await window.electron.fs.writeFile(targetPath, '')
+        const ext = name.split('.').pop().toLowerCase()
+        let initialContent = ''
+        if (ext === 'html' || ext === 'htm') {
+          initialContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>`
+        } else if (['js', 'jsx', 'ts', 'tsx'].includes(ext)) {
+          initialContent = `// ${name}\n`
+        } else if (['css', 'scss', 'less'].includes(ext)) {
+          initialContent = `/* ${name} */\n`
+        } else if (['py', 'rb', 'sh', 'yaml', 'yml'].includes(ext)) {
+          initialContent = `# ${name}\n`
+        } else if (['go', 'rs', 'c', 'cpp', 'java', 'cs'].includes(ext)) {
+          initialContent = `// ${name}\n`
+        }
+
+        await window.electron.fs.writeFile(targetPath, initialContent)
         const lang = detectLanguage(name)
-        openTab({ path: targetPath, name, language: lang, content: '' })
+        openTab({ path: targetPath, name, language: lang, content: initialContent })
       } else {
         await window.electron.fs.createFolder(targetPath)
       }
       setSelectedNode({ path: targetPath, name, type: inlineInput.type })
       await refreshTree()
     } catch (err) {
-      alert(`Error creating ${inlineInput.type}: ${err.message}`)
+      const store = useStore.getState();
+      store.appendOutputLog('error', `Error creating ${inlineInput.type}: ${err.message}`);
+      store.setActiveSidebarTab('output');
     } finally {
       setInlineInput(null)
       setInputValue('')
@@ -682,10 +698,14 @@ export default function FileTree() {
         }
         await refreshTree()
       } else {
-        alert("Failed to rename")
+        const store = useStore.getState();
+        store.appendOutputLog('error', "Failed to rename file/folder.");
+        store.setActiveSidebarTab('output');
       }
     } catch (err) {
-      alert(`Error renaming: ${err.message}`)
+      const store = useStore.getState();
+      store.appendOutputLog('error', `Error renaming: ${err.message}`);
+      store.setActiveSidebarTab('output');
     } finally {
       setRenamingNode(null)
       setInputValue('')
@@ -725,10 +745,14 @@ export default function FileTree() {
 
         await refreshTree()
       } else {
-        alert("Failed to delete")
+        const store = useStore.getState();
+        store.appendOutputLog('error', "Failed to delete file/folder.");
+        store.setActiveSidebarTab('output');
       }
     } catch (err) {
-      alert(`Error deleting: ${err.message}`)
+      const store = useStore.getState();
+      store.appendOutputLog('error', `Error deleting: ${err.message}`);
+      store.setActiveSidebarTab('output');
     } finally {
       setConfirmDeleteNode(null)
     }
@@ -763,10 +787,10 @@ export default function FileTree() {
         
         {rootPath && (
           <div className="hidden group-hover:flex items-center gap-1 pr-1 animate-in fade-in duration-200">
-             <button onClick={(e) => { e.stopPropagation(); handleCreateFile(); }} title="New File" className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors">
+             <button onClick={(e) => { e.stopPropagation(); handleCreateFile(true); }} title="New File at Root" className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors">
                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
              </button>
-             <button onClick={(e) => { e.stopPropagation(); handleCreateFolder(); }} title="New Folder" className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors">
+             <button onClick={(e) => { e.stopPropagation(); handleCreateFolder(true); }} title="New Folder at Root" className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors">
                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
              </button>
              <button onClick={(e) => { e.stopPropagation(); refreshTree(); }} title="Refresh" className="p-1 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors">
@@ -777,7 +801,18 @@ export default function FileTree() {
       </div>
 
       {explorerOpen && (
-        <div className="flex-1 overflow-y-auto pt-0.5 relative">
+        <div 
+          className="flex-1 overflow-y-auto pt-0.5 relative" 
+          onClick={() => setSelectedNode(null)}
+          onContextMenu={(e) => {
+            if (e.target === e.currentTarget) {
+              e.preventDefault();
+              // Deselect and open context menu for root, but since FileContextMenu requires a node, 
+              // we just deselect for now. You could pass root node if you wanted root context menu.
+              setSelectedNode(null);
+            }
+          }}
+        >
           {isLoading ? (
             <div className="absolute inset-0 z-10 flex flex-col gap-1 p-2 bg-slate-950/20 backdrop-blur-[1px]">
               {[1, 2, 3, 4, 5, 6].map(i => (
@@ -810,7 +845,7 @@ export default function FileTree() {
                   onBlur={() => { setInputValue(''); }}
                 />
               )}
-              {fileTree.sort((a, b) => {
+              {[...(Array.isArray(fileTree) ? fileTree : (fileTree?.children || []))].sort((a, b) => {
                 if (a.type === b.type) return a.name.localeCompare(b.name)
                 return a.type === 'dir' ? -1 : 1
               }).map((node) => (
@@ -854,6 +889,7 @@ export default function FileTree() {
           setRenamingNode={setRenamingNode}
           setInputValue={setInputValue}
           setConfirmDeleteNode={setConfirmDeleteNode}
+          toggleOpen={toggleOpen}
         />
       )}
 
