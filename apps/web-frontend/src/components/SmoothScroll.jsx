@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+﻿import { useEffect, useRef } from 'react'
 import Lenis from 'lenis';
 
 export default function SmoothScroll({ children }) {
@@ -33,3 +33,4 @@ export default function SmoothScroll({ children }) {
 
   return <>{children}</>
 }
+

@@ -3,12 +3,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import useOSDetection from '../hooks/useOSDetection.js'
 import { redirectToAuthForDownload } from '../utils/authRedirect.js'
 
-const BASE = (import.meta.env.VITE_DOWNLOAD_BASE_URL || 'https://github.com/Aeres-IDE/releases/latest/download').replace(/\/$/, '')
+const BASE = (import.meta.env.VITE_DOWNLOAD_BASE_URL || 'https://github.com/LAN-SHLOK/Aeres-IDE/releases/download/v0.1.0').replace(/\/$/, '')
 
 const ARTIFACTS = {
-  mac: 'Aeres-IDE-mac-universal.dmg',
-  windows: 'Aeres-IDE-Setup-win-x64.exe',
-  linux: 'Aeres-IDE-linux-x86_64.AppImage',
+  mac: 'aeres-ide_0.1.0_x64.dmg',
+  windows: 'aeres-ide_0.1.0_x64-setup.exe',
+  linux: 'aeres-ide_0.1.0_amd64.AppImage',
 }
 
 const LABELS = {
@@ -109,7 +109,7 @@ export default function SmartDownload({ className = '', large = false, autoStart
 
       {done && isSignedIn && (
         <p className="mt-4 text-xs font-sans font-bold text-black/60">
-          <span className="text-emerald-600 font-extrabold">✓ Download started.</span> After installing, choose Login via Browser inside Aeres IDE.
+          <span className="text-emerald-600 font-extrabold">âœ“ Download started.</span> After installing, choose Login via Browser inside Aeres IDE.
         </p>
       )}
 
@@ -119,7 +119,7 @@ export default function SmartDownload({ className = '', large = false, autoStart
             <a
               key={p}
               href={`${BASE}/${ARTIFACTS[p]}`}
-              className="bg-white border-2 border-black px-3.5 py-1.5 rounded-full text-black hover:bg-[#fae3d9] shadow-[1.5px_1.5px_0px_#000000] no-underline hover:-translate-y-0.5 transition"
+              className="bg-white border border-white/10 px-3.5 py-1.5 rounded-full text-black hover:bg-[#fae3d9] shadow-[1.5px_1.5px_0px_#000000] no-underline hover:-translate-y-0.5 transition"
               onClick={(e) => {
                 if (!isSignedIn) {
                   e.preventDefault()
@@ -135,3 +135,4 @@ export default function SmartDownload({ className = '', large = false, autoStart
     </div>
   )
 }
+

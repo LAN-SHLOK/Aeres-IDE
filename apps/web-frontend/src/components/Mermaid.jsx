@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
 
 export default function Mermaid({ chart, className = '' }) {
@@ -41,3 +41,4 @@ export default function Mermaid({ chart, className = '' }) {
 
   return <div ref={containerRef} className={`mermaid ${className}`} />;
 }
+

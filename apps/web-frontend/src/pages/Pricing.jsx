@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion'
+﻿import { motion } from 'framer-motion'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
 
@@ -57,13 +57,13 @@ export default function Pricing() {
       <section className="relative pt-40 pb-32 px-6 md:px-10 overflow-hidden max-w-[1400px] mx-auto">
         
         {/* Floating developer star and bracket stickers */}
-        <div className="absolute top-[20%] left-10 w-12 h-12 text-[#ff8ba7] sticker-float hidden md:block" style={{ animationDelay: '0.2s' }}>
+        <div className="absolute top-[20%] left-10 w-12 h-12 text-[#ff8ba7] hidden hidden md:block" style={{ animationDelay: '0.2s' }}>
           {/* Code Bracket SVG */}
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 3L1.5 12 8 21h3l-6.5-9L11 3H8zm8 0l6.5 9-6.5 9h-3l6.5-9-6.5-9h3z" />
           </svg>
         </div>
-        <div className="absolute top-[15%] right-16 w-10 h-10 text-[#c084fc] sticker-float hidden md:block" style={{ animationDelay: '0.7s' }}>
+        <div className="absolute top-[15%] right-16 w-10 h-10 text-[#c084fc] hidden hidden md:block" style={{ animationDelay: '0.7s' }}>
           {/* Floppy Disk SVG */}
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M19 12v7H5v-7h14zm2-5.586v13.586a2 2 0 01-2 2H5a2 2 0 01-2-2V4a2 2 0 012-2h10.586a2 2 0 011.414.586l4 4zM17 12H7v6h10v-6zM15 4H5v4h10V4z" />
@@ -71,7 +71,7 @@ export default function Pricing() {
         </div>
         
         <div className="text-center mb-24 relative z-10 font-display">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-8 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border border-white/10 shadow-[3px_3px_0px_#000000] mb-8 font-mono">
             menu_pricing.json
           </span>
           <motion.h1 
@@ -79,7 +79,7 @@ export default function Pricing() {
             animate={{ opacity: 1, y: 0 }}
             className="font-display text-[clamp(2.5rem,6vw,5rem)] font-extrabold tracking-tight leading-[0.9] text-white"
           >
-            Predictable <br/><span className="text-black bg-[#ff8ba7] border-4 border-black px-6 py-2.5 inline-block shadow-[5px_5px_0px_#000000] rounded-[2.5rem] italic font-bold mt-2">intelligence.</span>
+            Predictable <br/><span className="text-black bg-[#ff8ba7] border border-white/10 px-6 py-2.5 inline-block shadow-[5px_5px_0px_#000000] rounded-[2.5rem] italic font-bold mt-2">intelligence.</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -101,7 +101,7 @@ export default function Pricing() {
               className="h-full"
             >
               {/* Cozy Dialog card */}
-              <div className="kawaii-card h-full flex flex-col justify-between bg-[#13141f] border-3 border-black">
+              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl h-full flex flex-col justify-between bg-[#13141f] border border-white/10">
                 
                 {/* Windows 95 Style Title Bar */}
                 <div className={`${plan.barColor} border-b-4 border-black px-5 py-3 flex justify-between items-center font-display`}>
@@ -124,8 +124,8 @@ export default function Pricing() {
                       {plan.features.map(feature => (
                         <div key={feature} className="flex items-center gap-3 text-xs text-white/80 font-sans font-bold">
                           {/* Retro check indicator */}
-                          <div className="w-5 h-5 rounded-xl border-3 border-black bg-[#1b1c2b] flex items-center justify-center shadow-[2px_2px_0px_#000000] text-[#ff8ba7] font-black shrink-0 text-[10px]">
-                            ✓
+                          <div className="w-5 h-5 rounded-xl border border-white/10 bg-[#1b1c2b] flex items-center justify-center shadow-[2px_2px_0px_#000000] text-[#ff8ba7] font-black shrink-0 text-[10px]">
+                            âœ“
                           </div>
                           <span>{feature}</span>
                         </div>
@@ -133,7 +133,7 @@ export default function Pricing() {
                     </div>
                   </div>
 
-                  <button className={`w-full py-4 text-xs font-black uppercase tracking-wider ${plan.premium ? 'kawaii-btn-pink' : 'kawaii-btn-cream bg-[#1b1c2b] text-white hover:bg-[#2c2d3e]'}`}>
+                  <button className={`w-full py-4 text-xs font-black uppercase tracking-wider ${plan.premium ? 'bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-[0_0_15px_rgba(168,85,247,0.4)]' : 'kawaii-btn-cream bg-[#1b1c2b] text-white hover:bg-[#2c2d3e]'}`}>
                     {plan.buttonText}
                   </button>
                 </div>
@@ -148,3 +148,4 @@ export default function Pricing() {
     </div>
   )
 }
+

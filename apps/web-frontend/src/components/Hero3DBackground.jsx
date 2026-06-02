@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect } from 'react'
+﻿import React, { useRef, useMemo, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { 
   Points,
@@ -207,3 +207,4 @@ export default function Global8bitBackground() {
     </div>
   )
 }
+

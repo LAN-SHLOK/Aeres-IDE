@@ -1,4 +1,4 @@
-import { SignOutButton, useUser } from '@clerk/clerk-react'
+﻿import { SignOutButton, useUser } from '@clerk/clerk-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { redirectToAuthForDownload } from '../utils/authRedirect.js'
 
@@ -11,8 +11,8 @@ export default function Navbar() {
   const activeTabClass = (path) => {
     const isActive = location.pathname === path
     return isActive 
-      ? 'bg-[#c084fc] border-3 border-black text-black shadow-[3px_3px_0px_#000000] font-black px-5 py-2 rounded-full scale-105 transition-all duration-300'
-      : 'bg-[#1b1c2b] border-3 border-black text-white/70 hover:text-white hover:bg-[#ff8ba7]/20 shadow-[2px_2px_0px_#000000] hover:shadow-[3px_3px_0px_#000000] px-5 py-2 rounded-full hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all duration-300'
+      ? 'bg-[#c084fc] border border-white/10 text-black shadow-[3px_3px_0px_#000000] font-black px-5 py-2 rounded-full scale-105 transition-all duration-300'
+      : 'bg-[#1b1c2b] border border-white/10 text-white/70 hover:text-white hover:bg-[#ff8ba7]/20 shadow-[2px_2px_0px_#000000] hover:shadow-[3px_3px_0px_#000000] px-5 py-2 rounded-full hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all duration-300'
   }
 
   return (
@@ -20,7 +20,7 @@ export default function Navbar() {
       
       {/* Cute Sweet Monitor Logo with thick border */}
       <Link to="/" className="flex items-center gap-3.5 no-underline group">
-        <div className="bg-[#ff8ba7] border-3 border-black p-1.5 rounded-2xl shadow-[3px_3px_0px_#000000] group-hover:rotate-6 transition duration-300 flex items-center justify-center shrink-0">
+        <div className="bg-[#ff8ba7] border border-white/10 p-1.5 rounded-2xl shadow-[3px_3px_0px_#000000] group-hover:rotate-6 transition duration-300 flex items-center justify-center shrink-0">
           {/* Developer Monitor Screen SVG */}
           <svg className="w-5.5 h-5.5 text-black" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
             <rect x="2" y="3" width="20" height="13" rx="2" />
@@ -29,7 +29,7 @@ export default function Navbar() {
           </svg>
         </div>
         <span className="font-display text-xl font-bold text-white tracking-tight group-hover:text-[#ff8ba7] transition">
-          Aeres <span className="bg-[#fef08a] text-black px-2.5 py-0.5 border-2 border-black rounded-xl shadow-[2.5px_2.5px_0px_#000000] text-[10px] uppercase font-mono tracking-widest font-black">IDE</span>
+          Aeres <span className="bg-[#fef08a] text-black px-2.5 py-0.5 border border-white/10 rounded-xl shadow-[2.5px_2.5px_0px_#000000] text-[10px] uppercase font-mono tracking-widest font-black">IDE</span>
         </span>
       </Link>
 
@@ -54,14 +54,14 @@ export default function Navbar() {
           <>
             <Link
               to="/dashboard"
-              className="bg-[#fae3d9] border-3 border-black text-black shadow-[2.5px_2.5px_0px_#000000] px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider no-underline hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
+              className="bg-[#fae3d9] border border-white/10 text-black shadow-[2.5px_2.5px_0px_#000000] px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider no-underline hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
             >
               Dashboard
             </Link>
             <SignOutButton>
               <button
                 type="button"
-                className="cursor-pointer bg-[#1b1c2b] border-3 border-black text-white/70 hover:text-white shadow-[2.5px_2.5px_0px_#000000] px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
+                className="cursor-pointer bg-[#1b1c2b] border border-white/10 text-white/70 hover:text-white shadow-[2.5px_2.5px_0px_#000000] px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
               >
                 Sign Out
               </button>
@@ -79,7 +79,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => redirectToAuthForDownload()}
-              className="cursor-pointer kawaii-btn-mint text-xs uppercase tracking-wider text-black"
+              className="cursor-pointer bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg shadow-[0_0_15px_rgba(8,145,178,0.4)] text-xs uppercase tracking-wider text-black"
             >
               Download
             </button>
@@ -90,3 +90,4 @@ export default function Navbar() {
     </nav>
   )
 }
+

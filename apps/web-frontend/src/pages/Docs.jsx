@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+﻿import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo, useEffect } from 'react'
 import Navbar from '../components/Navbar.jsx'
 
@@ -21,7 +21,7 @@ const Icons = {
     </svg>
   ),
   alert: (
-    <div className="w-6 h-6 rounded-full border-2 border-black bg-[#1b1c2b] text-[#ff8ba7] flex items-center justify-center text-xs font-black shrink-0 font-mono shadow-[1.5px_1.5px_0px_#000000]">
+    <div className="w-6 h-6 rounded-full border border-white/10 bg-[#1b1c2b] text-[#ff8ba7] flex items-center justify-center text-xs font-black shrink-0 font-mono shadow-[1.5px_1.5px_0px_#000000]">
       !
     </div>
   ),
@@ -104,7 +104,7 @@ const DOCUMENTATION_SECTIONS = [
               Welcome to the Aeres IDE developer manual. Aeres is a high-fidelity development sandbox built for offline-first speed, intelligence, and seamless code orchestration. Combining local abstract syntax tree (AST) evaluations with background terminal runner integration, Aeres delivers the visual styling of premium web hubs with staff-level software engineering autonomy.
             </p>
 
-            <div className="my-8 flex gap-4 p-5 rounded-3xl bg-[#13141f] border-3 border-black shadow-[4px_4px_0px_#000000] relative overflow-hidden group">
+            <div className="my-8 flex gap-4 p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[4px_4px_0px_#000000] relative overflow-hidden group">
               {Icons.alert}
               <div className="relative z-10 font-sans text-left">
                 <span className="text-white font-black text-sm block mb-1">Architecture Philosophy</span>
@@ -116,11 +116,11 @@ const DOCUMENTATION_SECTIONS = [
 
             <h3 className="text-lg font-black text-white mt-10 mb-4 font-display text-left">Core Principles</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 my-6 text-left">
-              <div className="p-5 rounded-3xl bg-[#13141f] border-3 border-black shadow-[3px_3px_0px_#000000]">
+              <div className="p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[3px_3px_0px_#000000]">
                 <span className="font-extrabold text-white block mb-2 font-display">AST-Driven Intelligence</span>
                 <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Intelligence works by parsing syntax trees (ASTs) rather than simple text prediction, eliminating typical text hallucinatory blocks.</p>
               </div>
-              <div className="p-5 rounded-3xl bg-[#13141f] border-3 border-black shadow-[3px_3px_0px_#000000]">
+              <div className="p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[3px_3px_0px_#000000]">
                 <span className="font-extrabold text-white block mb-2 font-display">Self-Correction Loops</span>
                 <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Integrated pseudoterminals allow the AI to run builds, intercept tracebacks, surgical edit, and verify until the code is 100% green.</p>
               </div>
@@ -143,7 +143,7 @@ const DOCUMENTATION_SECTIONS = [
             <p className="text-white/60 text-xs font-bold mb-4 leading-relaxed font-sans text-left">
               Provision the CLI package globally using standard package managers. This registers all LSP listeners and bridge protocols:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
               $ npm install -g aeres-cli
             </pre>
 
@@ -151,7 +151,7 @@ const DOCUMENTATION_SECTIONS = [
             <p className="text-white/60 text-xs font-bold mb-4 leading-relaxed font-sans text-left">
               Mount the target source tree path to prepare the indexing database:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
               $ aeres init --workspace ./my-typescript-app
             </pre>
           </div>
@@ -195,7 +195,7 @@ const DOCUMENTATION_SECTIONS = [
             <p className="text-white/60 text-xs font-bold mb-4 leading-relaxed font-sans text-left">
               Aeres fully supports standard `.vscode/launch.json` and `.aeres/launch.json` formats. Define your configurations identically to VS Code:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
               &#123;<br />
               &nbsp;&nbsp;"version": "0.2.0",<br />
               &nbsp;&nbsp;"configurations": [<br />
@@ -252,7 +252,7 @@ const DOCUMENTATION_SECTIONS = [
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
               The Electron backend builds a directed graph with specialized links tracking bug propagation. For instance, if an OutOfMemory traceback occurs, the engine back-traces line parameters across structural refactors, mapping the error node back to the causal commit automatically:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
 [Error Line 142] --caused--&gt; [Commit a8e90f: Swapped bounds] --caused--&gt; [Commit d5b12a]
             </pre>
           </div>
@@ -271,11 +271,11 @@ const DOCUMENTATION_SECTIONS = [
 
             <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Mutator Synthesis Rules</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 my-6 font-sans text-left">
-              <div className="p-5 rounded-3xl border-3 border-black bg-[#13141f] shadow-[3px_3px_0px_#000000]">
+              <div className="p-5 rounded-3xl border border-white/10 bg-[#13141f] shadow-[3px_3px_0px_#000000]">
                 <span className="font-extrabold text-white block mb-2 font-display">Binary Bounds Mutation</span>
                 <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Swaps comparison boundaries (e.g. replacing &lt; with &lt;=) to verify boundary-condition assertions.</p>
               </div>
-              <div className="p-5 rounded-3xl border-3 border-black bg-[#13141f] shadow-[3px_3px_0px_#000000]">
+              <div className="p-5 rounded-3xl border border-white/10 bg-[#13141f] shadow-[3px_3px_0px_#000000]">
                 <span className="font-extrabold text-white block mb-2 font-display">Boolean Operator Flips</span>
                 <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Alters logic flows (switching true to false) to double-check that test coverage catches logical changes.</p>
               </div>
@@ -322,7 +322,7 @@ const DOCUMENTATION_SECTIONS = [
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
               When enough unique call observations are recorded, Aeres maps edge-case thresholds. Developers can click 'Generate Snapshot Tests' to automatically generate virtual test suites (such as test_fn.py or fn.test.ts) that enforce verified boundaries without manual script writing:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
 const res = await window.electron.contract.generate(&#123;<br />
 &nbsp;&nbsp;file_path: activeTab.path,<br />
 &nbsp;&nbsp;function_name: fn,<br />
@@ -352,7 +352,7 @@ const res = await window.electron.contract.generate(&#123;<br />
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
               Install Ollama locally and pull high-performance completion structures (e.g. Qwen-2.5-Coder or Llama-3 8B). Then update the Aeres configuration parameters inside your root settings:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
 &#123;<br />
 &nbsp;&nbsp;"aeres.ai.provider": "ollama",<br />
 &nbsp;&nbsp;"aeres.ai.model": "qwen2.5-coder:7b",<br />
@@ -403,7 +403,7 @@ const res = await window.electron.contract.generate(&#123;<br />
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
               Focus Sessions are stored locally. Restoring a session recreates the exact state, opening Monaco editors at the exact cursor line, restoring shell commands, and re-provisioning the active panel selections:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
 // Invokes local session restore stream<br />
 await window.electron.sessions.restore(&#123;<br />
 &nbsp;&nbsp;sessionId: "target-session-uuid"<br />
@@ -450,7 +450,7 @@ await window.electron.sessions.restore(&#123;<br />
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
               Define your own global macros in the workspace `keymap.json`:
             </p>
-            <pre className="bg-[#09090e] border-3 border-black shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
 &#123;<br />
 &nbsp;&nbsp;"keybindings": [<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&#123; "key": "ctrl+shift+r", "command": "aeres.mutator.flipBounds" &#125;,<br />
@@ -590,11 +590,11 @@ export default function Docs() {
       <div className="flex-1 flex max-w-7xl w-full mx-auto pt-32 px-4 md:px-8 gap-8 items-start pb-20">
         
         {/* Sleek Sidebar with dynamic search and glowing navigation buttons */}
-        <aside className="w-72 shrink-0 hidden md:block sticky top-32 h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain pr-4 bg-[#13141f] border-4 border-black shadow-[4px_4px_0px_#000000] rounded-[2rem] p-6">
+        <aside className="w-72 shrink-0 hidden md:block sticky top-32 h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain pr-4 bg-[#13141f] border border-white/10 shadow-[4px_4px_0px_#000000] rounded-[2rem] p-6">
           
           {/* Docs Live Search Filter */}
           <div className="mb-6 font-sans">
-            <div className="flex items-center gap-2.5 bg-[#09090e] border-3 border-black shadow-[2.5px_2.5px_0px_#000000] rounded-xl px-4 py-2.5 transition-all">
+            <div className="flex items-center gap-2.5 bg-[#09090e] border border-white/10 shadow-[2.5px_2.5px_0px_#000000] rounded-xl px-4 py-2.5 transition-all">
               <svg className="w-4 h-4 text-white/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -626,7 +626,7 @@ export default function Docs() {
                             setActivePageId(p.id)
                             setActiveOutlineId(p.id)
                           }}
-                          className={`w-full flex items-center gap-2.5 px-5 py-3.5 text-xs text-left rounded-full border-3 border-black transition-all duration-300 ${isActive ? 'bg-[#c084fc] text-black font-black shadow-[2px_2px_0px_#000000]' : 'bg-[#1b1c2b] text-white/75 hover:bg-[#ff8ba7]/20 shadow-[1.5px_1.5px_0px_#000000]'}`}
+                          className={`w-full flex items-center gap-2.5 px-5 py-3.5 text-xs text-left rounded-full border border-white/10 transition-all duration-300 ${isActive ? 'bg-[#c084fc] text-black font-black shadow-[2px_2px_0px_#000000]' : 'bg-[#1b1c2b] text-white/75 hover:bg-[#ff8ba7]/20 shadow-[1.5px_1.5px_0px_#000000]'}`}
                         >
                           <span className="shrink-0">{p.icon}</span>
                           <span>{p.title}</span>
@@ -652,7 +652,7 @@ export default function Docs() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="max-w-[720px] w-full kawaii-card bg-[#13141f] border-3 border-black"
+              className="max-w-[720px] w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] border border-white/10"
             >
               {/* Cozy Titlebar header with retro controls removed */}
               <div className="kawaii-titlebar font-display justify-start">
@@ -664,7 +664,7 @@ export default function Docs() {
               {/* Main Document Content */}
               <div className="p-8 bg-[#13141f]">
                 {/* Category Breadcrumb */}
-                <span className="text-[10px] font-black text-black bg-[#fae3d9] border-2 border-black shadow-[1.5px_1.5px_0px_#000000] px-3 py-1 rounded-full tracking-widest uppercase font-mono inline-block mb-5">
+                <span className="text-[10px] font-black text-black bg-[#fae3d9] border border-white/10 shadow-[1.5px_1.5px_0px_#000000] px-3 py-1 rounded-full tracking-widest uppercase font-mono inline-block mb-5">
                   {DOCUMENTATION_SECTIONS.find(cat => cat.pages.some(p => p.id === activePage.id))?.category || 'DOCS'}
                 </span>
 
@@ -677,14 +677,14 @@ export default function Docs() {
                 <div className="font-sans leading-[1.8] text-white/70 text-sm font-semibold">
                   {filteredCategories.length === 0 && searchQuery ? (
                     <div className="flex flex-col items-center justify-center py-20 text-center">
-                      <div className="w-16 h-16 rounded-full bg-[#1b1c2b] border-4 border-black text-[#ff8ba7] flex items-center justify-center mb-6 shadow-[4px_4px_0px_#000000]">
+                      <div className="w-16 h-16 rounded-full bg-[#1b1c2b] border border-white/10 text-[#ff8ba7] flex items-center justify-center mb-6 shadow-[4px_4px_0px_#000000]">
                         <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
                         </svg>
                       </div>
                       <h2 className="text-white font-display text-2xl font-black mb-2">No documentation found</h2>
                       <p className="text-white/60 font-sans text-sm">We couldn't find any articles matching "{searchQuery}".</p>
-                      <button onClick={() => setSearchQuery('')} className="mt-6 px-6 py-2.5 bg-[#c084fc] text-black font-black font-display text-xs rounded-full border-3 border-black shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#000000] transition-all">Clear Search</button>
+                      <button onClick={() => setSearchQuery('')} className="mt-6 px-6 py-2.5 bg-[#c084fc] text-black font-black font-display text-xs rounded-full border border-white/10 shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#000000] transition-all">Clear Search</button>
                     </div>
                   ) : (
                     activePage.content
@@ -697,7 +697,7 @@ export default function Docs() {
                     interactive_playground.log
                   </span>
 
-                  <div className="kawaii-card bg-[#13141f] border-3 border-black">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] border border-white/10">
                     {/* Title selector bar */}
                     <div className="bg-[#1b1c2b] px-5 py-3 border-b-4 border-black flex items-center justify-between gap-4 font-display">
                       <div className="flex gap-2">
@@ -707,7 +707,7 @@ export default function Docs() {
                             <button
                               key={lang}
                               onClick={() => setSandboxLang(lang)}
-                              className={`relative px-4 py-1.5 rounded-full text-[10px] font-mono border-2 border-black font-black uppercase tracking-wider transition-all duration-300 ${isSelected ? 'text-black bg-[#ff8ba7] shadow-[1.5px_1.5px_0px_#000000]' : 'text-white/60 bg-[#13141f] shadow-[1px_1px_0px_#000000]'}`}
+                              className={`relative px-4 py-1.5 rounded-full text-[10px] font-mono border border-white/10 font-black uppercase tracking-wider transition-all duration-300 ${isSelected ? 'text-black bg-[#ff8ba7] shadow-[1.5px_1.5px_0px_#000000]' : 'text-white/60 bg-[#13141f] shadow-[1px_1px_0px_#000000]'}`}
                             >
                               {lang}
                             </button>
@@ -733,7 +733,7 @@ export default function Docs() {
                       </span>
                       <button
                         onClick={() => handleCopy(PLAYGROUND_SNIPPETS[sandboxLang].code, sandboxLang)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full border-3 border-black text-xs font-black uppercase tracking-wider transition-all shrink-0 ${copiedId === sandboxLang ? 'bg-emerald-300 text-black shadow-[1px_1px_0px_#000000] translate-x-0.5 translate-y-0.5' : 'kawaii-btn-mint shadow-none'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-wider transition-all shrink-0 ${copiedId === sandboxLang ? 'bg-emerald-300 text-black shadow-[1px_1px_0px_#000000] translate-x-0.5 translate-y-0.5' : 'bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg shadow-[0_0_15px_rgba(8,145,178,0.4)] shadow-none'}`}
                       >
                         {copiedId === sandboxLang ? (
                           <>
@@ -759,7 +759,7 @@ export default function Docs() {
                         setActivePageId(allPages[currentPageIndex - 1].id)
                         setActiveOutlineId(allPages[currentPageIndex - 1].id)
                       }}
-                      className="flex flex-col items-start gap-1.5 p-4 rounded-3xl border-3 border-black bg-[#1b1c2b] shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition duration-200 text-left min-w-0"
+                      className="flex flex-col items-start gap-1.5 p-4 rounded-3xl border border-white/10 bg-[#1b1c2b] shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition duration-200 text-left min-w-0"
                     >
                       <span className="text-[10px] font-black text-white/30 uppercase tracking-wider">Previous</span>
                       <span className="text-xs text-white font-extrabold truncate max-w-[120px]">{allPages[currentPageIndex - 1].title}</span>
@@ -772,7 +772,7 @@ export default function Docs() {
                         setActivePageId(allPages[currentPageIndex + 1].id)
                         setActiveOutlineId(allPages[currentPageIndex + 1].id)
                       }}
-                      className="flex flex-col items-end gap-1.5 p-4 rounded-3xl border-3 border-black bg-[#1b1c2b] shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition duration-200 text-right min-w-0 ml-auto"
+                      className="flex flex-col items-end gap-1.5 p-4 rounded-3xl border border-white/10 bg-[#1b1c2b] shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition duration-200 text-right min-w-0 ml-auto"
                     >
                       <span className="text-[10px] font-black text-white/30 uppercase tracking-wider">Next</span>
                       <span className="text-xs text-white font-extrabold truncate max-w-[120px]">{allPages[currentPageIndex + 1].title}</span>
@@ -814,7 +814,7 @@ export default function Docs() {
       {/* developer footer */}
       <footer className="mt-auto py-8 border-t-4 border-black bg-[#13141f] shadow-[0_-4px_0px_rgba(0,0,0,0.06)]">
         <div className="max-w-7xl mx-auto px-4 md:px-8 flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-white/60 font-mono">
-          <span>© 2026 Aeres IDE. Engineered for high-speed multi-agent workflows.</span>
+          <span>Â© 2026 Aeres IDE. Engineered for high-speed multi-agent workflows.</span>
           <div className="flex gap-4">
             <span className="hover:text-[#ff8ba7] cursor-pointer transition">API Specs</span>
             <span className="hover:text-[#ff8ba7] cursor-pointer transition">Status Radar</span>
@@ -826,3 +826,4 @@ export default function Docs() {
     </div>
   )
 }
+

@@ -7,7 +7,7 @@ export default function AuthModal({ onCheckAgain }) {
     if (e?.auth?.openBrowser) {
       await e.auth.openBrowser('ide')
     } else if (e?.fs?.openExternal) {
-      const webUrl = import.meta.env.VITE_WEB_URL || 'https://app.aeres.ai'
+      const webUrl = import.meta.env.VITE_WEB_URL || 'https://aeres-ide-web-frontend.vercel.app'
       await e.fs.openExternal(webUrl)
     }
   }
@@ -16,7 +16,7 @@ export default function AuthModal({ onCheckAgain }) {
 
   const handleOpenWebApp = async () => {
     // Opens the web app directly in the default browser so the user can log in there
-    const webUrl = import.meta.env.VITE_WEB_URL || 'https://app.aeres.ai'
+    const webUrl = import.meta.env.VITE_WEB_URL || 'https://aeres-ide-web-frontend.vercel.app'
     if (e?.fs?.openExternal) {
       await e.fs.openExternal(webUrl)
     } else {

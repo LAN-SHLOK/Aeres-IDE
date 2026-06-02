@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from 'framer-motion'
+﻿import { motion, useScroll, useTransform } from 'framer-motion'
 import { useRef } from 'react'
 import SmartDownload from './SmartDownload.jsx'
 
@@ -66,3 +66,4 @@ export default function HeroSection({ autoDownload = false }) {
     </section>
   )
 }
+

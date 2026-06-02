@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-react'
+﻿import { useAuth } from '@clerk/clerk-react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AuthPortal from './pages/AuthPortal.jsx'
 import Dashboard from './pages/Dashboard.jsx'
@@ -55,3 +55,4 @@ export default function App() {
     </SmoothScroll>
   )
 }
+

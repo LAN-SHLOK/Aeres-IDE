@@ -51,7 +51,7 @@ function ScrollHUD() {
   }, [scrollYProgress])
   
   return (
-    <div className="fixed bottom-10 right-10 z-50 flex flex-col items-center gap-2 bg-[#13141f] border-3 border-black p-2.5 rounded-2xl shadow-[3px_3px_0px_#000000] font-mono">
+    <div className="fixed bottom-10 right-10 z-50 flex flex-col items-center gap-2 bg-[#13141f] border border-white/10 p-2.5 rounded-2xl shadow-2xl font-mono">
       <div className="relative h-10 w-10 flex items-center justify-center">
         <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full rotate-[-90deg]">
           <circle cx="50" cy="50" r="45" stroke="#1c1d2e" strokeWidth="6" fill="transparent" />
@@ -125,17 +125,17 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#09090e] font-body text-[#fffdf9] selection:bg-purple-500/20 selection:text-purple-300 overflow-x-hidden relative">
+    <div className="min-h-screen bg-[#09090e] font-body text-white selection:bg-purple-500/20 selection:text-purple-300 overflow-x-hidden relative">
       
       {/* Ambient glass bubbles removed as requested */}
 
       {/* Floating Y2K developer stickers */}
-      <div className="absolute top-[20%] left-12 w-14 h-14 text-[#ff8ba7] sticker-float hidden md:block" style={{ animationDelay: '0.1s' }}>
+      <div className="absolute top-[20%] left-12 w-14 h-14 text-[#ff8ba7] hidden hidden md:block" style={{ animationDelay: '0.1s' }}>
         <svg fill="currentColor" viewBox="0 0 24 24">
           <path d="M8 3L1.5 12 8 21h3l-6.5-9L11 3H8zm8 0l6.5 9-6.5 9h-3l6.5-9-6.5-9h3z" />
         </svg>
       </div>
-      <div className="absolute top-[35%] right-14 w-12 h-12 text-[#2dd4bf] sticker-float hidden md:block" style={{ animationDelay: '0.5s' }}>
+      <div className="absolute top-[35%] right-14 w-12 h-12 text-[#2dd4bf] hidden hidden md:block" style={{ animationDelay: '0.5s' }}>
         <svg fill="currentColor" viewBox="0 0 24 24">
           <path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
         </svg>
@@ -146,31 +146,31 @@ export default function LandingPage() {
 
       {/* Hero Banner styled as a massive Y2K Card */}
       <section className="pt-40 pb-20 px-6 max-w-[1200px] mx-auto z-10 relative">
-        <div className="kawaii-card bg-[#13141f] p-10 md:p-16 text-center relative overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-10 md:p-16 text-center relative overflow-hidden">
           
           {/* Cursors Removed */}
 
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-8 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-8 font-mono">
             welcome_to_aeres
           </span>
 
           {/* Expressive Typography Animation Header */}
           <h1 className="font-display text-[clamp(2.3rem,6.5vw,5rem)] font-extrabold tracking-tight leading-[1] text-white mb-8">
             {renderExpressiveTitle()} <br/>
-            <span className="text-black bg-[#ff8ba7] border-4 border-black px-6 py-2 inline-block shadow-[5px_5px_0px_#000000] rounded-[2.5rem] italic font-bold mt-2">
+            <span className="text-white bg-purple-500 border border-white/10 px-6 py-2 inline-block shadow-2xl rounded-[2.5rem] italic font-bold mt-2">
               provisioned locally.
             </span>
           </h1>
 
-          <p className="text-[#fffdf9]/75 text-base max-w-[620px] mx-auto leading-relaxed font-sans font-semibold mt-6 mb-10">
+          <p className="text-white/75 text-base max-w-[620px] mx-auto leading-relaxed font-sans font-semibold mt-6 mb-10">
             Aeres is a high-performance offline development environment featuring self-correcting multi-agent loops and AST-level mutation sweeper diagnostics. Optimized to keep coder eyes fresh and workspaces safe.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <SmartDownload className="kawaii-btn-pink text-xs uppercase tracking-wider font-display font-bold" />
+            <SmartDownload className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-[0_0_15px_rgba(168,85,247,0.4)] text-xs uppercase tracking-wider font-display font-bold" />
             <Link
               to="/docs"
-              className="bg-[#1b1c2b] border-3 border-black text-white font-extrabold shadow-[3px_3px_0px_#000000] px-6 py-3.5 rounded-full text-xs uppercase tracking-wider font-display no-underline hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
+              className="bg-[#1b1c2b] border border-white/10 text-white font-extrabold shadow-2xl px-6 py-3.5 rounded-full text-xs uppercase tracking-wider font-display no-underline hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-2xl transition-all"
             >
               read_manual.log
             </Link>
@@ -188,7 +188,7 @@ export default function LandingPage() {
             }}
           >
             <span className="text-[10px] font-black uppercase tracking-widest font-mono text-white/50">Scroll to Explore</span>
-            <div className="w-6 h-10 rounded-full border-3 border-black bg-[#1b1c2b] flex justify-center p-1.5 shadow-[2px_2px_0px_#000000]">
+            <div className="w-6 h-10 rounded-full border border-white/10 bg-[#1b1c2b] flex justify-center p-1.5 shadow-2xl">
               <motion.div 
                 animate={{ y: [0, 6, 0] }}
                 transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
@@ -203,7 +203,7 @@ export default function LandingPage() {
       {/* Zero-Config CLI Terminal Dashboard */}
       <section className="relative px-6 py-12 max-w-[1400px] mx-auto z-10">
         <div className="text-center mb-12">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-4 font-mono">
             terminal_daemon
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -212,7 +212,7 @@ export default function LandingPage() {
         </div>
 
         {/* terminal dialogue */}
-        <div className="max-w-[760px] mx-auto kawaii-card bg-[#13141f]">
+        <div className="max-w-[760px] mx-auto bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f]">
           <div className="bg-[#1b1c2b] px-6 py-3.5 border-b-4 border-black flex items-center justify-between gap-4 font-display">
             <div className="flex gap-2">
               {Object.keys(OS_SCRIPTS).map(os => {
@@ -221,7 +221,7 @@ export default function LandingPage() {
                   <button
                     key={os}
                     onClick={() => setActiveOs(os)}
-                    className={`relative px-4 py-1.5 rounded-full text-xs font-mono font-black tracking-wide border-2 border-black transition-all ${isSelected ? 'text-black bg-[#ff8ba7] shadow-[2px_2px_0px_#000000]' : 'text-white/60 bg-[#13141f] shadow-[1px_1px_0px_#000000]'}`}
+                    className={`relative px-4 py-1.5 rounded-full text-xs font-mono font-black tracking-wide border border-white/10 transition-all ${isSelected ? 'text-white bg-purple-500 shadow-2xl' : 'text-white/60 bg-[#13141f] shadow-2xl'}`}
                   >
                     {OS_SCRIPTS[os].name}
                   </button>
@@ -249,7 +249,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             </span>
             <button
               onClick={() => copyScript(OS_SCRIPTS[activeOs].command)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full border-3 border-black text-xs font-black uppercase tracking-wider transition-all ${copied ? 'bg-emerald-300 text-black shadow-[1px_1px_0px_#000000] translate-x-0.5 translate-y-0.5' : 'kawaii-btn-mint shadow-none'}`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full border border-white/10 text-xs font-black uppercase tracking-wider transition-all ${copied ? 'bg-emerald-300 text-black shadow-2xl translate-x-0.5 translate-y-0.5' : 'bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg shadow-[0_0_15px_rgba(8,145,178,0.4)] shadow-none'}`}
             >
               {copied ? (
                 <>
@@ -291,10 +291,10 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             <div 
               onClick={() => setScrollyStep(0)}
               onMouseEnter={() => setScrollyStep(0)}
-              className={`p-8 rounded-[2rem] border-3 border-black cursor-pointer transition-all duration-300 ${scrollyStep === 0 ? 'bg-[#ff8ba7]/20 shadow-[5px_5px_0px_#000000] scale-[1.02]' : 'bg-[#13141f] shadow-[2px_2px_0px_#000000] opacity-75 hover:opacity-100'}`}
+              className={`p-8 rounded-[2rem] border border-white/10 cursor-pointer transition-all duration-300 ${scrollyStep === 0 ? 'bg-[#ff8ba7]/20 shadow-2xl scale-[1.02]' : 'bg-[#13141f] shadow-2xl opacity-75 hover:opacity-100'}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#ff8ba7]">
-                <span className="px-3 py-1 bg-[#ff8ba7] text-black border-2 border-black rounded-full">STAGE 01</span>
+                <span className="px-3 py-1 bg-[#ff8ba7] text-black border border-white/10 rounded-full">STAGE 01</span>
                 <span>UNIVERSAL LSP INTEGRATION</span>
               </div>
               <h3 className="text-2xl font-black text-white mb-3">Language Server Bridge</h3>
@@ -307,10 +307,10 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             <div 
               onClick={() => setScrollyStep(1)}
               onMouseEnter={() => setScrollyStep(1)}
-              className={`p-8 rounded-[2rem] border-3 border-black cursor-pointer transition-all duration-300 ${scrollyStep === 1 ? 'bg-[#fef08a]/20 shadow-[5px_5px_0px_#000000] scale-[1.02]' : 'bg-[#13141f] shadow-[2px_2px_0px_#000000] opacity-75 hover:opacity-100'}`}
+              className={`p-8 rounded-[2rem] border border-white/10 cursor-pointer transition-all duration-300 ${scrollyStep === 1 ? 'bg-[#fef08a]/20 shadow-2xl scale-[1.02]' : 'bg-[#13141f] shadow-2xl opacity-75 hover:opacity-100'}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#eab308]">
-                <span className="px-3 py-1 bg-[#fef08a] text-black border-2 border-black rounded-full">STAGE 02</span>
+                <span className="px-3 py-1 bg-[#fef08a] text-black border border-white/10 rounded-full">STAGE 02</span>
                 <span>PTY STREAM PIPELINES</span>
               </div>
               <h3 className="text-2xl font-black text-white mb-3">Self-Healing Terminal</h3>
@@ -323,10 +323,10 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             <div 
               onClick={() => setScrollyStep(2)}
               onMouseEnter={() => setScrollyStep(2)}
-              className={`p-8 rounded-[2rem] border-3 border-black cursor-pointer transition-all duration-300 ${scrollyStep === 2 ? 'bg-[#2dd4bf]/20 shadow-[5px_5px_0px_#000000] scale-[1.02]' : 'bg-[#13141f] shadow-[2px_2px_0px_#000000] opacity-75 hover:opacity-100'}`}
+              className={`p-8 rounded-[2rem] border border-white/10 cursor-pointer transition-all duration-300 ${scrollyStep === 2 ? 'bg-[#2dd4bf]/20 shadow-2xl scale-[1.02]' : 'bg-[#13141f] shadow-2xl opacity-75 hover:opacity-100'}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#2dd4bf]">
-                <span className="px-3 py-1 bg-[#2dd4bf] text-black border-2 border-black rounded-full">STAGE 03</span>
+                <span className="px-3 py-1 bg-[#2dd4bf] text-black border border-white/10 rounded-full">STAGE 03</span>
                 <span>TAURI AUTHENTICATION HANDLERS</span>
               </div>
               <h3 className="text-2xl font-black text-white mb-3">Deep-Linked Authentication</h3>
@@ -339,12 +339,12 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
 
           {/* Right Column: Sticky Mock IDE visualizer */}
           <div className="w-full lg:w-1/2 lg:sticky lg:top-28">
-            <div className="kawaii-card overflow-hidden bg-[#13141f]">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden bg-[#13141f]">
               
               {/* Custom Y2K Mock IDE header */}
               <div className="bg-[#1b1c2b] border-b-4 border-black px-5 py-3.5 flex justify-between items-center font-display">
                 <div className="flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 rounded-full border-2 border-black bg-[#ff8ba7]" />
+                  <div className="w-3.5 h-3.5 rounded-full border border-white/10 bg-[#ff8ba7]" />
                   <span className="text-xs font-black uppercase text-white tracking-wide">
                     {scrollyStep === 0 ? 'monaco_lsp_bridge.js' : scrollyStep === 1 ? 'pty_build_stream.sh' : 'clerk_oauth_handler.ts'}
                   </span>
@@ -360,7 +360,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
                     <span className="text-[10px] font-black text-[#ff8ba7] block mb-4 uppercase">Monaco JSON-RPC Sync</span>
                     
-                    <div className="w-full h-56 border-3 border-black rounded-3xl bg-[#09090e] p-5 font-mono text-[10px] text-white/80 overflow-y-auto leading-relaxed relative">
+                    <div className="w-full h-56 border border-white/10 rounded-3xl bg-[#09090e] p-5 font-mono text-[10px] text-white/80 overflow-y-auto leading-relaxed relative">
                       <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-white/10 text-white/50">
                         <span>1</span>
                         <span className="text-[#c084fc]">function</span> <span className="text-[#2dd4bf]">initializeLSP</span>() {'{'}
@@ -387,7 +387,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
                       </div>
 
                       {/* Mock Diagnostic Popup */}
-                      <div className="absolute top-16 left-12 bg-[#1b1c2b] border-2 border-black rounded-xl p-3 shadow-[3px_3px_0px_#000000] w-[70%] animate-pulse">
+                      <div className="absolute top-16 left-12 bg-[#1b1c2b] border border-white/10 rounded-xl p-3 shadow-2xl w-[70%] animate-pulse">
                         <div className="text-[9px] text-[#ff8ba7] font-black uppercase mb-1">TypeScript Diagnostics</div>
                         <div className="text-white/80 text-[10px]">Property 'sendRequest' implicitly has an 'any' type.</div>
                       </div>
@@ -404,9 +404,9 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
                     <span className="text-[10px] font-black text-[#eab308] block mb-4 uppercase">Background Daemon PTY</span>
                     
-                    <div className="w-full h-56 flex flex-col justify-end border-3 border-black rounded-3xl bg-black p-5 font-mono text-[10px] overflow-y-auto leading-relaxed text-[#2dd4bf]">
+                    <div className="w-full h-56 flex flex-col justify-end border border-white/10 rounded-3xl bg-black p-5 font-mono text-[10px] overflow-y-auto leading-relaxed text-[#2dd4bf]">
                       <div className="space-y-1">
-                        <div className="text-white/50">➜  workspace git:(main) aeres build</div>
+                        <div className="text-white/50">âžœ  workspace git:(main) aeres build</div>
                         <div className="text-white/70">[Core] Initializing Rust Tauri bundler...</div>
                         <div className="text-white/70">[Deps] Fetching crates.io registry...</div>
                         <div className="text-white">Compiling aeres-core v1.0.4</div>
@@ -414,7 +414,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
                         <div className="text-white/50"> &nbsp;--&gt; src/main.rs:42:15</div>
                         <div className="text-[#eab308] italic animate-pulse">Waiting for diagnostic repair payload...</div>
                         <div className="text-emerald-400 font-extrabold mt-2">Build finished in 4.2s. Output: target/release/aeres</div>
-                        <div className="text-white/50 flex">➜  workspace git:(main) <span className="w-2 h-4 bg-[#2dd4bf] ml-1 animate-ping inline-block" /></div>
+                        <div className="text-white/50 flex">âžœ  workspace git:(main) <span className="w-2 h-4 bg-[#2dd4bf] ml-1 animate-ping inline-block" /></div>
                       </div>
                     </div>
 
@@ -429,11 +429,11 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
                     <span className="text-[10px] font-black text-[#2dd4bf] block mb-4 uppercase">OAuth Protocol Handler</span>
                     
-                    <div className="w-full h-56 border-3 border-black rounded-3xl bg-[#1b1c2b] p-5 font-mono text-[9px] overflow-y-auto leading-relaxed relative flex flex-col justify-center gap-3">
+                    <div className="w-full h-56 border border-white/10 rounded-3xl bg-[#1b1c2b] p-5 font-mono text-[9px] overflow-y-auto leading-relaxed relative flex flex-col justify-center gap-3">
                       
                       {/* Flow Step 1 */}
                       <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50">
-                        <div className="w-6 h-6 rounded-full bg-[#ff8ba7] border-2 border-black flex items-center justify-center shrink-0">1</div>
+                        <div className="w-6 h-6 rounded-full bg-[#ff8ba7] border border-white/10 flex items-center justify-center shrink-0">1</div>
                         <div>
                           <div className="text-white font-bold">Clerk Identity Provider</div>
                           <div className="text-white/50">Browser resolves OAuth handshake securely.</div>
@@ -445,7 +445,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
 
                       {/* Flow Step 2 */}
                       <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50 ring-2 ring-[#2dd4bf]">
-                        <div className="w-6 h-6 rounded-full bg-[#2dd4bf] border-2 border-black flex items-center justify-center shrink-0 text-black">2</div>
+                        <div className="w-6 h-6 rounded-full bg-[#2dd4bf] border border-white/10 flex items-center justify-center shrink-0 text-black">2</div>
                         <div>
                           <div className="text-[#2dd4bf] font-bold">aeres:// Deep Link Execution</div>
                           <div className="text-white/50 truncate w-40">aeres://auth?token=eyJhbG...</div>
@@ -457,7 +457,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
 
                       {/* Flow Step 3 */}
                       <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50">
-                        <div className="w-6 h-6 rounded-full bg-[#c084fc] border-2 border-black flex items-center justify-center shrink-0 text-black">3</div>
+                        <div className="w-6 h-6 rounded-full bg-[#c084fc] border border-white/10 flex items-center justify-center shrink-0 text-black">3</div>
                         <div>
                           <div className="text-white font-bold">Tauri IPC Hydration</div>
                           <div className="text-white/50">Zustand global store receives JWT payload.</div>
@@ -482,7 +482,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
       {/* Workspace Architectural Schema Flow Section (New Content) */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-4 font-mono">
             architecture_schema.map
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -493,10 +493,10 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
           </p>
         </div>
 
-        <div className="kawaii-card bg-[#13141f] p-8 md:p-12 relative overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 md:p-12 relative overflow-hidden">
           {/* Schematic SVG Flowchart */}
           <div className="flex flex-col items-center justify-center gap-8 font-mono text-center text-xs">
-            <div className="w-full h-auto overflow-hidden rounded-xl border-3 border-black bg-[#09090e] p-6 shadow-[3px_3px_0px_#000000]">
+            <div className="w-full h-auto overflow-hidden rounded-xl border border-white/10 bg-[#09090e] p-6 shadow-2xl">
               <Mermaid chart={`
 graph TD
     classDef tauri fill:#fef08a,stroke:#000000,stroke-width:3px,color:#000,font-weight:900
@@ -610,7 +610,7 @@ graph TD
       {/* Deep Feature Diagnostic Grid Section (New Content) */}
       <section className="relative px-6 py-20 max-w-[1400px] mx-auto z-10">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-4 font-mono">
             feature_diagnostics.sys
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -621,8 +621,8 @@ graph TD
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           
           {/* Card 1: AST Parsing */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.1 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border-2 border-black flex items-center justify-center mb-6 text-[#ff8ba7] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.1 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border border-white/10 flex items-center justify-center mb-6 text-[#ff8ba7] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">AST Parsing Engine</h3>
@@ -632,8 +632,8 @@ graph TD
           </motion.div>
 
           {/* Card 2: Offline-First LSP */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.2 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#2dd4bf]/20 border-2 border-black flex items-center justify-center mb-6 text-[#2dd4bf] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.2 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#2dd4bf]/20 border border-white/10 flex items-center justify-center mb-6 text-[#2dd4bf] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Local-First LSP Server</h3>
@@ -643,8 +643,8 @@ graph TD
           </motion.div>
 
           {/* Card 3: Zero-Overhead Tracing */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.3 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#c084fc]/20 border-2 border-black flex items-center justify-center mb-6 text-[#c084fc] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.3 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#c084fc]/20 border border-white/10 flex items-center justify-center mb-6 text-[#c084fc] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Zero-Overhead Tracing</h3>
@@ -654,8 +654,8 @@ graph TD
           </motion.div>
 
           {/* Card 4: Clerk Desktop Sync */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.4 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#fef08a]/20 border-2 border-black flex items-center justify-center mb-6 text-[#fef08a] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.4 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#fef08a]/20 border border-white/10 flex items-center justify-center mb-6 text-[#fef08a] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Workspace Account Sync</h3>
@@ -665,8 +665,8 @@ graph TD
           </motion.div>
 
           {/* Card 5: Mutation testing */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.5 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border-2 border-black flex items-center justify-center mb-6 text-[#ff8ba7] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.5 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border border-white/10 flex items-center justify-center mb-6 text-[#ff8ba7] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Mutation Synthesizer</h3>
@@ -676,8 +676,8 @@ graph TD
           </motion.div>
 
           {/* Card 6: Pseudoterminal sidecar */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.6 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#2dd4bf]/20 border-2 border-black flex items-center justify-center mb-6 text-[#2dd4bf] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.6 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#2dd4bf]/20 border border-white/10 flex items-center justify-center mb-6 text-[#2dd4bf] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Self-Healing Terminal</h3>
@@ -687,8 +687,8 @@ graph TD
           </motion.div>
 
           {/* Card 7: Temporal Lens */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.7 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#c084fc]/20 border-2 border-black flex items-center justify-center mb-6 text-[#c084fc] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.7 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#c084fc]/20 border border-white/10 flex items-center justify-center mb-6 text-[#c084fc] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Temporal Lens</h3>
@@ -698,8 +698,8 @@ graph TD
           </motion.div>
 
           {/* Card 8: Universal LSP */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.8 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border-2 border-black flex items-center justify-center mb-6 text-[#ff8ba7] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.8 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border border-white/10 flex items-center justify-center mb-6 text-[#ff8ba7] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Universal LSP Engine</h3>
@@ -709,8 +709,8 @@ graph TD
           </motion.div>
 
           {/* Card 9: Universal DAP Debugging */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.9 }} className="kawaii-card bg-[#13141f] p-8 border-3 border-black">
-            <div className="w-10 h-10 rounded-2xl bg-[#fef08a]/20 border-2 border-black flex items-center justify-center mb-6 text-[#fef08a] shadow-[2px_2px_0px_#000000]">
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.9 }} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-8 border border-white/10">
+            <div className="w-10 h-10 rounded-2xl bg-[#fef08a]/20 border border-white/10 flex items-center justify-center mb-6 text-[#fef08a] shadow-2xl">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 20c-3.31 0-6-2.69-6-6v-1h4v1c0 1.1.9 2 2 2s2-.9 2-2v-1h4v1c0 3.31-2.69 6-6 6Z"/><path d="M12 15V8"/></svg>
             </div>
             <h3 className="font-display text-lg font-black text-white mb-3">Universal Debugging (DAP)</h3>
@@ -725,7 +725,7 @@ graph TD
       {/* Creators Showcase Section (New Content) */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-4 font-mono">
             engineering_team.log
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -739,8 +739,8 @@ graph TD
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           
           {/* Creator 1: Shlok Patel */}
-          <div className="kawaii-card bg-[#13141f] p-6 text-center border-3 border-black">
-            <div className="w-20 h-20 rounded-full border-3 border-black bg-[#ff8ba7] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black shadow-[3px_3px_0px_#000000]">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-6 text-center border border-white/10">
+            <div className="w-20 h-20 rounded-full border border-white/10 bg-[#ff8ba7] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black shadow-2xl">
               SP
             </div>
             <h3 className="text-xl font-black text-white mb-1">Shlok Patel</h3>
@@ -751,8 +751,8 @@ graph TD
           </div>
 
           {/* Creator 2: Rutvik Gudaliya */}
-          <div className="kawaii-card bg-[#13141f] p-6 text-center border-3 border-black">
-            <div className="w-20 h-20 rounded-full border-3 border-black bg-[#2dd4bf] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black shadow-[3px_3px_0px_#000000]">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-6 text-center border border-white/10">
+            <div className="w-20 h-20 rounded-full border border-white/10 bg-[#2dd4bf] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black shadow-2xl">
               RG
             </div>
             <h3 className="text-xl font-black text-white mb-1">Rutvik Gudaliya</h3>
@@ -763,8 +763,8 @@ graph TD
           </div>
 
           {/* Creator 3: Vinit Panchal */}
-          <div className="kawaii-card bg-[#13141f] p-6 text-center border-3 border-black">
-            <div className="w-20 h-20 rounded-full border-3 border-black bg-[#c084fc] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black shadow-[3px_3px_0px_#000000]">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-6 text-center border border-white/10">
+            <div className="w-20 h-20 rounded-full border border-white/10 bg-[#c084fc] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black shadow-2xl">
               VP
             </div>
             <h3 className="text-xl font-black text-white mb-1">Vinit Panchal</h3>
@@ -780,7 +780,7 @@ graph TD
       {/* Interactive AST Playground Section */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-4 font-mono">
             ast_synthesizer.run
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -791,7 +791,7 @@ graph TD
           </p>
         </div>
 
-        <div className="kawaii-card bg-[#13141f] p-6 md:p-10 border-3 border-black flex flex-col lg:flex-row gap-8 items-stretch">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] p-6 md:p-10 border border-white/10 flex flex-col lg:flex-row gap-8 items-stretch">
           {/* Left panel: Snippet Select & Code Canvas */}
           <div className="w-full lg:w-1/2 flex flex-col justify-between">
             <div>
@@ -808,7 +808,7 @@ graph TD
                       status: 'Stable AST scope verified'
                     })
                   }}
-                  className={`px-4 py-2 border-2 border-black rounded-xl text-xs font-mono font-black transition-all ${astLang === 'python' ? 'bg-[#ff8ba7] text-black shadow-[2px_2px_0px_#000000]' : 'bg-[#1b1c2b] text-white/60 shadow-[1px_1px_0px_#000000]'}`}
+                  className={`px-4 py-2 border border-white/10 rounded-xl text-xs font-mono font-black transition-all ${astLang === 'python' ? 'bg-[#ff8ba7] text-black shadow-2xl' : 'bg-[#1b1c2b] text-white/60 shadow-2xl'}`}
                 >
                   pipeline_agent.py
                 </button>
@@ -824,14 +824,14 @@ graph TD
                       status: 'Dynamic AST scope verified'
                     })
                   }}
-                  className={`px-4 py-2 border-2 border-black rounded-xl text-xs font-mono font-black transition-all ${astLang === 'javascript' ? 'bg-[#2dd4bf] text-black shadow-[2px_2px_0px_#000000]' : 'bg-[#1b1c2b] text-white/60 shadow-[1px_1px_0px_#000000]'}`}
+                  className={`px-4 py-2 border border-white/10 rounded-xl text-xs font-mono font-black transition-all ${astLang === 'javascript' ? 'bg-[#2dd4bf] text-black shadow-2xl' : 'bg-[#1b1c2b] text-white/60 shadow-2xl'}`}
                 >
                   parser_core.js
                 </button>
               </div>
 
               {/* Code Editor Mock */}
-              <div className="bg-black border-3 border-black p-5 rounded-2xl font-mono text-[11px] leading-relaxed text-[#2dd4bf] min-h-[190px]">
+              <div className="bg-black border border-white/10 p-5 rounded-2xl font-mono text-[11px] leading-relaxed text-[#2dd4bf] min-h-[190px]">
                 {astLang === 'python' ? (
                   <pre className="select-none text-left">
                     <span className="text-purple-400">@aeres.agent</span>(self_healing=<span className="text-amber-400">True</span>)<br />
@@ -857,7 +857,7 @@ graph TD
           </div>
 
           {/* Right panel: Live AST Tree & Metadata Details */}
-          <div className="w-full lg:w-1/2 flex flex-col justify-between border-2 border-black bg-[#1b1c2b] p-5 rounded-2xl shadow-[3px_3px_0px_#000000]">
+          <div className="w-full lg:w-1/2 flex flex-col justify-between border border-white/10 bg-[#1b1c2b] p-5 rounded-2xl shadow-2xl">
             <div>
               <span className="text-[10px] font-black text-white/50 block mb-4 uppercase tracking-wider font-mono text-left">Abstract Syntax Tree (LibCST Representation)</span>
               <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 text-[11px] font-mono">
@@ -910,7 +910,7 @@ graph TD
       {/* AI Agent Autonomy Comparison Grid Section */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-4 font-mono">
             agent_benchmarks.log
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -921,7 +921,7 @@ graph TD
           </p>
         </div>
 
-        <div className="kawaii-card bg-[#13141f] overflow-hidden border-3 border-black shadow-[4px_4px_0px_#000000]">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] overflow-hidden border border-white/10 shadow-2xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
@@ -977,7 +977,7 @@ graph TD
       {/* Deep Technical Systems FAQ Accordion Section */}
       <section className="relative px-6 py-20 max-w-[900px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-3 border-black shadow-[3px_3px_0px_#000000] mb-4 font-mono">
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-purple-400 bg-purple-500/10 border-purple-500/20 border border-white/10 shadow-2xl mb-4 font-mono">
             technical_faq.log
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
@@ -1040,7 +1040,7 @@ graph TD
             return (
               <div
                 key={i}
-                className={`kawaii-card border-3 border-black overflow-hidden transition-all duration-300 ${isOpen ? 'bg-[#1b1c2b] shadow-[4px_4px_0px_#000000] scale-[1.01]' : 'bg-[#13141f] shadow-[2.5px_2.5px_0px_#000000] hover:bg-white/5'}`}
+                className={`bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl border border-white/10 overflow-hidden transition-all duration-300 ${isOpen ? 'bg-[#1b1c2b] shadow-2xl scale-[1.01]' : 'bg-[#13141f] shadow-[2.5px_2.5px_0px_#000000] hover:bg-white/5'}`}
               >
                 <button
                   onClick={() => setActiveFaq(isOpen ? null : i)}
@@ -1077,12 +1077,12 @@ graph TD
 
       {/* Cozy Y2K CTA */}
       <section className="relative py-28 bg-transparent max-w-[1200px] mx-auto px-6 z-10 font-display">
-        <div className="kawaii-card bg-[#1b1c2b] p-12 text-center relative overflow-hidden">
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#1b1c2b] p-12 text-center relative overflow-hidden">
             <h2 className="font-display text-[clamp(2rem,6vw,4.5rem)] font-black tracking-tight leading-[0.9] mb-12 text-white">
-              The neural layer <br/><span className="italic font-bold text-[#ff8ba7] bg-white border-4 border-black px-6 py-2.5 inline-block shadow-[4px_4px_0px_#000000] rounded-[2.5rem] mt-4 text-black">is Aeres.</span>
+              The neural layer <br/><span className="italic font-bold text-[#ff8ba7] bg-white border border-white/10 px-6 py-2.5 inline-block shadow-2xl rounded-[2.5rem] mt-4 text-black">is Aeres.</span>
             </h2>
             <div className="flex justify-center">
-               <SmartDownload large className="kawaii-btn-pink text-xs uppercase tracking-wider font-display font-bold" />
+               <SmartDownload large className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-[0_0_15px_rgba(168,85,247,0.4)] text-xs uppercase tracking-wider font-display font-bold" />
             </div>
         </div>
       </section>
@@ -1093,3 +1093,4 @@ graph TD
     </div>
   )
 }
+
