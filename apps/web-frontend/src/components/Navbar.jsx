@@ -11,7 +11,7 @@ export default function Navbar() {
   const activeTabClass = (path) => {
     const isActive = location.pathname === path
     return isActive 
-      ? 'bg-[#ff8ba7] border border-white/10 text-black shadow-[3px_3px_0px_#000000] font-black px-5 py-2 rounded-full scale-105 transition-all duration-300'
+      ? 'bg-[#c084fc] border border-white/10 text-black shadow-[3px_3px_0px_#000000] font-black px-5 py-2 rounded-full scale-105 transition-all duration-300'
       : 'bg-[#1b1c2b] border border-white/10 text-white/70 hover:text-white hover:bg-[#ff8ba7]/20 shadow-[2px_2px_0px_#000000] hover:shadow-[3px_3px_0px_#000000] px-5 py-2 rounded-full hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all duration-300'
   }
 
@@ -79,7 +79,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => redirectToAuthForDownload()}
-              className="cursor-pointer bg-[#ff8ba7] hover:bg-[#ff7090] text-black rounded-full border-3 border-black shadow-[2.5px_2.5px_0px_#000000] px-5 py-2 text-xs font-bold uppercase tracking-wider hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
+              className="cursor-pointer bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg shadow-[0_0_15px_rgba(8,145,178,0.4)] text-xs uppercase tracking-wider text-black"
             >
               Download
             </button>
