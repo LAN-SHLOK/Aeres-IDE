@@ -880,7 +880,7 @@ export default function CodeCanvas() {
       {/* Toolbar */}
       <div className="flex h-8 shrink-0 items-center gap-3 border-b border-aeres-border bg-aeres-surface px-3">
         <span className="truncate text-xs text-aeres-muted">
-          {activeTab.path.split(/[/\\]/).slice(-2).join('/')}
+          {(activeTab.path || activeTab.name || 'Untitled').split(/[/\\]/).slice(-2).join('/')}
         </span>
         <span className="rounded bg-aeres-violet/20 px-1.5 py-px text-[10px] font-medium text-aeres-violet">
           {activeTab.language}

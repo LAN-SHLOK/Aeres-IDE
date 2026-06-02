@@ -105,7 +105,7 @@ function AgentStep({ step }) {
   if (step.type === 'tool_call') {
     const icon = TOOL_ICONS[step.tool] || <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83 2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     const label = TOOL_LABELS[step.tool] || step.tool
-    const fileName = step.args?.file_path?.split(/[/\\]/).pop() || ''
+    const fileName = (step.args?.file_path || '').split(/[/\\]/).pop() || ''
     const query = step.args?.query || step.args?.command || ''
     
     return (
@@ -224,7 +224,7 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
   if (!confirm) return null
   
   const icon = TOOL_ICONS[confirm.tool] || <Settings size={14} />
-  const fileName = confirm.args?.file_path?.split(/[/\\]/).pop() || 'file'
+  const fileName = (confirm.args?.file_path || '').split(/[/\\]/).pop() || 'file'
   
   return (
     <div className="mx-1 my-2 rounded-2xl border-2 border-black bg-aeres-surface overflow-hidden shadow-[2px_2px_0px_#000] animate-bounce-subtle">
@@ -252,10 +252,10 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
         {showDiff && confirm.tool === 'edit_file' && (
           <div className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto font-mono text-[9px] shadow-[2px_2px_0px_#000]">
             <div className="text-red-400 font-bold bg-red-950/20 px-1 py-0.5 rounded mb-1">
-              {confirm.args?.find?.split('\n').map((l, i) => <div key={`d${i}`} className="truncate">- {l}</div>)}
+              {(confirm.args?.find || '').split('\n').map((l, i) => <div key={`d${i}`} className="truncate">- {l}</div>)}
             </div>
             <div className="text-emerald-400 font-bold bg-emerald-950/20 px-1 py-0.5 rounded">
-              {confirm.args?.replace?.split('\n').map((l, i) => <div key={`a${i}`} className="truncate">+ {l}</div>)}
+              {(confirm.args?.replace || '').split('\n').map((l, i) => <div key={`a${i}`} className="truncate">+ {l}</div>)}
             </div>
           </div>
         )}
@@ -264,10 +264,10 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
           <div key={idx} className="bg-aeres-bg border-2 border-black rounded-xl p-2.5 mb-3 max-h-48 overflow-y-auto font-mono text-[9px] shadow-[2px_2px_0px_#000]">
             <div className="text-aeres-muted mb-1.5 text-[8px] uppercase font-black tracking-widest border-b border-black/20 pb-1">Chunk {idx + 1}</div>
             <div className="text-red-400 font-bold bg-red-950/20 px-1 py-0.5 rounded mb-1">
-              {edit.find?.split('\n').map((l, i) => <div key={`d${i}`} className="truncate">- {l}</div>)}
+              {(edit.find || '').split('\n').map((l, i) => <div key={`d${i}`} className="truncate">- {l}</div>)}
             </div>
             <div className="text-emerald-400 font-bold bg-emerald-950/20 px-1 py-0.5 rounded">
-              {edit.replace?.split('\n').map((l, i) => <div key={`a${i}`} className="truncate">+ {l}</div>)}
+              {(edit.replace || '').split('\n').map((l, i) => <div key={`a${i}`} className="truncate">+ {l}</div>)}
             </div>
           </div>
         ))}
