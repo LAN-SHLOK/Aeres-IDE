@@ -17,7 +17,7 @@ try {
 /**
  * Proxy fetch to the Python backend sidecar via its dynamic port.
  */
-async function fetchProxy(endpoint, method = 'GET', body = null) {
+async function fetchProxy(endpoint, method = 'GET', body = null, retries = 5) {
   try {
     const port = await invoke('get_backend_port')
     const url = `http://127.0.0.1:${port}${endpoint}`
@@ -39,7 +39,20 @@ async function fetchProxy(endpoint, method = 'GET', body = null) {
     }
 
     if (body) opts.body = JSON.stringify(body)
-    const res = await fetch(url, opts)
+    
+    let res;
+    try {
+      res = await fetch(url, opts)
+    } catch (err) {
+      // If it's a network error (e.g. Failed to fetch) and we have retries left, wait and retry.
+      // This handles the PyInstaller onefile startup delay where the sidecar takes 5-15s to extract and run.
+      if (retries > 0 && err.message && err.message.includes('Failed to fetch')) {
+        console.warn(`[fetchProxy] Backend not ready yet, retrying in 3s... (${retries} retries left)`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        return await fetchProxy(endpoint, method, body, retries - 1);
+      }
+      throw err;
+    }
     
     let data
     try {
