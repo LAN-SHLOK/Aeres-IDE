@@ -61,24 +61,37 @@ async def ingest_repository(req: IngestRepoRequest, user: dict = Depends(get_cur
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to scrape website: {str(e)}")
 
-    # Fallback to standard git clone for actual repos
-    git_env = os.environ.copy()
-    git_env["GIT_TERMINAL_PROMPT"] = "0"
+    # Fallback to HTTP Zip Download for actual repos to avoid requiring git installed
+    import httpx
+    import zipfile
+    import io
     
-    if os.path.exists(repo_path):
+    parts = req.github_url.rstrip("/").split("/")
+    if len(parts) >= 2:
+        owner, repo = parts[-2], parts[-1].replace(".git", "")
+        zip_url = f"https://api.github.com/repos/{owner}/{repo}/zipball"
+        
+        if os.path.exists(repo_path):
+            shutil.rmtree(repo_path)
+        os.makedirs(repo_path, exist_ok=True)
+        
         try:
-            subprocess.run(["git", "-C", repo_path, "pull"], check=True, capture_output=True, env=git_env)
-        except subprocess.CalledProcessError as e:
-            raise HTTPException(status_code=500, detail=f"Failed to pull repo: {e.stderr.decode()}")
-        except FileNotFoundError:
-            raise HTTPException(status_code=500, detail="Git is not installed or not in PATH.")
-    else:
-        try:
-            subprocess.run(["git", "clone", req.github_url, repo_path], check=True, capture_output=True, env=git_env)
-        except subprocess.CalledProcessError as e:
-            raise HTTPException(status_code=500, detail=f"Failed to clone repo: {e.stderr.decode()}")
-        except FileNotFoundError:
-            raise HTTPException(status_code=500, detail="Git is not installed or not in PATH.")
+            async with httpx.AsyncClient(follow_redirects=True) as client:
+                resp = await client.get(zip_url, timeout=30)
+                resp.raise_for_status()
+                
+                with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+                    for file_info in z.infolist():
+                        if not file_info.filename.endswith('/'):
+                            # Strip the first directory (e.g. owner-repo-1234abc/) from filename
+                            filename_parts = file_info.filename.split('/', 1)
+                            if len(filename_parts) == 2:
+                                dest_path = os.path.join(repo_path, filename_parts[1])
+                                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                                with z.open(file_info) as source, open(dest_path, "wb") as target:
+                                    shutil.copyfileobj(source, target)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to download repository. Ensure it is public: {str(e)}")
 
     # 2. Walk and Parse ASTs
     all_nodes = []

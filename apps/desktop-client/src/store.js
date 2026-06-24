@@ -279,7 +279,7 @@ export const useStore = create(
       // LAYOUT
       sidebarWidth: 260,
       rightPanelOpen: true,
-      rightPanelWidth: 340,
+      rightPanelWidth: 480,
       activeSidebarTab: 'files', // files | search | git | debug
       activeRightTab: 'chat', // chat | problems
       theme: 'cutie-dark',
