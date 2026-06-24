@@ -150,7 +150,18 @@ export default function App() {
         }
       })
     }
-    if (e.sidecar?.getPort) { 
+    if (import.meta.env.DEV) {
+      const url = `http://127.0.0.1:8008`
+      setBackendUrl(url)
+      fetch(`${url}/api/keys`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.is_configured === false) {
+            setApiConfigured(false)
+          }
+        })
+        .catch(err => console.error("Failed to check keys:", err))
+    } else if (e.sidecar?.getPort) { 
       e.sidecar.getPort().then(port => { 
         if (port) {
           const url = `http://127.0.0.1:${port}`
