@@ -19,8 +19,7 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
   const [breakingChanges, setBreakingChanges] = useState([])
   const [fetchingNotes, setFetchingNotes] = useState(false)
 
-  if (!dep) return null
-  const statusInfo = STATUS_COLORS[dep.status] || STATUS_COLORS.unknown
+  const statusInfo = dep ? (STATUS_COLORS[dep.status] || STATUS_COLORS.unknown) : STATUS_COLORS.unknown;
 
   const handleOpenFile = async (fileMatch) => {
     try {
@@ -122,9 +121,11 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
       console.error('Error finding usages:', err)
       if (isMounted) setSearchingUsages(false)
     })
-    
+
     return () => { isMounted = false }
   }, [dep])
+
+  if (!dep) return null;
 
   return (
     <div className="border-t border-slate-800 bg-slate-950/95 overflow-y-auto max-h-[75%] animate-in slide-in-from-bottom-2 duration-200">

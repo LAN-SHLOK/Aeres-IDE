@@ -8,7 +8,6 @@ export default function StatusBar() {
   const activeTabId = useStore((s) => s.activeTabId)
   const tabs = useStore((s) => s.tabs)
   const gitTask = useStore((s) => s.gitTask)
-  const currentSessionName = useStore((s) => s.currentSessionName)
   const backendUrl = useStore((s) => s.backendUrl)
   const cursorLine = useStore((s) => s.cursorLine || 1)
   const cursorColumn = useStore((s) => s.cursorColumn || 1)
@@ -101,14 +100,6 @@ export default function StatusBar() {
 
         {/* Center */}
         <div className="flex items-center h-full">
-          {currentSessionName && (
-            <button 
-              className="flex items-center gap-1 px-2.5 py-0.5 bg-white border border-black rounded-full shadow-[2px_2px_0px_#000] font-black uppercase tracking-wider text-[9px] text-black"
-            >
-              <Heart size={10} className="animate-pulse shrink-0 fill-current text-pink-500" />
-              {currentSessionName}
-            </button>
-          )}
         </div>
 
         {/* Right */}
@@ -178,14 +169,6 @@ export default function StatusBar() {
 
       {/* Center */}
       <div className="flex items-center h-full">
-        {currentSessionName && (
-          <button 
-            className="flex items-center gap-1.5 px-3 hover:text-slate-300 transition-colors font-bold uppercase tracking-widest text-[9px]"
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-[#7C3AED] animate-pulse" />
-            {currentSessionName}
-          </button>
-        )}
       </div>
 
       {/* Right */}

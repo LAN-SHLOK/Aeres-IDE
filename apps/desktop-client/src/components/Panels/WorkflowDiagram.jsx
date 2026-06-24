@@ -1,140 +1,213 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import * as d3 from 'd3';
-import { Layers, Zap, ArrowRight, ShieldAlert } from 'lucide-react';
+import mermaid from 'mermaid';
+import { Maximize2, Minimize2, Copy, Plus, Minus, RefreshCcw, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Maximize } from 'lucide-react';
 
 export default function WorkflowDiagram({ data }) {
   const containerRef = useRef(null);
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+  const svgWrapperRef = useRef(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const zoomBehaviorRef = useRef(null);
+  const d3SvgRef = useRef(null);
+
+  const isStringData = typeof data === 'string';
+
+  const [errorStr, setErrorStr] = useState(null);
 
   useEffect(() => {
-    if (!data || !data.nodes || !data.edges) return;
-
-    // Create deep copies for D3 simulation
-    const simulationNodes = data.nodes.map((d) => ({ ...d }));
-    
-    // Map edge source/target to node objects or indices
-    const simulationEdges = data.edges.map((e) => ({
-      ...e,
-      source: simulationNodes.find((n) => n.id === e.source) || e.source,
-      target: simulationNodes.find((n) => n.id === e.target) || e.target,
-    }));
-
-    const width = 600;
-    const height = 400;
-
-    const simulation = d3.forceSimulation(simulationNodes)
-      .force('link', d3.forceLink(simulationEdges).id((d) => d.id).distance(150))
-      .force('charge', d3.forceManyBody().strength(-800))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collide', d3.forceCollide().radius(60));
-
-    simulation.on('tick', () => {
-      // Force re-render with updated positions
-      setNodes([...simulationNodes]);
-      setEdges([...simulationEdges]);
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'base',
+      securityLevel: 'loose',
+      fontFamily: '"Outfit", "Inter", sans-serif',
+      themeVariables: {
+        primaryColor: 'transparent',
+        primaryTextColor: '#ffffff',
+        primaryBorderColor: '#475569',
+        lineColor: '#8b5cf6',
+        secondaryColor: '#1e293b',
+        tertiaryColor: '#0f172a',
+        clusterBkg: '#1e293b55',
+        clusterBorder: '#334155',
+        mainBkg: '#0f172a',
+        nodeBorder: '#475569',
+        fontSize: '12px',
+        edgeLabelBackground: '#0f172a',
+        clusterTextColor: '#e2e8f0'
+      },
+      flowchart: {
+        htmlLabels: true,
+        curve: 'basis'
+      }
     });
+  }, []);
 
-    return () => {
-      simulation.stop();
-    };
-  }, [data]);
+  const renderMermaid = useCallback(async () => {
+    if (!isStringData || !containerRef.current) return;
+    setErrorStr(null);
+    try {
+      const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+      // Make sure we pass a valid string
+      let rawData = data;
+      if (rawData.includes('```mermaid')) {
+        const m = rawData.match(/```mermaid([\s\S]*?)```/);
+        if (m) rawData = m[1].trim();
+      }
+      const { svg } = await mermaid.render(id, rawData);
+      containerRef.current.innerHTML = svg;
+      
+      const svgEl = containerRef.current.querySelector('svg');
+      if (svgEl) {
+        // Prevent SVG native stretching and rely completely on D3
+        svgEl.removeAttribute('width');
+        svgEl.removeAttribute('height');
+        svgEl.removeAttribute('viewBox'); // This prevents browser double-scaling!
+        svgEl.style.width = '100%';
+        svgEl.style.height = '100%';
+        
+        // Wrap content in a group if not already wrapped
+        const gWrapper = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        gWrapper.classList.add('zoom-group');
+        // Move all children into gWrapper
+        while (svgEl.firstChild) {
+          gWrapper.appendChild(svgEl.firstChild);
+        }
+        svgEl.appendChild(gWrapper);
 
-  if (!data || !data.nodes) return null;
+        const d3Svg = d3.select(svgEl);
+        d3SvgRef.current = d3Svg;
 
-  return (
-    <div className="w-full mt-4 flex flex-col gap-3 font-mono">
-      {/* Tech Stack Banner */}
-      {data.tech_stack && (
-        <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-xl p-3 flex items-start gap-3 shadow-[2px_2px_0px_#000]">
-          <Layers className="text-indigo-400 mt-0.5 shrink-0" size={16} />
-          <div>
-            <div className="text-[9px] font-black uppercase tracking-widest text-indigo-500 mb-0.5">Detected Stack</div>
-            <div className="text-xs text-indigo-200">{data.tech_stack}</div>
-          </div>
-        </div>
-      )}
-
-      {/* Physics Diagram */}
-      <div 
-        ref={containerRef}
-        className="relative w-full h-[400px] bg-slate-950 border-2 border-black rounded-2xl overflow-hidden shadow-[inset_0px_0px_40px_rgba(0,0,0,0.5)]"
-      >
-        <svg width="100%" height="100%" viewBox="0 0 600 400" className="absolute inset-0">
-          <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="28" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#8B5CF6" />
-            </marker>
-          </defs>
+        const zoom = d3.zoom()
+          .scaleExtent([0.1, 4])
+          .on('zoom', (event) => {
+            d3.select(gWrapper).attr('transform', event.transform);
+            setZoomLevel(event.transform.k);
+          });
           
-          {/* Edges */}
-          {edges.map((edge, i) => (
-            <g key={`edge-${i}`}>
-              <line
-                x1={edge.source.x}
-                y1={edge.source.y}
-                x2={edge.target.x}
-                y2={edge.target.y}
-                stroke="#8B5CF6"
-                strokeWidth={2}
-                strokeOpacity={0.6}
-                markerEnd="url(#arrow)"
-                className="transition-all duration-75"
-              />
-              {edge.relationship && (
-                <text
-                  x={(edge.source.x + edge.target.x) / 2}
-                  y={(edge.source.y + edge.target.y) / 2 - 8}
-                  fill="#A78BFA"
-                  fontSize="8"
-                  textAnchor="middle"
-                  className="font-black uppercase tracking-widest"
-                  style={{ textShadow: '1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000' }}
-                >
-                  {edge.relationship}
-                </text>
-              )}
-            </g>
-          ))}
+        zoomBehaviorRef.current = zoom;
+        d3Svg.call(zoom);
+        
+        // Initial center
+        const bbox = gWrapper.getBBox();
+        const parentRect = svgWrapperRef.current.getBoundingClientRect();
+        
+        const bW = bbox.width || 1;
+        const bH = bbox.height || 1;
+        const pW = parentRect.width || 600;
+        const pH = parentRect.height || 450;
 
-          {/* Nodes */}
-          {nodes.map((node) => (
-            <foreignObject
-              key={node.id}
-              x={(node.x || 0) - 75}
-              y={(node.y || 0) - 30}
-              width="150"
-              height="60"
-              className="overflow-visible"
-            >
-              <div 
-                className="flex flex-col items-center justify-center w-full h-full bg-slate-900/80 backdrop-blur-md border border-slate-700/50 rounded-xl shadow-lg hover:border-indigo-500 hover:scale-105 transition cursor-default p-2 text-center"
-                style={{ boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)' }}
-              >
-                <div className="text-[11px] font-bold text-white truncate w-full px-1">{node.label}</div>
-                <div className="text-[8px] text-slate-400 truncate w-full px-1 mt-0.5">{node.role}</div>
-              </div>
-            </foreignObject>
-          ))}
-        </svg>
+        let scale = Math.min(pW / bW, pH / bH) * 0.9;
+        if (isNaN(scale) || !isFinite(scale) || scale <= 0) scale = 1;
+        // Clamp scale to reasonable limits so it doesn't zoom into a dot
+        scale = Math.max(0.15, Math.min(scale, 2));
+        
+        d3Svg.call(
+          zoom.transform,
+          d3.zoomIdentity.translate(
+            pW / 2 - (bbox.x + bW / 2) * scale,
+            pH / 2 - (bbox.y + bH / 2) * scale
+          ).scale(scale)
+        );
+      }
+    } catch (err) {
+      console.error('Mermaid render error:', err);
+      setErrorStr(err.message || String(err));
+    }
+  }, [data, isStringData]);
+
+  useEffect(() => {
+    renderMermaid();
+  }, [renderMermaid, isFullScreen]); // Re-render when full screen changes to fix bounds
+
+  if (!isStringData) {
+    return <div className="text-xs text-slate-500 italic p-4 bg-slate-950/40 rounded-xl border border-slate-800">Legacy diagram format detected. Please query again to generate a new Architectural Blueprint.</div>;
+  }
+
+  const handleZoomIn = () => {
+    if (d3SvgRef.current && zoomBehaviorRef.current) {
+      d3SvgRef.current.transition().duration(250).call(zoomBehaviorRef.current.scaleBy, 1.3);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (d3SvgRef.current && zoomBehaviorRef.current) {
+      d3SvgRef.current.transition().duration(250).call(zoomBehaviorRef.current.scaleBy, 1 / 1.3);
+    }
+  };
+
+  const handleReset = () => {
+    renderMermaid(); // Re-render will recenter
+  };
+
+  const handlePan = (dx, dy) => {
+    if (d3SvgRef.current && zoomBehaviorRef.current) {
+      d3SvgRef.current.transition().duration(250).call(zoomBehaviorRef.current.translateBy, dx, dy);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(data);
+  };
+
+  const DiagramContent = (
+    <div className={`relative flex flex-col items-center justify-center bg-[#0f172a] rounded-2xl overflow-hidden shadow-xl ${isFullScreen ? 'w-full h-full' : 'w-full h-[450px] border border-slate-700/50 mt-4'}`}>
+      
+      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+        <button onClick={handleCopy} title="Copy Mermaid Syntax" className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-600 shadow-md backdrop-blur-md transition-colors">
+          <Copy size={14} />
+        </button>
+        <button onClick={() => setIsFullScreen(!isFullScreen)} title={isFullScreen ? "Exit Full Screen" : "Full Screen"} className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-md border border-slate-600 shadow-md backdrop-blur-md transition-colors">
+          {isFullScreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+        </button>
       </div>
 
-      {/* Impact Zones */}
-      {data.impact_zones && data.impact_zones.length > 0 && (
-        <div className="bg-red-950/20 border border-red-900/50 rounded-xl p-3 shadow-[2px_2px_0px_#000]">
-          <div className="flex items-center gap-2 text-red-500 mb-2">
-            <ShieldAlert size={14} />
-            <span className="text-[9px] font-black uppercase tracking-widest">Blast Radius</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {data.impact_zones.map((zone, idx) => (
-              <div key={idx} className="bg-red-950/40 text-red-300 text-[10px] px-2 py-1 rounded-md border border-red-900/50 font-mono">
-                {zone}
-              </div>
-            ))}
-          </div>
+      <div className="absolute bottom-4 right-4 flex items-end gap-2 z-10">
+        <div className="grid grid-cols-3 grid-rows-3 gap-1 bg-slate-800/80 p-1.5 rounded-lg border border-slate-600 shadow-lg backdrop-blur-md">
+          <div />
+          <button onClick={() => handlePan(0, 50)} className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded"><ChevronUp size={14} /></button>
+          <div />
+          <button onClick={() => handlePan(50, 0)} className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded"><ChevronLeft size={14} /></button>
+          <button onClick={handleReset} title="Reset View" className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded"><RefreshCcw size={12} /></button>
+          <button onClick={() => handlePan(-50, 0)} className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded"><ChevronRight size={14} /></button>
+          <div />
+          <button onClick={() => handlePan(0, -50)} className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded"><ChevronDown size={14} /></button>
+          <div />
         </div>
-      )}
+        
+        <div className="flex flex-col gap-1 bg-slate-800/80 p-1.5 rounded-lg border border-slate-600 shadow-lg backdrop-blur-md">
+          <button onClick={handleZoomIn} title="Zoom In" className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded mb-1"><Plus size={14} /></button>
+          <button onClick={handleReset} title="Fit to Screen" className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded mb-1"><Maximize size={12} /></button>
+          <button onClick={handleZoomOut} title="Zoom Out" className="flex items-center justify-center p-1 bg-slate-900/50 hover:bg-slate-700 text-slate-300 rounded"><Minus size={14} /></button>
+        </div>
+      </div>
+
+      <div ref={svgWrapperRef} className="w-full h-full overflow-hidden cursor-move">
+        {errorStr ? (
+           <div className="w-full h-full flex items-center justify-center flex-col p-8 text-center bg-red-950/10">
+             <div className="text-red-500 font-bold mb-2">Mermaid Generation Error</div>
+             <div className="text-xs text-red-400 font-mono text-left max-w-full overflow-auto bg-black/40 p-4 rounded-xl border border-red-900/30 whitespace-pre-wrap max-h-[300px]">
+               {errorStr}
+               {"\n\nRaw syntax:\n"}
+               {data}
+             </div>
+           </div>
+        ) : (
+           <div ref={containerRef} className="w-full h-full flex items-center justify-center" />
+        )}
+      </div>
     </div>
   );
+
+  if (isFullScreen) {
+    return createPortal(
+      <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-8 animate-fade-in">
+        {DiagramContent}
+      </div>,
+      document.body
+    );
+  }
+
+  return DiagramContent;
 }

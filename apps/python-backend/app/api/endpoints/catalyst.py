@@ -196,7 +196,9 @@ async def query_issue(req: QueryIssueRequest, request: dict = Depends(get_curren
         "1. Identify the core components or logic files that need modification.\n"
         "2. Explain *why* those files are relevant based on the AST context provided.\n"
         "3. Provide a step-by-step architectural plan on where to make changes.\n"
-        "4. Be technical, structured, and extremely precise with file paths and function names."
+        "4. Be technical, structured, and extremely precise with file paths and function names.\n"
+        "5. If summarizing the architecture or tech stack (like databases or gateways), INFER details from the [FULL REPOSITORY FOLDER STRUCTURE] (e.g. infer PostgreSQL if 'prisma/' or 'migrations/' is present, or Stripe if 'stripe' files exist), rather than saying 'not specified in provided code'.\n"
+        "6. If generating Mermaid charts, STRICTLY use standard syntax. Example: NodeA -->|Label text| NodeB. NEVER append an extra '>' after the label like `-->|Label|>`. This breaks the parser."
     )
     
     user_prompt = f"TARGET REPOSITORY: {req.repo_name}\n\n[FULL REPOSITORY FOLDER STRUCTURE]:\n{tree_context}\n\n[ARCHITECTURAL CONTEXT FROM AST PARSER]:\n{context_str}\n\n[GITHUB ISSUE / GOAL]:\n{req.issue_text}"
@@ -217,14 +219,12 @@ async def diagram_blueprint(req: QueryIssueRequest, request: dict = Depends(get_
     
     repo_name = req.repo_name
     
-    collection = vector_db.get_or_create_collection(repo_name)
-    rag_results = vector_db.query_collection(collection, query_texts=[req.issue_text], n_results=10)
+    rag_results = vector_db.query_catalyst_nodes(req.issue_text, repo_name, n_results=10)
     
     context_chunks = []
-    if rag_results and rag_results['documents'] and len(rag_results['documents']) > 0:
-        for idx, doc in enumerate(rag_results['documents'][0]):
-            metadata = rag_results['metadatas'][0][idx]
-            context_chunks.append(f"File: {metadata.get('file', 'Unknown')}\nType: {metadata.get('type', 'Unknown')}\nName: {metadata.get('name', 'Unknown')}\nContent:\n{doc}")
+    if rag_results:
+        for r in rag_results:
+            context_chunks.append(f"File: {r.get('file_path', 'Unknown')}\nType: {r.get('type', 'Unknown')}\nName: {r.get('name', 'Unknown')}\nContent:\n{r.get('document', '')}")
             
     # Also grab the _tree.txt
     tree_context = ""
@@ -238,7 +238,7 @@ async def diagram_blueprint(req: QueryIssueRequest, request: dict = Depends(get_
 You are the "Direct Repo Cartographer," an advanced architectural mapping AI. Your sole purpose is to analyze a GitHub repository via its direct link, parse its file structure and contents, match it against a user's natural language description, and plan a highly accurate, beautiful structural workflow diagram.
 
 STRICT DIRECTIVE: NO CODE GENERATION
-Do not write, refactor, or output any executable code snippets. Your output must strictly be a JSON blueprint defining architectural relationships, execution pathways, and file dependencies.
+Do not write, refactor, or output any executable code snippets. Your output must strictly be a Mermaid flowchart defining architectural relationships, execution pathways, and file dependencies.
 
 INPUTS PROVIDED TO YOU
 [Codebase Contents]: The fetched file tree, repository architecture, and contents of core files from the link.
@@ -250,18 +250,20 @@ BEHAVIOR & CORRELATION ENGINE
 3. Draft the Blueprint: Organize the files and modules into a clean, sequential flow of data or execution.
 
 OUTPUT REQUIREMENTS
-Generate a clean, structured JSON object. Wrap it in a markdown ```json block.
-It MUST match this EXACT schema:
-{
-  "tech_stack": "Brief summary",
-  "nodes": [
-    {"id": "file_1", "label": "index.html", "role": "Main UI Layout"}
-  ],
-  "edges": [
-    {"source": "file_1", "target": "file_2", "relationship": "Imports / Calls"}
-  ],
-  "impact_zones": ["static/styles.css"]
-}
+Generate a clean, structured Mermaid flowchart (flowchart TD). Wrap it in a markdown ```mermaid block.
+Use subgraphs to group related modules or frontend/backend boundaries.
+CRITICAL: When labeling an arrow, use STRICT syntax: NodeA -->|Label| NodeB. NEVER append an extra '>' after the label (e.g. `-->|Label|>`).
+Example:
+```mermaid
+flowchart TD
+  User --> Frontend
+  subgraph Client
+    Frontend[React UI]
+  end
+  subgraph Server
+    Frontend -->|API| Backend[FastAPI]
+  end
+```
 """
     
     user_prompt = f"""
@@ -278,24 +280,16 @@ It MUST match this EXACT schema:
         diagram_api_key = os.environ.get("IDE_DIAGRAM_ENGINE") or settings.IDE_DIAGRAM_ENGINE or settings.GROQ_API_KEY
         answer = await groq_complete(system_prompt, user_prompt, max_tokens=1500, temperature=0.1, api_key=diagram_api_key)
         
-        # Extract JSON
-        diagram_data = None
-        import re, json
-        match = re.search(r"```json\n(.*?)\n```", answer, re.DOTALL)
+        # Extract Mermaid
+        diagram_data = ""
+        import re
+        match = re.search(r"```mermaid\n(.*?)\n```", answer, re.DOTALL)
         if match:
-            try:
-                diagram_data = json.loads(match.group(1))
-            except Exception:
-                pass
+            diagram_data = match.group(1).strip()
         else:
-            try:
-                start = answer.find('{')
-                end = answer.rfind('}')
-                if start != -1 and end != -1:
-                    diagram_data = json.loads(answer[start:end+1])
-            except Exception:
-                pass
+            diagram_data = answer.strip()
                 
         return {"diagram_data": diagram_data, "raw_response": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+

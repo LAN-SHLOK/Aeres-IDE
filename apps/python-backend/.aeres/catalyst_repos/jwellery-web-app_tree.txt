@@ -1,0 +1,167 @@
+[jwellery-web-app]
+- .eslintrc.json
+- .gitignore
+- LICENSE
+- middleware.ts
+- next.config.js
+- package-lock.json
+- package.json
+- postcss.config.js
+- README.md
+- tailwind.config.ts
+- tsconfig.json
+- vercel.json
+/app
+  - globals.css
+  - layout.tsx
+  /(public)
+    - layout.tsx
+    - page.tsx
+    /about
+      - page.tsx
+    /cart
+      - page.tsx
+    /checkout
+      - page.tsx
+    /collections
+      - CollectionsClient.tsx
+      - page.tsx
+    /contact
+      - page.tsx
+    /order-confirmation
+      - OrderConfirmationClient.tsx
+      - page.tsx
+    /payment
+      /demo
+        - page.tsx
+    /privacy
+      - page.tsx
+    /products
+      /[slug]
+        - page.tsx
+        - ProductDetailClient.tsx
+    /shipping-policy
+      - page.tsx
+    /terms
+      - page.tsx
+    /wishlist
+      - page.tsx
+  /admin
+    - page.tsx
+    /coupons
+      - page.tsx
+    /dashboard
+      - page.tsx
+    /gold-rate
+      - page.tsx
+    /login
+      - page.tsx
+    /orders
+      - page.tsx
+    /products
+      - page.tsx
+    /reviews
+      - page.tsx
+  /api
+    /admin
+      /coupons
+        - route.ts
+      /login
+        - route.ts
+      /logout
+        - route.ts
+      /products
+        - route.ts
+        /list
+          - route.ts
+      /reviews
+        - route.ts
+    /checkout
+      - route.ts
+    /contact
+      - route.ts
+    /coupons
+      /validate
+        - route.ts
+    /cron
+      /reminder
+        - route.ts
+    /gold-rate
+      - route.ts
+      /history
+        - route.ts
+    /orders
+      - route.ts
+    /payments
+      /demo
+        - route.ts
+    /products
+      - route.ts
+    /razorpay
+      /webhook
+        - route.ts
+    /reviews
+      - route.ts
+    /test-email
+      - route.ts
+/components
+  /admin
+    - AdminLayout.tsx
+    - HoverTrendChart.tsx
+  /cart
+    - CartDrawer.tsx
+    - CartDrawerRoot.tsx
+  /product
+    - ProductCard.tsx
+    - ProductGrid.tsx
+    - ProductReviews.tsx
+  /ui
+    - CartBadge.tsx
+    - CustomCursor.tsx
+    - DeferredMount.tsx
+    - Footer.tsx
+    - MagicCursor.tsx
+    - MobileBottomNav.tsx
+    - Navbar.tsx
+    - ScrollBackground.tsx
+    - SkeletonLoader.tsx
+    - SmoothScroll.tsx
+    - Ticker.tsx
+/config
+  - brand.ts
+/lib
+  - animations.ts
+  - auth.ts
+  - cache.ts
+  - catalog.ts
+  - cloudinary.ts
+  - coupons.ts
+  - demo-payment.ts
+  - email.ts
+  - india-date.ts
+  - order-payment.ts
+  - pricing.ts
+  - product-presentation.ts
+  - rate-limit.ts
+  - security.ts
+  - store.ts
+  - supabase.ts
+  - validation.ts
+/public
+  - logo-placeholder.svg
+  - manifest.json
+  /placeholders
+    - bangle.svg
+    - chain.svg
+    - earring.svg
+    - necklace.svg
+    - pendant.svg
+    - ring.svg
+/scripts
+  - verify-smtp.mjs
+/supabase
+  - add_purity_columns.sql
+  - complete-database-setup.sql
+  - decrement_stock.sql
+  /migrations
+    - add_purity_fields.sql

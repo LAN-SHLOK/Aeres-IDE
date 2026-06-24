@@ -112,10 +112,10 @@ if (!fs.existsSync(aeresDir)) fs.mkdirSync(aeresDir);
 const profPath = path.join(aeresDir, 'temp.cpuprofile');
 if (fs.existsSync(profPath)) fs.unlinkSync(profPath);
 let cmd = 'node';
-let args = ['--cpu-prof', '--cpu-prof-dir=' + aeresDir, '--cpu-prof-name=temp.cpuprofile', target];
+let args = ['--cpu-prof', '--cpu-prof-interval=10', '--cpu-prof-dir=' + aeresDir, '--cpu-prof-name=temp.cpuprofile', target];
 if (isTsx) {
     cmd = 'npx';
-    process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --cpu-prof --cpu-prof-dir="' + aeresDir + '" --cpu-prof-name=temp.cpuprofile';
+    process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --cpu-prof --cpu-prof-interval=10 --cpu-prof-dir="' + aeresDir + '" --cpu-prof-name=temp.cpuprofile';
     args = ['tsx', target];
 }
 spawnSync(cmd, args, { stdio: 'inherit', env: process.env });
@@ -126,11 +126,16 @@ if (fs.existsSync(profPath)) {
         const newData = {};
         for (const node of nodes) {
             const callFrame = node.callFrame;
-            if (!callFrame || !callFrame.url || !callFrame.url.startsWith('file://')) continue;
-            let filePath = callFrame.url.replace('file://', '');
-            if (process.platform === 'win32' && filePath.startsWith('/')) filePath = filePath.slice(1);
+            if (!callFrame || !callFrame.url) continue;
+            let filePath = callFrame.url;
+            if (filePath.startsWith('file://')) {
+                filePath = filePath.replace('file://', '');
+                if (process.platform === 'win32' && filePath.startsWith('/')) filePath = filePath.slice(1);
+            }
+            // Node.js cpu profiles often use raw absolute paths, not file://
+            if (!path.isAbsolute(filePath)) continue;
             filePath = path.resolve(filePath);
-            if (filePath.includes('node_modules')) continue;
+            if (filePath.includes('node_modules') || filePath.includes('node:')) continue;
             const line = callFrame.lineNumber + 1;
             const name = callFrame.functionName || '(anonymous)';
             const hitCount = node.hitCount || 0;

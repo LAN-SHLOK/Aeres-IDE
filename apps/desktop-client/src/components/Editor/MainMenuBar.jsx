@@ -276,9 +276,6 @@ export default function MainMenuBar() {
             window.dispatchEvent(new CustomEvent('aeres:select-terminal-tab', { detail: 'problems' }))
           }, 50)
         } },
-        { label: 'Focus Session Manager', shortcut: 'Ctrl+Alt+F', action: () => {
-          useStore.setState({ rightPanelOpen: true, activeRightTab: 'focus' })
-        } },
       ]
     },
     {
@@ -417,16 +414,6 @@ export default function MainMenuBar() {
          </span>
       </div>
 
-      {/* Right-Side Action Bar: Focus Sessions */}
-      <div className="flex items-center gap-2 h-full px-2">
-        <button 
-          onClick={() => useStore.setState({ activeRightTab: 'focus', rightPanelOpen: true })}
-          className="flex items-center gap-1.5 px-3 h-6 rounded-sm border border-slate-700/50 text-slate-400 text-[10px] font-bold uppercase tracking-wider hover:bg-white/5 transition-all"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          Focus Session
-        </button>
-      </div>
     </div>
   )
 }
