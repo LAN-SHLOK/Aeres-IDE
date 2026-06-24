@@ -28,7 +28,7 @@ async def get_keys() -> Dict[str, Any]:
         "GOOGLE_API_KEY": mask_key(settings.GOOGLE_API_KEY),
         "GITHUB_TOKEN": mask_key(settings.GITHUB_TOKEN),
         "CLERK_SECRET_KEY": mask_key(settings.CLERK_SECRET_KEY),
-        "is_configured": bool(settings.GROQ_API_KEY),
+        "is_configured": bool(settings.GROQ_API_KEY and settings.IDE_DIAGRAM_ENGINE),
     }
 
 @router.post("/")

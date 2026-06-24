@@ -15,6 +15,10 @@ const OnboardingModal = ({ onComplete }) => {
       setError('A Groq API key is required to use the AI features.');
       return;
     }
+    if (!diagramKey.trim()) {
+      setError('A Catalyst Diagram Key is required to use the diagram engine.');
+      return;
+    }
     
     setIsSubmitting(true);
     setError('');
@@ -93,7 +97,7 @@ const OnboardingModal = ({ onComplete }) => {
               <div>
                 <label className="mb-2 flex items-center text-sm font-medium text-pink-100">
                   <Key className="mr-2 h-4 w-4 text-pink-400" />
-                  Catalyst Diagram Key <span className="ml-2 text-[10px] uppercase tracking-wider text-pink-100/30 bg-white/5 px-2 py-0.5 rounded-full">Optional</span>
+                  Catalyst Diagram Key <span className="ml-1 text-red-400">*</span>
                 </label>
                 <input
                   type="password"
