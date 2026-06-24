@@ -53,6 +53,8 @@ dist/
 data/
 /data/chroma_db/
 apps/python-backend/data/
+.aeres/
+**/.aeres/
 *.db
 *.sqlite3
 *.log
