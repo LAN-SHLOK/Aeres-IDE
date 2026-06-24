@@ -674,12 +674,12 @@ export default function RagChat() {
 
       // 2. Query Text and Diagram concurrently
       const [qRes, dRes] = await Promise.all([
-        fetch(`${backendUrl || 'http://localhost:8000'}/api/catalyst/query-issue`, {
+        fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/query-issue`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
         }),
-        fetch(`${backendUrl || 'http://localhost:8000'}/api/catalyst/diagram-blueprint`, {
+        fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/diagram-blueprint`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
