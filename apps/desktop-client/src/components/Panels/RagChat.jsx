@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState, useEffect } from 'react'
 import { useStore } from '../../store.js'
 import { Map, Rocket, Book, Globe, Settings, AlertTriangle, Palette, FlaskConical, Zap, Hammer, MessageSquare, User, Sparkles } from 'lucide-react'
+import WorkflowDiagram from './WorkflowDiagram.jsx'
 
-// ── Simple Markdown Renderer (no external dep) ──────
+// Simple Markdown Renderer (no external dep)
 
 function renderMarkdown(text) {
   if (!text) return ''
@@ -43,7 +44,7 @@ function MarkdownContent({ content }) {
   )
 }
 
-// ── Tool Icons (SVG) ────────────────────────────────
+// Tool Icons (SVG)
 
 const TOOL_ICONS = {
   read_file: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
@@ -87,7 +88,7 @@ const TOOL_LABELS = {
   find_symbol: 'Finding Symbol',
 }
 
-// ── Agent Step Component ────────────────────────────
+// Agent Step Component
 
 function AgentStep({ step }) {
   const [expanded, setExpanded] = useState(false)
@@ -217,7 +218,7 @@ function AgentStep({ step }) {
   return null
 }
 
-// ── Confirmation Dialog ─────────────────────────────
+// Confirmation Dialog
 
 function ConfirmDialog({ confirm, onAccept, onReject }) {
   const [showDiff, setShowDiff] = useState(true)
@@ -298,7 +299,7 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
   )
 }
 
-// ── Main Chat Component ─────────────────────────────
+// Main Chat Component
 
 export default function RagChat() {
   const chatMessages = useStore((s) => s.chatMessages)
@@ -337,6 +338,11 @@ export default function RagChat() {
   const [showMentions, setShowMentions] = useState(false)
   const [mentionQuery, setMentionQuery] = useState('')
 
+  // Catalyst Modal state
+  const [showCatalystModal, setShowCatalystModal] = useState(false)
+  const [catalystUrl, setCatalystUrl] = useState('')
+  const [catalystQuery, setCatalystQuery] = useState('')
+
   const WORKFLOWS = [
     {
       name: 'React UI',
@@ -361,6 +367,12 @@ export default function RagChat() {
       icon: <Hammer size={10} />,
       desc: 'Auto compile & run scripts',
       prompt: 'Inspect active file dependency imports, setup build packages, run compiles and fix syntax compilation errors.'
+    },
+    {
+      name: 'Catalyst',
+      icon: <Globe size={10} />,
+      desc: 'Open-Source Catalyst Guide',
+      prompt: '/catalyst '
     }
   ]
 
@@ -633,6 +645,70 @@ export default function RagChat() {
   }
 
   // Agent mode: stream
+  const handleCatalystSubmit = useCallback(async () => {
+    if (!catalystUrl.trim() || !catalystQuery.trim()) return
+    setShowCatalystModal(false)
+    const repoName = catalystUrl.split('/').pop().replace('.git', '')
+    
+    // Add user message to UI
+    const targetMsg = { role: 'user', content: `Run Catalyst on: ${catalystUrl}\nQuery: ${catalystQuery}` }
+    if (mode === 'agent') appendAgentMessage(targetMsg)
+    else appendChatMessage(targetMsg)
+
+    setChatLoading(true)
+    try {
+      // 1. Ingest
+      const res = await fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/ingest-repo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ github_url: catalystUrl })
+      })
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.detail || 'Failed to ingest repository')
+      }
+      
+      const statusMsg = { role: 'assistant', content: `**Catalyst**: Successfully ingested ${repoName}. Mapping architecture and querying...` }
+      if (mode === 'agent') appendAgentMessage(statusMsg)
+      else appendChatMessage(statusMsg)
+
+      // 2. Query Text and Diagram concurrently
+      const [qRes, dRes] = await Promise.all([
+        fetch(`${backendUrl || 'http://localhost:8000'}/api/catalyst/query-issue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
+        }),
+        fetch(`${backendUrl || 'http://localhost:8000'}/api/catalyst/diagram-blueprint`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
+        })
+      ])
+      
+      const textData = await qRes.json()
+      const diagramResult = await dRes.json()
+      
+      const resultMsg = { 
+        role: 'assistant', 
+        content: textData.answer || 'No architecture plan generated.',
+        diagramData: diagramResult.diagram_data
+      }
+      
+      if (mode === 'agent') appendAgentMessage(resultMsg)
+      else appendChatMessage(resultMsg)
+    } catch (err) {
+      console.error(err)
+      const errMsg = { role: 'assistant', content: `**Catalyst Error**: ${err.message}` }
+      if (mode === 'agent') appendAgentMessage(errMsg)
+      else appendChatMessage(errMsg)
+    } finally {
+      setChatLoading(false)
+      setCatalystUrl('')
+      setCatalystQuery('')
+    }
+  }, [catalystUrl, catalystQuery, backendUrl, mode, appendAgentMessage, appendChatMessage])
+
   const handleAgentSend = useCallback(async (imagesToSend, customQuery) => {
     const e = window.electron
     if (!e?.rag?.agentStream) return
@@ -690,6 +766,44 @@ export default function RagChat() {
     }
     
     try {
+      if (q.startsWith('/ingest-repo ')) {
+        const url = q.replace('/ingest-repo ', '').trim()
+        setChatLoading(true)
+        const res = await fetch(`${backendUrl || 'http://localhost:8000'}/api/catalyst/ingest-repo`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ github_url: url })
+        })
+        const data = await res.json()
+        setChatLoading(false)
+        if (mode === 'agent') {
+          appendAgentMessage({ role: 'assistant', content: data.message || data.detail || 'Ingestion complete.' })
+        } else {
+          appendChatMessage({ role: 'assistant', content: data.message || data.detail || 'Ingestion complete.' })
+        }
+        return
+      }
+
+      if (q.startsWith('/catalyst ')) {
+        const parts = q.replace('/catalyst ', '').trim().split(' ')
+        const repoName = parts[0]
+        const issueText = parts.slice(1).join(' ')
+        setChatLoading(true)
+        const res = await fetch(`${backendUrl || 'http://localhost:8000'}/api/catalyst/query-issue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_name: repoName, issue_text: issueText })
+        })
+        const data = await res.json()
+        setChatLoading(false)
+        if (mode === 'agent') {
+          appendAgentMessage({ role: 'assistant', content: data.answer || data.detail || 'Query failed.' })
+        } else {
+          appendChatMessage({ role: 'assistant', content: data.answer || data.detail || 'Query failed.' })
+        }
+        return
+      }
+
       if (mode === 'agent') {
         await handleAgentSend(imgs, q)
       } else {
@@ -878,7 +992,10 @@ export default function RagChat() {
                 : 'bg-slate-950/65 text-slate-200 border-black/80'
             }`}>
               {msg.role === 'assistant' ? (
-                <MarkdownContent content={msg.content} />
+                <>
+                  <MarkdownContent content={msg.content} />
+                  {msg.diagramData && <WorkflowDiagram data={msg.diagramData} />}
+                </>
               ) : (
                 <span className="font-semibold whitespace-pre-wrap">{msg.content}</span>
               )}
@@ -989,6 +1106,62 @@ export default function RagChat() {
         </div>
       )}
   
+      {/* Catalyst Modal */}
+      {showCatalystModal && (
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border-2 border-black rounded-3xl p-5 w-full max-w-sm shadow-[4px_4px_0px_#000] flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-white font-black uppercase tracking-widest flex items-center gap-2">
+                <Globe className="text-[#7C3AED]" size={16} /> Open-Source Catalyst
+              </h3>
+              <button 
+                onClick={() => setShowCatalystModal(false)}
+                className="text-slate-400 hover:text-white transition"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+            
+            <p className="text-[10px] text-slate-400 font-medium">
+              Enter a GitHub URL and describe the issue or architectural change you want to make. Catalyst will parse the entire repository layout and generate a Staff Engineer execution plan.
+            </p>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Repository URL</label>
+                <input 
+                  type="text" 
+                  placeholder="https://github.com/user/repo" 
+                  value={catalystUrl}
+                  onChange={e => setCatalystUrl(e.target.value)}
+                  className="w-full bg-black/50 border-2 border-black rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-[#7C3AED] shadow-[2px_2px_0px_#000]"
+                />
+              </div>
+              
+              <div>
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5 block">Goal / Issue</label>
+                <textarea 
+                  placeholder="I want to add a dark mode toggle button to the layout. Where should I put the state management?" 
+                  value={catalystQuery}
+                  onChange={e => setCatalystQuery(e.target.value)}
+                  rows={3}
+                  className="w-full bg-black/50 border-2 border-black rounded-xl px-3 py-2 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-[#7C3AED] shadow-[2px_2px_0px_#000] resize-none"
+                />
+              </div>
+            </div>
+            
+            <button 
+              onClick={handleCatalystSubmit}
+              disabled={!catalystUrl.trim() || !catalystQuery.trim() || chatLoading}
+              className="w-full mt-2 bg-[#7C3AED] hover:bg-[#8B5CF6] disabled:opacity-50 disabled:hover:bg-[#7C3AED] text-black font-black uppercase tracking-widest text-[10px] py-2.5 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-[1px_1px_0px_#000] transition-all flex justify-center items-center gap-2"
+            >
+              {chatLoading ? <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin" /> : <Rocket size={14} />}
+              Launch Catalyst
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Workflows Pill Ribbon */}
       {!agentRunning && (
         <div className="flex gap-1.5 px-3 py-2 bg-slate-950/20 border-t border-aeres-border overflow-x-auto shrink-0 scrollbar-hide">
@@ -997,8 +1170,18 @@ export default function RagChat() {
               key={idx}
               type="button"
               onClick={() => {
-                setInput(wf.prompt)
-                handleAgentSend([], wf.prompt)
+                if (wf.name === 'Catalyst') {
+                  setShowCatalystModal(true)
+                } else {
+                  setInput(wf.prompt)
+                  if (!wf.prompt.endsWith(' ')) {
+                    handleSend(wf.prompt)
+                  } else {
+                    setTimeout(() => {
+                      document.querySelector('input[type="text"]')?.focus()
+                    }, 50)
+                  }
+                }
               }}
               className="flex-shrink-0 px-3 py-1 rounded-full border-2 border-black bg-slate-950/40 text-[9px] text-slate-400 hover:text-white hover:bg-aeres-violet hover:text-black font-extrabold uppercase transition flex items-center gap-1 hover:scale-105 active:scale-95 shadow-[2px_2px_0px_#000] cursor-pointer"
               title={wf.desc}

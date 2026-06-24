@@ -33,6 +33,7 @@ def main():
     if len(sys.argv) < 2: sys.exit(1)
     script_path = sys.argv[1]
     sys.argv = sys.argv[1:]
+    sys.path.insert(0, os.path.dirname(os.path.abspath(script_path)))
     profiler = cProfile.Profile()
     try:
         with open(script_path, 'rb') as f: code = compile(f.read(), script_path, 'exec')
@@ -42,8 +43,7 @@ def main():
     globals_dict = {'__name__': '__main__', '__file__': script_path, '__builtins__': __builtins__}
     profiler.enable()
     try: exec(code, globals_dict)
-    except SystemExit: pass
-    except Exception: import traceback; traceback.print_exc()
+    except BaseException: pass
     finally: profiler.disable()
     stats = pstats.Stats(profiler)
     new_data = {}
@@ -268,6 +268,91 @@ if (fs.existsSync(profPath)) {
  * @returns {Promise<string|null>}
  */
 export async function detectTestCommand(filePath, rootPath) {
+  const lower = filePath.toLowerCase()
+
+  // Python — pytest preferred
+  if (lower.endsWith('.py')) {
+    try {
+      const store = useStore.getState();
+      const rPath = store.rootPath;
+      if (rPath && window.electron) {
+        const sep = rPath.includes('\\') ? '\\' : '/';
+        const aeresDir = `${rPath}${sep}.aeres`;
+        await window.electron.fs.createFolder(aeresDir);
+        const runnerPath = `${aeresDir}${sep}pytest_runner.py`;
+        const runnerCode = `
+import sys, cProfile, pstats, json, os, pytest
+def main():
+    if len(sys.argv) < 2: sys.exit(1)
+    pytest_args = sys.argv[1:]
+    profiler = cProfile.Profile()
+    profiler.enable()
+    try: pytest.main(pytest_args)
+    except SystemExit: pass
+    finally: profiler.disable()
+    stats = pstats.Stats(profiler)
+    new_data = {}
+    for func, (cc, nc, tt, ct, callers) in stats.stats.items():
+        filename, line, name = func
+        if not filename or filename.startswith('<') or 'site-packages' in filename: continue
+        abs_filename = os.path.abspath(filename)
+        duration_ms = (ct / nc) * 1000 if nc > 0 else 0
+        if abs_filename not in new_data: new_data[abs_filename] = []
+        new_data[abs_filename].append({'line': line, 'name': name, 'durationMs': duration_ms, 'calls': nc})
+    
+    aeres_dir = os.path.join(os.getcwd(), '.aeres')
+    os.makedirs(aeres_dir, exist_ok=True)
+    out_file = os.path.join(aeres_dir, 'temporal_lens.json')
+    history_data = {}
+    if os.path.exists(out_file):
+        try:
+            with open(out_file, 'r') as f: history_data = json.load(f)
+        except: pass
+    for filename, functions in new_data.items():
+        if filename not in history_data: history_data[filename] = []
+        existing_funcs = {f"{f['line']}_{f['name']}": f for f in history_data[filename]}
+        for new_f in functions:
+            key = f"{new_f['line']}_{new_f['name']}"
+            if key in existing_funcs:
+                hist = existing_funcs[key].get('history', [])
+                hist.insert(0, new_f['durationMs'])
+                hist = hist[:20]
+                existing_funcs[key]['durationMs'] = sum(hist) / len(hist)
+                existing_funcs[key]['calls'] = new_f['calls']
+                existing_funcs[key]['history'] = hist
+            else:
+                new_f['history'] = [new_f['durationMs']]
+                existing_funcs[key] = new_f
+        history_data[filename] = list(existing_funcs.values())
+    with open(out_file, 'w') as f: json.dump(history_data, f)
+if __name__ == '__main__': main()
+`.trim();
+        await window.electron.fs.writeFile(runnerPath, runnerCode);
+        
+        let testPath = filePath;
+        const isTest = lower.includes('test_') || lower.includes('_test');
+        if (!isTest) {
+          const sepPath = filePath.includes('\\') ? '\\' : '/';
+          const parts = filePath.split(sepPath);
+          const filename = parts.pop();
+          testPath = [...parts, `test_${filename}`].join(sepPath);
+        }
+        return `python -m pip install -q pytest; python "${runnerPath}" "${testPath}" -v`;
+      }
+    } catch(e) {}
+
+    const isTest = lower.includes('test_') || lower.includes('_test');
+    if (!isTest) {
+      const sep = filePath.includes('\\') ? '\\' : '/';
+      const parts = filePath.split(sep);
+      const filename = parts.pop();
+      const testFilename = `test_${filename}`;
+      const testPath = [...parts, testFilename].join(sep);
+      return `python -m pip install -q pytest; python -m pytest "${testPath}" -v`;
+    }
+    return `python -m pip install -q pytest; python -m pytest "${filePath}" -v`;
+  }
+
   // --- AI-POWERED DETECTION ENGINE ---
   if (window.electron?.rag?.query) {
     try {
@@ -291,12 +376,18 @@ export async function detectTestCommand(filePath, rootPath) {
         }
       }
 
-      const prompt = `You are an automated test runner engine. I need to run tests for this specific file: ${filePath}.
+      const isTestFile = filePath.toLowerCase().includes('test') || filePath.toLowerCase().includes('spec');
+      let fileContext = `I need to run tests for this specific file: ${filePath}.`;
+      if (!isTestFile) {
+        fileContext = `I need to run the test suite that covers this source file: ${filePath}. If your test framework supports running related tests (like vitest related), use that. For Python/pytest, guess the specific test file (e.g., if source is 'main.py', the test file is likely 'test_main.py', so you should output 'pytest test_main.py'). DO NOT just pass the source file directly to pytest, as it will fail if it contains no tests.`;
+      }
+
+      const prompt = `You are an automated test runner engine. ${fileContext}
 Here is the project configuration file content (if found):
 ${configContent.slice(0, 1500)}
 
 Respond with ONLY the exact, raw terminal command needed to run the tests for this file. 
-DO NOT wrap the response in markdown code blocks. DO NOT provide any explanation or conversational text. JUST the raw command string. IMPORTANT: If the project uses Node.js tools like vitest, jest, mocha, etc., ALWAYS prepend the command with 'npx ' so it resolves the local binary.`;
+DO NOT wrap the response in markdown code blocks. DO NOT provide any explanation or conversational text. JUST the raw command string. IMPORTANT: Pay attention to the file extension of ${filePath}. If it's a Python file (.py), DO NOT use Node.js tools like vitest/jest; use pytest. To ensure a seamless experience, automatically install pytest in the command like this: 'python -m pip install -q pytest; python -m pytest ...'. If the project uses Node.js tools, ALWAYS prepend the command with 'npx ' so it resolves the local binary.`;
       
       const res = await window.electron.rag.query(prompt, "");
       if (res && res.answer) {
@@ -319,13 +410,6 @@ DO NOT wrap the response in markdown code blocks. DO NOT provide any explanation
     }
   }
   // --- END AI DETECTION ---
-
-  const lower = filePath.toLowerCase()
-
-  // Python — pytest preferred
-  if (lower.endsWith('.py')) {
-    return `python -m pytest "${filePath}" -v`
-  }
 
   // JavaScript / TypeScript
   if (lower.endsWith('.js') || lower.endsWith('.jsx') || lower.endsWith('.ts') || lower.endsWith('.tsx')) {
@@ -604,7 +688,7 @@ export async function detectProjectTestCommand(rootPath) {
     }
   } catch { /* ignore */ }
 
-  if (await exists(`${rootPath}${sep}pytest.ini`) || await exists(`${rootPath}${sep}pyproject.toml`)) return 'python -m pytest -v'
+  if (await exists(`${rootPath}${sep}pytest.ini`) || await exists(`${rootPath}${sep}pyproject.toml`)) return 'python -m pip install -q pytest; python -m pytest -v'
   if (await exists(`${rootPath}${sep}Cargo.toml`)) return 'cargo test'
   if (await exists(`${rootPath}${sep}go.mod`)) return 'go test ./...'
   if (await exists(`${rootPath}${sep}pom.xml`)) return 'mvn test'
@@ -691,36 +775,41 @@ export function getTestFileName(fileName, language, content = '') {
   const isReact = content.includes('React') || content.includes('export default') ||
                   fileName.endsWith('x') || fileName.includes('page') || fileName.includes('layout')
 
+  const lower = fileName.toLowerCase()
+  const alreadyTest = lower.includes('test') || lower.includes('spec')
+
   switch (language) {
-    case 'python':      return `test_${base}.py`
-    case 'go':          return `${base}_test.go`
-    case 'rust':        return `${base}_test.rs`
-    case 'java':        return `${base}Test.java`
-    case 'kotlin':      return `${base}Test.kt`
-    case 'csharp':      return `${base}Tests.cs`
+    case 'python':      return alreadyTest ? fileName : `test_${base}.py`
+    case 'go':          return alreadyTest ? fileName : `${base}_test.go`
+    case 'rust':        return alreadyTest ? fileName : `${base}_test.rs`
+    case 'java':        return alreadyTest ? fileName : `${base}Test.java`
+    case 'kotlin':      return alreadyTest ? fileName : `${base}Test.kt`
+    case 'csharp':      return alreadyTest ? fileName : `${base}Tests.cs`
     case 'cpp':
-    case 'c':           return `test_${base}.cpp`
-    case 'ruby':        return `${base}_spec.rb`
-    case 'php':         return `${base}Test.php`
-    case 'dart':        return `${base}_test.dart`
-    case 'swift':       return `${base}Tests.swift`
-    case 'lua':         return `${base}_spec.lua`
-    case 'elixir':      return `${base}_test.exs`
-    case 'haskell':     return `${base}Spec.hs`
-    case 'scala':       return `${base}Spec.scala`
-    case 'r':           return `test_${base}.R`
-    case 'perl':        return `${base}.t`
-    case 'shell':       return `${base}.bats`
-    case 'powershell':  return `${base}.Tests.ps1`
-    case 'nim':         return `test_${base}.nim`
-    case 'zig':         return `${base}_test.zig`
-    case 'fsharp':      return `${base}Tests.fs`
-    case 'clojure':     return `${base.replace(/_/g, '-')}-test.clj`
-    case 'erlang':      return `${base}_test.erl`
+    case 'c':           return alreadyTest ? fileName : `test_${base}.cpp`
+    case 'ruby':        return alreadyTest ? fileName : `${base}_spec.rb`
+    case 'php':         return alreadyTest ? fileName : `${base}Test.php`
+    case 'dart':        return alreadyTest ? fileName : `${base}_test.dart`
+    case 'swift':       return alreadyTest ? fileName : `${base}Tests.swift`
+    case 'lua':         return alreadyTest ? fileName : `${base}_spec.lua`
+    case 'elixir':      return alreadyTest ? fileName : `${base}_test.exs`
+    case 'haskell':     return alreadyTest ? fileName : `${base}Spec.hs`
+    case 'scala':       return alreadyTest ? fileName : `${base}Spec.scala`
+    case 'r':           return alreadyTest ? fileName : `test_${base}.R`
+    case 'perl':        return alreadyTest ? fileName : `${base}.t`
+    case 'shell':       return alreadyTest ? fileName : `${base}.bats`
+    case 'powershell':  return alreadyTest ? fileName : `${base}.Tests.ps1`
+    case 'nim':         return alreadyTest ? fileName : `test_${base}.nim`
+    case 'zig':         return alreadyTest ? fileName : `${base}_test.zig`
+    case 'fsharp':      return alreadyTest ? fileName : `${base}Tests.fs`
+    case 'clojure':     return alreadyTest ? fileName : `${base.replace(/_/g, '-')}-test.clj`
+    case 'erlang':      return alreadyTest ? fileName : `${base}_test.erl`
     case 'typescript':
+      if (alreadyTest) return fileName
       return isReact ? `${base}.test.tsx` : `${base}.test.ts`
     case 'javascript':
     default:
+      if (alreadyTest) return fileName
       return isReact ? `${base}.test.jsx` : `${base}.test.js`
   }
 }

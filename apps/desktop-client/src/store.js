@@ -6,25 +6,31 @@ let _tabIdCounter = 0
 export const useStore = create(
   persist(
     (set, get) => ({
-      // ── AUTH ───────────────────────────────────────────
+      // AUTH
       authStatus: { authenticated: false, email: null },
       setAuthStatus: (s) => set({ authStatus: s }),
 
-      // ── BACKEND ───────────────────────────────────────
+      // BACKEND
       backendUrl: null,
       backendError: null,
       setBackendUrl: (url) => set({ backendUrl: url, backendError: null }),
       setBackendError: (err) => set({ backendError: err }),
 
-      // ── WORKSPACE ─────────────────────────────────────
+      // WORKSPACE
       rootPath: null,
       fileTree: null,
       comparePath: null,
+      explorerOpenPaths: [], // array of paths to keep expanded
       setRootPath: (p) => set({ rootPath: p }),
       setFileTree: (t) => set({ fileTree: t }),
       setComparePath: (p) => set({ comparePath: p }),
+      toggleExplorerOpenPath: (path, forceOpen) => set((s) => {
+        const next = new Set(s.explorerOpenPaths)
+        if (forceOpen) { next.add(path) } else if (next.has(path)) { next.delete(path) } else { next.add(path) }
+        return { explorerOpenPaths: Array.from(next) }
+      }),
 
-      // ── OVERLAYS ──────────────────────────────────────
+      // OVERLAYS
       quickOpenOpen: false,
       setQuickOpenOpen: (open) => set({ quickOpenOpen: open }),
       paletteOpen: false,
@@ -32,7 +38,7 @@ export const useStore = create(
       keybindingsOpen: false,
       setKeybindingsOpen: (open) => set({ keybindingsOpen: open }),
 
-      // ── TABS ──────────────────────────────────────────
+      // TABS
       tabs: [],
       activeTabId: null,
       recentlyClosedTabs: [],
@@ -117,7 +123,7 @@ export const useStore = create(
         })
       },
 
-      // ── EDITOR ────────────────────────────────────────
+      // EDITOR
       editorSettings: {
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 14,
@@ -132,12 +138,14 @@ export const useStore = create(
           editorSettings: { ...s.editorSettings, [key]: val },
         })),
 
-      // ── MODERNIZE ─────────────────────────────────────
+      // MODERNIZE
       modernizeState: 'idle', // idle | scanning | scraping | streaming | done | error
       originalCode: '',
       fixedCode: '',
       activeFlag: null,
       sourceUrl: '',
+      batchModernizeState: null, // { depName, files: [{ path, originalCode, fixedCode, status: 'pending'|'modernizing'|'review'|'accepted'|'rejected'|'error' }], currentIndex: 0 }
+      
       setModernizeState: (st) => set({ modernizeState: st }),
       appendFixedCode: (chunk) => set((s) => ({ fixedCode: s.fixedCode + chunk })),
       resetModernize: () =>
@@ -148,8 +156,18 @@ export const useStore = create(
           activeFlag: null,
           sourceUrl: '',
         }),
+      setBatchModernizeState: (state) => set({ batchModernizeState: state }),
+      setBatchModernizeFileStatus: (index, status, data = {}) => set((s) => {
+        if (!s.batchModernizeState) return s
+        const files = [...s.batchModernizeState.files]
+        if (files[index]) {
+          files[index] = { ...files[index], status, ...data }
+        }
+        return { batchModernizeState: { ...s.batchModernizeState, files } }
+      }),
+      cancelBatchModernize: () => set({ batchModernizeState: null, modernizeState: 'idle' }),
 
-      // ── TERMINAL ──────────────────────────────────────
+      // TERMINAL
       terminals: [],
       terminalPanelOpen: false,
       terminalPanelHeight: 250,
@@ -186,7 +204,7 @@ export const useStore = create(
       })),
       clearOutputLog: () => set({ outputLog: [] }),
 
-      // ── DEBUGGER ──────────────────────────────────────
+      // DEBUGGER
       debugSession: null,
       debugState: 'idle', // idle | running | paused | stopped
       breakpoints: {},
@@ -210,7 +228,7 @@ export const useStore = create(
       setCallStack: (cs) => set({ callStack: cs }),
       setVariables: (v) => set({ variables: v }),
 
-      // ── GIT ───────────────────────────────────────────
+      // GIT
       gitStatus: { branch: 'main', files: [], ahead: 0, behind: 0 },
       gitTask: null,
       gitPanelOpen: false,
@@ -224,7 +242,7 @@ export const useStore = create(
       showTemporal: true,
       setShowTemporal: (val) => set({ showTemporal: val }),
 
-      // ── CAUSAL MAP ────────────────────────────────────
+      // CAUSAL MAP
       causalTarget: null,
       setCausalTarget: (target) => set((s) => ({ 
         causalTarget: target,
@@ -232,7 +250,7 @@ export const useStore = create(
         activeRightTab: target ? 'causemap' : s.activeRightTab
       })),
 
-      // ── DIAGNOSTICS ───────────────────────────────────
+      // DIAGNOSTICS
       diagnostics: {},
       setDiagnostics: (filePath, markers) =>
         set((s) => ({
@@ -251,14 +269,14 @@ export const useStore = create(
       showMutations: true,
       setShowMutations: (val) => set({ showMutations: val }),
 
-      // ── HEALTH DASHBOARD ──────────────────────────────
+      // HEALTH DASHBOARD
       healthScore: null,
       healthIssues: [],
       isScanningHealth: false,
       setHealthData: (score, issues) => set({ healthScore: score, healthIssues: issues }),
       setIsScanningHealth: (scanning) => set({ isScanningHealth: scanning }),
 
-      // ── LAYOUT ────────────────────────────────────────
+      // LAYOUT
       sidebarWidth: 260,
       rightPanelOpen: true,
       rightPanelWidth: 340,
@@ -319,7 +337,7 @@ export const useStore = create(
         }
       }),
 
-      // ── SESSIONS ──────────────────────────────────────
+      // SESSIONS
       currentSessionName: 'No Session',
       setCurrentSessionName: (name) => set({ currentSessionName: name }),
 
@@ -368,7 +386,7 @@ export const useStore = create(
         })
       },
 
-      // ── CHAT ──────────────────────────────────────────
+      // CHAT
       chatMessages: [],
       appendChatMessage: (msg) =>
         set((s) => ({ chatMessages: [...s.chatMessages, msg] })),
@@ -383,7 +401,7 @@ export const useStore = create(
 
       clearChat: () => set({ chatMessages: [], agentMessages: [], agentSteps: [], pendingConfirm: null, agentRunning: false }),
 
-      // ── AGENT ──────────────────────────────────────────
+      // AGENT
       agentMode: 'chat',
       agentRunning: false,
       agentSteps: [],
@@ -422,7 +440,7 @@ export const useStore = create(
       appendAgentMessage: (msg) => set((s) => ({ agentMessages: [...s.agentMessages, msg] })),
       setAgentMessages: (msgs) => set({ agentMessages: msgs }),
 
-      // ── ENVIRONMENTS ──────────────────────────────────
+      // ENVIRONMENTS
       activeEnvironment: null,
       availableEnvironments: [],
       envSelectorOpen: false,

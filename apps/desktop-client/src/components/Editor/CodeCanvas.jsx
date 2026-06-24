@@ -7,6 +7,7 @@ import { useStore } from '../../store.js'
 import { emmetHTML, emmetCSS, emmetJSX } from 'emmet-monaco-es'
 
 import WelcomeScreen from './WelcomeScreen.jsx'
+import BatchModernizeView from './BatchModernizeView.jsx'
 
 import useTemporalLens from './TemporalLens.jsx'
 
@@ -21,6 +22,7 @@ export default function CodeCanvas() {
   const editorSettings = useStore(s => s.editorSettings)
   const isAeresMode = useStore(s => s.isAeresMode)
   const openTab = useStore(s => s.openTab)
+  const batchModernizeState = useStore((s) => s.batchModernizeState)
 
   //  Keyboard Shortcuts & IPC
   const installedExtensions = useStore((s) => s.installedExtensions || [])
@@ -278,10 +280,13 @@ export default function CodeCanvas() {
       })
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
+      let buffer = ''
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-        const lines = decoder.decode(value).split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() // keep incomplete chunks in the buffer
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const dataStr = line.slice(6)
@@ -442,64 +447,7 @@ export default function CodeCanvas() {
       [activeTabId, setTabDirty, setTabContent]
     )
 
-  const handleModernize = useCallback(async () => {
-    if (!activeTab || !window.electron) return
-    const store = useStore.getState()
-    const setModernizeState = store.setModernizeState
-    const appendFixedCode = store.appendFixedCode
-    
-    store.resetModernize()
-    useStore.setState({ originalCode: activeTab.content })
-    setModernizeState('scanning')
-    
-    try {
-      window.electron.analyze.onStream((chunk) => {
-        if (!chunk) return
-        
-        if (chunk.status === 'done') {
-          setModernizeState('done')
-          if (!chunk.content) {
-            const store = useStore.getState();
-            store.appendOutputLog('info', 'No deprecations found in this file.');
-            store.setActiveSidebarTab('output');
-          }
-        } else if (chunk.status === 'error') {
-          setModernizeState('error')
-          const store = useStore.getState();
-          store.appendOutputLog('error', chunk.message || 'Error occurred during modernization');
-          store.setActiveSidebarTab('output');
-        } else if (chunk.status === 'streaming') {
-          if (useStore.getState().modernizeState !== 'streaming') {
-            setModernizeState('streaming')
-          }
-          // The backend sends the full updated code when swapping AST nodes
-          useStore.setState({ fixedCode: chunk.content })
-        } else if (chunk.type === 'flag_found') {
-          if (chunk.source_url) {
-            useStore.setState({ sourceUrl: chunk.source_url })
-          }
-        }
-      })
-      
-      await window.electron.analyze.modernize(activeTab.content, activeTab.path)
-    } catch (err) {
-      console.error('Modernize stream error:', err)
-      const store = useStore.getState();
-      store.appendOutputLog('error', 'Failed to modernize code.');
-      store.setActiveSidebarTab('output');
-      useStore.setState({ modernizeState: 'error' })
-    }
-  }, [activeTab])
 
-  const handleAccept = useCallback(async () => {
-    if (!activeTab || !window.electron) return
-    const code = useStore.getState().fixedCode
-    await window.electron.fs.writeFile(activeTab.path, code)
-    setTabContent(activeTabId, code)
-    setTabDirty(activeTabId, false)
-    setLocalContent(code)
-    resetModernize()
-  }, [activeTab, activeTabId, setTabContent, setTabDirty, resetModernize])
 
   const handleOpenLiveServer = useCallback(async () => {
     if (!activeTab || !window.electron) return
@@ -717,17 +665,8 @@ export default function CodeCanvas() {
     }
   }, [editorLoaded, activeTab, activeTabId, localContent, setTabDirty, handleCut, handleCopy, handlePaste, handleRunFile, handleOpenLiveServer])
 
-  useEffect(() => {
-    const handler = () => handleModernize()
-    window.addEventListener('aeres:modernize', handler)
-    document.addEventListener('aeres:modernize', handler)
-    return () => {
-      window.removeEventListener('aeres:modernize', handler)
-      document.removeEventListener('aeres:modernize', handler)
-    }
-  }, [handleModernize])
 
-  // ── ESLint Extension Diagnostics ──
+  // ESLint Extension Diagnostics
   // Real diagnostics are provided by the LSP listener in App.jsx.
   // If the ESLint extension is toggled off, clear any stale markers for the active file.
   const hasEslint = installedExtensions.includes('eslint') && !disabledExtensions.includes('eslint')
@@ -744,7 +683,7 @@ export default function CodeCanvas() {
     }
   }, [activeTab?.path, hasEslint])
 
-  // ── Apply LSP Diagnostics to Monaco ──
+  // Apply LSP Diagnostics to Monaco
   useEffect(() => {
     if (!activeTab?.path || !editorLoaded || !window.electron?.lsp) return
     const editor = editorRef.current
@@ -764,7 +703,7 @@ export default function CodeCanvas() {
     })
   }, [activeTab?.path, activeTab?.language, editorLoaded])
 
-  // ── Auto Save ──
+  // Auto Save
   useEffect(() => {
     if (!activeTab?.path || !activeTab?.isDirty || !window.electron) return
     
@@ -809,7 +748,7 @@ export default function CodeCanvas() {
     monaco.editor.setModelMarkers(model, 'aeres-lsp', markers)
   }, [activeTab?.path, fileDiagnostics, editorLoaded])
 
-  // ── GitLens Elite Blame Annotations ──
+  // GitLens Elite Blame Annotations
   const hasGitLens = installedExtensions.includes('gitlens-elite') && !disabledExtensions.includes('gitlens-elite')
   useEffect(() => {
     const editor = editorRef.current
@@ -871,7 +810,9 @@ export default function CodeCanvas() {
     )
   }
 
-  const showDiff = modernizeState === 'streaming' || modernizeState === 'done'
+  if (batchModernizeState) {
+    return <BatchModernizeView />
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -903,58 +844,10 @@ export default function CodeCanvas() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2M7.88 4.88l1.41 1.41M16.12 4.88l-1.41 1.41M4.88 7.88l1.41 1.41M19.12 7.88l-1.41 1.41M2 12h2M20 12h2M4.88 16.12l1.41-1.41M19.12 16.12l-1.41-1.41M7.88 19.12l1.41-1.41M16.12 19.12l-1.41 1.41M12 20v2"/></svg>
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={handleModernize}
-          disabled={modernizeState === 'scanning' || modernizeState === 'streaming'}
-          title="Modernize Code: Ask the AI Agent to scan this file for deprecations and suggest small snippet replacements."
-          className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium text-white shadow-sm transition ${
-            modernizeState === 'scanning' || modernizeState === 'streaming'
-              ? 'bg-aeres-violet/60 cursor-not-allowed animate-pulse'
-              : 'bg-aeres-violet hover:opacity-90'
-          }`}
-        >
-          {modernizeState === 'scanning' || modernizeState === 'streaming' ? (
-             <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-          ) : (
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-          )}
-          {modernizeState === 'scanning' ? 'Scanning DB...' : modernizeState === 'streaming' ? 'Modernizing...' : 'Modernize'}
-        </button>
       </div>
 
-      {/* Source URL bar */}
-      {showDiff && sourceUrl && (
-        <div className="flex h-6 shrink-0 items-center gap-2 border-b border-aeres-border bg-aeres-surface/50 px-3">
-          <span className="text-[10px] text-aeres-muted">Source:</span>
-          <span className="truncate text-[10px] text-aeres-blue">{sourceUrl}</span>
-        </div>
-      )}
-
-      {/* Editor / Diff */}
+      {/* Editor Area */}
       <div className="min-h-0 flex-1">
-        {showDiff ? (
-          <DiffEditor
-            height="100%"
-            original={originalCode}
-            modified={fixedCode}
-            language={activeTab.language}
-            theme={theme?.includes('light') ? 'vs' : 'vs-dark'}
-            options={{
-              readOnly: true,
-              minimap: { enabled: false },
-              fontSize: editorSettings.fontSize,
-              fontFamily: editorSettings.fontFamily,
-              lineHeight: editorSettings.lineHeight,
-              renderSideBySide: true,
-              fixedOverflowWidgets: true
-            }}
-          />
-        ) : (
           <Editor
             height="100%"
             path={activeTab.path}
@@ -977,7 +870,7 @@ export default function CodeCanvas() {
                 console.warn('Failed to initialize Emmet:', err)
               }
 
-              // ── Register LSP WebSocket Completion Provider ──
+              // Register LSP WebSocket Completion Provider
               let lspWs = null
               const backendPort = useStore.getState().backendUrl?.split(':').pop() || 8008
               try {
@@ -1043,7 +936,7 @@ export default function CodeCanvas() {
                 })
               }
 
-              // ── Register debounced AI Inline Completion Provider ──
+              // Register debounced AI Inline Completion Provider
               let autocompleteTimer = null
               monaco.languages.registerInlineCompletionsProvider({ pattern: '**/*' }, {
                 provideInlineCompletions: async (model, position, context, token) => {
@@ -1132,7 +1025,7 @@ export default function CodeCanvas() {
                 freeInlineCompletions: () => {}
               })
 
-              // ── Register Symbol Documentation Hover Provider ──
+              // Register Symbol Documentation Hover Provider
               const docMappings = {
                 // React Hooks
                 'useState': {
@@ -1826,31 +1719,7 @@ export default function CodeCanvas() {
               showDeprecated: true
             }}
           />
-        )}
-      </div>
-
-      {/* Accept / Reject */}
-      {showDiff && (
-        <div className="flex h-10 shrink-0 items-center justify-center gap-3 border-t border-aeres-border bg-aeres-surface">
-          <button
-            type="button"
-            onClick={handleAccept}
-            disabled={modernizeState !== 'done'}
-            className="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-green-700 disabled:opacity-40 shadow-sm"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            Accept Fix
-          </button>
-          <button
-            type="button"
-            onClick={resetModernize}
-            className="flex items-center gap-1.5 rounded-md border border-aeres-border bg-transparent px-4 py-1.5 text-xs font-medium text-aeres-muted transition hover:border-red-500 hover:text-red-400"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            Reject
-          </button>
         </div>
-      )}
 
       {/* Custom Y2K Neo-Brutalist Context Menu */}
       {contextMenu.visible && createPortal(

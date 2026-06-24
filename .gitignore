@@ -13,6 +13,7 @@ dist-ssr/
 apps/desktop-client/src-tauri/target/
 apps/desktop-client/src-tauri/binaries/
 apps/desktop-client/src-tauri/gen/
+apps/desktop-client/src-tauri/resources/backend/
 **/*.rs.bk
 
 # =========================

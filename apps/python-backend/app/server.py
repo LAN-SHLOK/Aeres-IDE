@@ -12,10 +12,10 @@ from app.api.endpoints import (
     ai,
     analyze,
     contracts,
+    catalyst,
     deps,
     git,
     git_extra,
-    mutations,
     perf,
     rag,
     rag_ingest,
@@ -90,13 +90,16 @@ def create_app() -> FastAPI:
     application.include_router(git.router, prefix="/api/git", tags=["git"])
     application.include_router(git_extra.router, prefix="/api/git", tags=["git-extra"])
     application.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+
     application.include_router(perf.router, prefix="/api/perf", tags=["perf"])
     application.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])
+    application.include_router(catalyst.router, prefix="/api/catalyst", tags=["catalyst"])
     application.include_router(deps.router, prefix="/api/deps", tags=["deps"])
-    application.include_router(mutations.router, prefix="/api/mutations", tags=["mutations"])
     application.include_router(search.router, prefix="/api/search", tags=["search"])
     application.include_router(rag_ingest.router, prefix="/api/rag", tags=["rag"])
     application.include_router(settings.router, prefix="/api/settings", tags=["settings"])
+    from app.api.endpoints import api_keys
+    application.include_router(api_keys.router, prefix="/api/keys", tags=["api_keys"])
     application.include_router(lsp.router, prefix="/api/lsp", tags=["lsp"])
     application.include_router(lsp_ws.router, prefix="/api/lsp", tags=["lsp-ws"])
     application.include_router(debug_api.router, prefix="/api/debug", tags=["debug"])
@@ -105,6 +108,8 @@ def create_app() -> FastAPI:
     application.include_router(proxy.router, prefix="/api/proxy", tags=["proxy"])
     from app.api.endpoints import jupyter_endpoints
     application.include_router(jupyter_endpoints.router, prefix="/api/jupyter", tags=["jupyter"])
+    from app.api.endpoints import db_viewer
+    application.include_router(db_viewer.router, prefix="/api/db", tags=["db-viewer"])
 
     return application
 

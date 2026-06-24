@@ -10,11 +10,13 @@ const COLORS = {
   muted: '#64748b',
 }
 
-function BarChart({ data, width, height }) {
+function BarChart({ data, width, height, activePath }) {
   if (!data || data.length === 0) return null
 
   const maxVal = Math.max(...data.map(d => d.value), 1)
-  const barWidth = Math.max(6, Math.min(24, (width - 40) / data.length - 2))
+  const availableWidth = Math.max(100, width - 40)
+  const barSpacing = Math.min(80, availableWidth / data.length) // Spread out up to 80px apart
+  const barWidth = Math.max(6, barSpacing * 0.7) // Bars take up 70% of spacing
   const chartHeight = height - 32
 
   return (
@@ -34,14 +36,17 @@ function BarChart({ data, width, height }) {
 
       {/* Bars */}
       {data.map((d, i) => {
-        const x = 32 + i * (barWidth + 2)
-        const barH = (d.value / maxVal) * chartHeight
+        const x = 32 + i * barSpacing + (barSpacing - barWidth) / 2
+        // Ensure even 0ms functions have a tiny visual bar
+        const barH = Math.max(2, (d.value / maxVal) * chartHeight)
         const y = 16 + chartHeight - barH
 
         const color = d.value > maxVal * 0.8 ? COLORS.red
           : d.value > maxVal * 0.5 ? COLORS.amber
           : d.value > maxVal * 0.3 ? COLORS.blue
           : COLORS.green
+
+        const maxLabelLen = Math.max(4, Math.floor(barSpacing / 6))
 
         return (
           <g key={i}>
@@ -50,13 +55,18 @@ function BarChart({ data, width, height }) {
               rx={2}
               fill={color}
               opacity={0.85}
-              className="transition-all duration-300 hover:opacity-100"
+              className="transition-all duration-300 hover:opacity-100 cursor-pointer"
+              onClick={() => {
+                if (d.line && activePath) {
+                  useStore.getState().openTab({ path: activePath, line: d.line })
+                }
+              }}
             >
               <title>{d.label}: {d.value}ms</title>
             </rect>
-            {barWidth >= 12 && (
-              <text x={x + barWidth / 2} y={height - 2} textAnchor="middle" fontSize="7" fill="#475569" fontFamily="monospace">
-                {d.label.length > 6 ? d.label.slice(0, 5) + '…' : d.label}
+            {barSpacing >= 16 && (
+              <text x={x + barWidth / 2} y={height - 2} textAnchor="middle" fontSize="9" fill="#94a3b8" fontFamily="monospace">
+                {d.label.length > maxLabelLen ? d.label.slice(0, maxLabelLen - 1) + '…' : d.label}
               </text>
             )}
           </g>
@@ -166,6 +176,7 @@ export default function TemporalPanel() {
     return timings.slice(0, 30).map(t => ({
       label: t.name || t.function_name || `L${t.line || '?'}`,
       value: Math.round(t.duration_ms || t.avg_ms || t.durationMs || 0),
+      line: t.line
     }))
   }, [timings])
 
@@ -262,7 +273,7 @@ export default function TemporalPanel() {
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 scrollbar-thin">
         {barData.length > 0 ? (
           <div className="mb-4">
-            <BarChart data={barData} width={containerWidth - 16} height={200} />
+            <BarChart data={barData} width={containerWidth - 16} height={200} activePath={activeTab.path} />
           </div>
         ) : !loading && !error ? (
           <div className="flex flex-col items-center justify-center h-48 text-center p-4">

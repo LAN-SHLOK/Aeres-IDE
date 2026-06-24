@@ -495,22 +495,16 @@ export default function FileTree() {
   const gitStatus = useStore((s) => s.gitStatus)
   const activeTabId = useStore((s) => s.activeTabId)
   const tabs = useStore((s) => s.tabs)
+  
+  const explorerOpenPathsList = useStore((s) => s.explorerOpenPaths)
+  const openPaths = new Set(explorerOpenPathsList)
+  const toggleOpen = useStore((s) => s.toggleExplorerOpenPath)
 
   const [explorerOpen, setExplorerOpen] = useState(true)
   const [contextMenu, setContextMenu] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingFile, setLoadingFile] = useState(null)
   const [selectedNode, setSelectedNode] = useState(null)
-
-  // Track which folder paths are expanded — lifted from TreeRow so refreshTree() doesn't collapse them
-  const [openPaths, setOpenPaths] = useState(new Set())
-  const toggleOpen = useCallback((path, forceOpen) => {
-    setOpenPaths(prev => {
-      const next = new Set(prev)
-      if (forceOpen) { next.add(path) } else if (next.has(path)) { next.delete(path) } else { next.add(path) }
-      return next
-    })
-  }, [])
 
   // Inline inputs state
   const [inlineInput, setInlineInput] = useState(null) // { type: 'file' | 'dir', parentPath: string }

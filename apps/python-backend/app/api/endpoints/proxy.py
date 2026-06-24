@@ -13,7 +13,7 @@ async def proxy_request(path: str, request: Request):
     async with httpx.AsyncClient() as client:
         body = await request.body()
         headers = dict(request.headers)
-        # Remove headers that could cause issues
+        # Strip problematic hop-by-hop headers and encodings
         for h in ["host", "content-length", "x-proxy-target"]:
             headers.pop(h, None)
             
@@ -26,10 +26,14 @@ async def proxy_request(path: str, request: Request):
                 follow_redirects=True,
                 timeout=30.0
             )
+            headers_to_return = dict(res.headers)
+            headers_to_return.pop("content-encoding", None)
+            headers_to_return.pop("content-length", None)
+            headers_to_return.pop("transfer-encoding", None)
             return Response(
                 content=res.content,
                 status_code=res.status_code,
-                headers=dict(res.headers)
+                headers=headers_to_return
             )
         except Exception as e:
             return Response(content=str(e), status_code=500)

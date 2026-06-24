@@ -1,8 +1,12 @@
 """Background cron scraper for updating docs monthly."""
 
 import logging
+import os
+import json
+from datetime import datetime, timedelta
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+from app.core.config import user_config_dir
 from app.scrapers.doc_crawler import crawl_and_extract, filter_migration_syntax, find_latest_release_url
 from app.scrapers.text_processor import chunk_for_vectorization
 from app.rag_engine.vector_db import store_migration_context
@@ -84,20 +88,31 @@ DYNAMIC_TARGETS = [
 
 async def monthly_doc_update_job():
     logger.info("[CronScraper] Starting monthly documentation update job...")
+    
+    browser = None
+    playwright_context = None
+    try:
+        from playwright.async_api import async_playwright
+        playwright_context = await async_playwright().start()
+        browser = await playwright_context.chromium.launch(headless=True)
+        logger.info("[CronScraper] Successfully launched persistent Playwright browser.")
+    except Exception as e:
+        logger.warning(f"[CronScraper] Could not launch Playwright browser (will fallback to httpx): {e}")
+
     for target in DYNAMIC_TARGETS:
         try:
             index_url = target["index_url"]
             pattern = target["pattern"]
             logger.info(f"[CronScraper] Traversing index {index_url} for latest release...")
             
-            latest_url = await find_latest_release_url(index_url, pattern)
+            latest_url = await find_latest_release_url(index_url, pattern, browser=browser)
             if not latest_url:
-                logger.warning(f"[CronScraper] Could not find any matching URL for {index_url} with pattern {pattern}")
+                logger.info(f"[CronScraper] Using index URL directly (no specific link found for {pattern}): {index_url}")
                 # Fallback to scraping the index url directly just in case
                 latest_url = index_url
                 
             logger.info(f"[CronScraper] Found latest docs: {latest_url}. Scraping...")
-            scraped = await crawl_and_extract(latest_url)
+            scraped = await crawl_and_extract(latest_url, browser=browser)
             if not scraped:
                 continue
             filtered = filter_migration_syntax(scraped)
@@ -110,13 +125,61 @@ async def monthly_doc_update_job():
             logger.info(f"[CronScraper] Successfully updated docs for {latest_url}")
         except Exception as e:
             logger.error(f"[CronScraper] Failed to update docs from target {target}: {e}")
+            
+    # Cleanup browser
+    if browser:
+        await browser.close()
+    if playwright_context:
+        await playwright_context.stop()
+            
+    # Update last scrape date file after completion
+    last_scrape_file = os.path.join(user_config_dir, "last_scrape_date.json")
+    try:
+        with open(last_scrape_file, "w") as f:
+            json.dump({"last_scrape": datetime.now().isoformat()}, f)
+        logger.info("[CronScraper] Updated last scrape date.")
+    except Exception as e:
+        logger.error(f"[CronScraper] Failed to save last scrape date: {e}")
+
+from apscheduler.schedulers.background import BackgroundScheduler
+import asyncio
+
+def run_monthly_doc_update_job_sync():
+    logger.info("[CronScraper] Spawning isolated event loop for doc update job...")
+    try:
+        # Use asyncio.run to create a fresh event loop for Playwright,
+        # avoiding NotImplementedError on Windows Uvicorn loops.
+        asyncio.run(monthly_doc_update_job())
+    except Exception as e:
+        logger.error(f"[CronScraper] Sync wrapper failed: {e}")
+
+def check_and_run_scraper(scheduler):
+    last_scrape_file = os.path.join(user_config_dir, "last_scrape_date.json")
+    needs_scrape = True
+    if os.path.exists(last_scrape_file):
+        try:
+            with open(last_scrape_file, "r") as f:
+                data = json.load(f)
+                last_scrape = datetime.fromisoformat(data.get("last_scrape", "2000-01-01T00:00:00"))
+                if datetime.now() - last_scrape < timedelta(days=30):
+                    needs_scrape = False
+                    logger.info(f"[CronScraper] Scrape not needed yet. Last scrape: {last_scrape}")
+        except Exception as e:
+            logger.error(f"[CronScraper] Error reading scrape date: {e}")
+            
+    if needs_scrape:
+        logger.info("[CronScraper] Triggering scraper (more than 30 days or never scraped).")
+        scheduler.add_job(run_monthly_doc_update_job_sync)
 
 def start_cron_scraper():
-    scheduler = AsyncIOScheduler()
+    scheduler = BackgroundScheduler()
     
-    # Run once a month, on the 1st day of the month at 2:00 AM
-    trigger = CronTrigger(day="1", hour="2", minute="0")
-    scheduler.add_job(monthly_doc_update_job, trigger=trigger)
+    # Initial check on startup
+    check_and_run_scraper(scheduler)
+    
+    # Check periodically (e.g. every 24 hours) while app is open
+    trigger = IntervalTrigger(days=1)
+    scheduler.add_job(check_and_run_scraper, args=[scheduler], trigger=trigger)
     
     scheduler.start()
-    logger.info("[CronScraper] Monthly doc scraper scheduled (runs on the 1st of every month at 02:00 AM).")
+    logger.info("[CronScraper] Monthly doc scraper interval scheduled (checks every 24h).")

@@ -10,6 +10,7 @@ from app.agents.anomaly_detector import detect_language, traverse_and_flag
 from app.rag_engine.groq_gateway import (
     assemble_strict_prompt,
     generate_modernize_rule,
+    enforce_syntax_only
 )
 from app.rag_engine.vector_db import query_relevant_fix, store_migration_context
 from app.scrapers.doc_crawler import crawl_and_extract, filter_migration_syntax, resolve_doc_url
@@ -109,10 +110,11 @@ async def run_modernize_pipeline(
         folder_structure = await asyncio.to_thread(get_folder_structure, file_path)
         prompt = f"Analyze this {language} file for ANY deprecated functions, legacy patterns, or framework-specific lint warnings (e.g., using <img> instead of next/image in Next.js, or old React patterns). If the file is already modern and optimal, output exactly the word 'NO_DEPRECATIONS'. Otherwise, output ONLY the fully modernized and fixed source code. Do NOT output markdown or explanations, just the raw code.\n\nFile:\n```\n{file_content}\n```"
         
-        from app.rag_engine.groq_gateway import generate_modernize_rule
-        new_file_content = await generate_modernize_rule(prompt, api_key=api_key)
+        from app.rag_engine.groq_gateway import generate_modernize_rule, enforce_syntax_only
+        raw_content = await generate_modernize_rule(prompt, api_key=api_key)
+        new_file_content = enforce_syntax_only(raw_content)
         
-        if not new_file_content or new_file_content.strip() == "NO_DEPRECATIONS":
+        if not new_file_content or new_file_content.strip() == "NO_DEPRECATIONS" or "NO_DEPRECATIONS" in new_file_content:
             yield json.dumps({
                 "type": "no_deprecations"
             })
@@ -151,7 +153,8 @@ async def run_modernize_pipeline(
             })
 
             # Get the fully modernized file from the LLM
-            new_file_content = await generate_modernize_rule(prompt, api_key=api_key)
+            raw_content = await generate_modernize_rule(prompt, api_key=api_key)
+            new_file_content = enforce_syntax_only(raw_content)
             
             if new_file_content:
                 current_content = new_file_content

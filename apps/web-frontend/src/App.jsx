@@ -1,4 +1,4 @@
-﻿import { useAuth } from '@clerk/clerk-react'
+import { useAuth } from '@clerk/clerk-react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AuthPortal from './pages/AuthPortal.jsx'
 import Dashboard from './pages/Dashboard.jsx'
@@ -39,7 +39,7 @@ export default function App() {
     <SmoothScroll>
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/auth" element={<AuthPortal />} />
+        <Route path="/auth/*" element={<AuthPortal />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/docs" element={<Docs />} />
         <Route

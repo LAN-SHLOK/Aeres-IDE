@@ -19,7 +19,12 @@ try {
  */
 async function fetchProxy(endpoint, method = 'GET', body = null, retries = 5) {
   try {
-    const port = await invoke('get_backend_port')
+    let port = 8008;
+    try {
+      port = await invoke('get_backend_port')
+    } catch (e) {
+      console.warn('Tauri invoke failed, using default port 8008');
+    }
     const url = `http://127.0.0.1:${port}${endpoint}`
     const opts = { method, headers: { 'Content-Type': 'application/json' } }
     
@@ -77,7 +82,7 @@ window.electron = {
   isMac: _isMac,
   platform: _platform === 'windows' ? 'win32' : _platform,
 
-  // ── Auth ──────────────────────────────────────────────────────────────────
+  // Auth
   auth: {
     onDeepLink: (cb) => {
       import('@tauri-apps/plugin-deep-link').then(({ onOpenUrl }) => {
@@ -135,7 +140,7 @@ window.electron = {
     }
   },
 
-  // ── Sidecar (Python backend) ──────────────────────────────────────────────
+  // Sidecar (Python backend)
   sidecar: {
     getPort: async () => {
       try {
@@ -146,7 +151,7 @@ window.electron = {
     }
   },
 
-  // ── Window Management ─────────────────────────────────────────────────────
+  // Window Management
   window: {
     minimize: async () => {
       try {
@@ -193,7 +198,7 @@ window.electron = {
     }
   },
 
-  // ── File System ───────────────────────────────────────────────────────────
+  // File System
   fs: {
     readFile: async (path) => {
       try {
@@ -314,7 +319,7 @@ window.electron = {
     }
   },
 
-  // ── Terminal (PTY) ────────────────────────────────────────────────────────
+  // Terminal (PTY)
   terminal: {
     create: async (opts) => {
       try {
@@ -388,7 +393,8 @@ window.electron = {
     autocomplete: async (opts) => await fetchProxy('/api/rag/autocomplete', 'POST', opts),
     modernize: async (code, path) => {
       try {
-        const port = await invoke('get_backend_port')
+        let port = 8008;
+        try { port = await invoke('get_backend_port') } catch(e) {}
         const url = `http://127.0.0.1:${port}/api/analyze/modernize`
         
         let groqApiKey = ''
@@ -410,11 +416,13 @@ window.electron = {
         })
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
+        let buffer = ''
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n')
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() // Keep the last incomplete chunk in the buffer
           for (let line of lines) {
             if (line.startsWith('data: ')) {
               try {
@@ -434,13 +442,13 @@ window.electron = {
     }
   },
 
-  // ── Radar ─────────────────────────────────────────────────────────────────
+  // Radar
   radar: {
     scan: async (opts) => await fetchProxy('/api/deps/scan', 'POST', opts),
     getNotes: async (opts) => await fetchProxy('/api/deps/notes', 'POST', opts)
   },
 
-  // ── Sessions (Tauri local storage) ────────────────────────────────────────
+  // Sessions (Tauri local storage)
   sessions: {
     list: async () => {
       try {
@@ -490,12 +498,12 @@ window.electron = {
     }
   },
 
-  // ── Environment ───────────────────────────────────────────────────────────
+  // Environment
   env: {
     scan: async (rootPath) => await fetchProxy('/api/env/scan', 'POST', { root_path: rootPath })
   },
 
-  // ── Git (Python backend proxy) ────────────────────────────────────────────
+  // Git (Python backend proxy)
   git: {
     causalChain: async (opts) => await fetchProxy('/api/git/causal-chain', 'POST', opts),
     diff: async (rootPath, file) => await fetchProxy(`/api/git/diff?path=${encodeURIComponent(rootPath)}&file=${encodeURIComponent(file || '')}`, 'GET').then(res => res.diff || ''),
@@ -519,14 +527,14 @@ window.electron = {
     addRemote: async (rootPath, url) => await fetchProxy('/api/git/add_remote', 'POST', { path: rootPath, url })
   },
 
-  // ── Contract Observer ─────────────────────────────────────────────────────
+  // Contract Observer
   contract: {
     getSummary: async (path) => await fetchProxy(`/api/contracts/summary?file_path=${encodeURIComponent(path)}`, 'GET'),
     onSuggestion: (cb) => () => {},
     generate: async (opts) => await fetchProxy('/api/contracts/generate', 'POST', opts)
   },
 
-  // ── RAG / AI Agent ────────────────────────────────────────────────────────
+  // RAG / AI Agent
   rag: {
     query: async (question, context) => await fetchProxy('/api/rag/query', 'POST', { question, context }),
     onAgentStep: (cb) => {
@@ -535,7 +543,8 @@ window.electron = {
     },
     agentStream: async (opts) => {
       try {
-        const port = await invoke('get_backend_port')
+        let port = 8000;
+        try { port = await invoke('get_backend_port') } catch(e) {}
         const url = `http://127.0.0.1:${port}/api/rag/agent_stream`
         
         let groqApiKey = ''
@@ -557,11 +566,13 @@ window.electron = {
         })
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
+        let buffer = ''
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n')
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() // Keep the last incomplete chunk in the buffer
           for (let line of lines) {
             if (line.startsWith('data: ')) {
               try {
@@ -577,7 +588,7 @@ window.electron = {
     }
   },
 
-  // ── Debug ─────────────────────────────────────────────────────────────────
+  // Debug
   debug: {
     onOutput: (cb) => {
       let unlistenPromise = import('@tauri-apps/api/event').then(({ listen }) => {
@@ -604,7 +615,7 @@ window.electron = {
     evaluate: async (session, code) => await invoke('debug_evaluate', { sessionId: session?.session || session, code })
   },
 
-  // ── Temporal ──────────────────────────────────────────────────────────────
+  // Temporal
   temporal: {
     getFile: async (path) => await fetchProxy(`/api/perf/temporal_file?file_path=${encodeURIComponent(path)}`, 'GET'),
     wrapPython: async () => "",
@@ -632,7 +643,7 @@ window.electron = {
     }
   },
 
-  // ── LSP ───────────────────────────────────────────────────────────────────
+  // LSP
   lsp: {
     start: async () => {},
     notify: async () => {},

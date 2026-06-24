@@ -12,13 +12,15 @@ const STATUS_COLORS = {
 }
 
 function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
-  if (!dep) return null
-  const statusInfo = STATUS_COLORS[dep.status] || STATUS_COLORS.unknown
+  const setBatchState = useStore(s => s.setBatchModernizeState)
   const [usages, setUsages] = useState([])
   const [searchingUsages, setSearchingUsages] = useState(false)
   const [migrationNotes, setMigrationNotes] = useState('')
   const [breakingChanges, setBreakingChanges] = useState([])
   const [fetchingNotes, setFetchingNotes] = useState(false)
+
+  if (!dep) return null
+  const statusInfo = STATUS_COLORS[dep.status] || STATUS_COLORS.unknown
 
   const handleOpenFile = async (fileMatch) => {
     try {
@@ -298,6 +300,23 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
                   )
                 })}
               </div>
+              
+              {(dep.status === 'abandoned' || dep.deprecated) && usages.length > 0 && (
+                <button
+                  onClick={() => {
+                    const files = usages.map(u => ({
+                      path: u.file,
+                      originalCode: '',
+                      fixedCode: '',
+                      status: 'pending'
+                    }))
+                    setBatchState({ depName: dep.name, files, currentIndex: 0 })
+                  }}
+                  className="w-full mt-2 py-1.5 bg-aeres-violet text-white text-[10px] font-bold rounded shadow-md hover:bg-aeres-violet/80 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Brain size={12} /> Modernize All Usages
+                </button>
+              )}
             </div>
           )}
         </div>

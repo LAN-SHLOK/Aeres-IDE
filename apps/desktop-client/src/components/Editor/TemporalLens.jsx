@@ -37,27 +37,45 @@ export default function useTemporalLens(editor, filePath, enabled) {
       applyDecorations(timings || [])
     })
 
+    function sparkline(data) {
+      if (!data || data.length === 0) return '';
+      const min = Math.min(...data);
+      const max = Math.max(...data);
+      const range = max - min;
+      const chars = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+      return data.map(v => {
+        if (range === 0) return chars[3];
+        const idx = Math.floor(((v - min) / range) * 7);
+        return chars[Math.min(7, Math.max(0, idx))];
+      }).join('');
+    }
+
     function applyDecorations(timings) {
       if (!editor || !monaco) return
       
-      const newDecorations = timings.map(t => ({
-        range: new monaco.Range(t.line, 1, t.line, 1),
-        options: {
-          isWholeLine: false,
-          after: {
-            content: `  (avg: ${labelForMs(t.durationMs)} · ${t.calls} calls)`,
-            color: colorForMs(t.durationMs),
-            fontStyle: 'normal',
-            fontSize: '11px',
-            opacity: '0.65',
-          },
-          hoverMessage: {
-            value: `**${t.name || t.functionName}**\nAvg: ${labelForMs(t.durationMs)}\nLast 20 calls: ${
-              (t.history || [t.durationMs]).map(d => labelForMs(d)).join(', ')
-            }`
+      const newDecorations = timings.map(t => {
+        const history = t.history || [t.durationMs];
+        const graph = sparkline(history);
+        
+        return {
+          range: new monaco.Range(t.line, 1, t.line, 1),
+          options: {
+            isWholeLine: false,
+            after: {
+              content: `  (avg: ${labelForMs(t.durationMs)} · ${t.calls} calls)`,
+              color: colorForMs(t.durationMs),
+              fontStyle: 'normal',
+              fontSize: '11px',
+              opacity: '0.65',
+            },
+            hoverMessage: {
+              value: `**${t.name || t.functionName}**\nAvg: ${labelForMs(t.durationMs)}\nGraph: \`${graph}\`\nLast 20 calls: ${
+                history.map(d => labelForMs(d)).join(', ')
+              }`
+            }
           }
         }
-      }))
+      })
 
       decorationsRef.current = editor.deltaDecorations(decorationsRef.current, newDecorations)
     }

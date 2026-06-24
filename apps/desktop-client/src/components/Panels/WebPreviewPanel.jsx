@@ -40,9 +40,7 @@ export default function WebPreviewPanel() {
     if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
       finalUrl = 'http://' + finalUrl
     }
-    if (finalUrl.includes('//localhost:')) {
-      finalUrl = finalUrl.replace('//localhost:', '//127.0.0.1:')
-    }
+    // Keep original url so IPv6 local binds work correctly
     setUrl(finalUrl)
     setInputUrl(finalUrl)
   }

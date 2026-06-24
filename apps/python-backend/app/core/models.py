@@ -133,13 +133,6 @@ class DepScanRequest(BaseModel):
     root_path: str
 
 
-class MutationRunRequest(BaseModel):
-    file_path: str
-    source: str
-    test_command: str
-    repo_path: str
-    max_mutations: int = 20
-
 
 class CausalChainRequest(BaseModel):
     repo_path: str

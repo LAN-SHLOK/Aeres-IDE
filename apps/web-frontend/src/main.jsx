@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { ClerkProvider } from '@clerk/clerk-react'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, useNavigate } from 'react-router-dom'
 import App from './App.jsx'
 import './assets/global.css'
 import './index.css'
@@ -37,6 +37,19 @@ class ErrorBoundary extends React.Component {
 
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 
+function ClerkWithRoutes() {
+  const navigate = useNavigate()
+  return (
+    <ClerkProvider 
+      publishableKey={publishableKey}
+      routerPush={(to) => navigate(to)}
+      routerReplace={(to) => navigate(to, { replace: true })}
+    >
+      <App />
+    </ClerkProvider>
+  )
+}
+
 if (!publishableKey || publishableKey === 'pk_test_placeholder' || publishableKey === 'pk_test_replace_me') {
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
@@ -68,13 +81,10 @@ if (!publishableKey || publishableKey === 'pk_test_placeholder' || publishableKe
   ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
       <ErrorBoundary>
-        <ClerkProvider publishableKey={publishableKey}>
-          <BrowserRouter>
-            <App />
-          </BrowserRouter>
-        </ClerkProvider>
+        <BrowserRouter>
+          <ClerkWithRoutes />
+        </BrowserRouter>
       </ErrorBoundary>
     </React.StrictMode>
   )
 }
-

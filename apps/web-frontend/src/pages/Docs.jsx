@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useMemo, useEffect } from 'react'
 import Navbar from '../components/Navbar.jsx'
 
@@ -590,11 +590,11 @@ export default function Docs() {
       <div className="flex-1 flex max-w-7xl w-full mx-auto pt-32 px-4 md:px-8 gap-8 items-start pb-20">
         
         {/* Sleek Sidebar with dynamic search and glowing navigation buttons */}
-        <aside className="w-72 shrink-0 hidden md:block sticky top-32 h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain pr-4 bg-[#13141f] border border-white/10 shadow-[4px_4px_0px_#000000] rounded-[2rem] p-6">
+        <aside className="w-72 shrink-0 hidden md:block sticky top-32 h-[calc(100vh-10rem)] overflow-y-auto overscroll-contain pr-4 bg-[#13141f] border-[3px] border-black shadow-[4px_4px_0px_#000000] rounded-[2rem] p-6">
           
           {/* Docs Live Search Filter */}
           <div className="mb-6 font-sans">
-            <div className="flex items-center gap-2.5 bg-[#09090e] border border-white/10 shadow-[2.5px_2.5px_0px_#000000] rounded-xl px-4 py-2.5 transition-all">
+            <div className="flex items-center gap-2.5 bg-[#09090e] border-[3px] border-black shadow-[4px_4px_0px_#000000] rounded-xl px-4 py-2.5 transition-all">
               <svg className="w-4 h-4 text-white/30 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
@@ -611,7 +611,7 @@ export default function Docs() {
           {/* Navigation Category Hierarchy */}
           <nav className="space-y-6">
             {filteredCategories.map(cat => (
-              <div key={cat.category} className="border-b-2 border-black/10 pb-4 last:border-b-0">
+              <div key={cat.category} className="pb-6">
                 <span className="text-[10px] font-black text-[#ff8ba7] tracking-wider block mb-3.5 uppercase font-mono flex items-center gap-1.5">
                   {Icons.folderOpen}
                   {cat.category}
@@ -626,7 +626,7 @@ export default function Docs() {
                             setActivePageId(p.id)
                             setActiveOutlineId(p.id)
                           }}
-                          className={`w-full flex items-center gap-2.5 px-5 py-3.5 text-xs text-left rounded-full border border-white/10 transition-all duration-300 ${isActive ? 'bg-[#c084fc] text-black font-black shadow-[2px_2px_0px_#000000]' : 'bg-[#1b1c2b] text-white/75 hover:bg-[#ff8ba7]/20 shadow-[1.5px_1.5px_0px_#000000]'}`}
+                          className={`w-full flex items-center gap-2.5 px-5 py-3.5 text-xs text-left rounded-full transition-all duration-300 ${isActive ? 'bg-[#c084fc] text-black font-black border-[3px] border-black shadow-[4px_4px_0px_#000000]' : 'bg-transparent text-white/75 hover:text-white border-[3px] border-transparent hover:border-[#ff8ba7] hover:shadow-[4px_4px_0px_#000000] hover:-translate-y-0.5 hover:bg-[#1b1c2b]'}`}
                         >
                           <span className="shrink-0">{p.icon}</span>
                           <span>{p.title}</span>
@@ -652,7 +652,7 @@ export default function Docs() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
               transition={{ duration: 0.35, ease: 'easeOut' }}
-              className="max-w-[720px] w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] border border-white/10"
+              className="max-w-[720px] w-full bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] overflow-hidden"
             >
               {/* Cozy Titlebar header with retro controls removed */}
               <div className="kawaii-titlebar font-display justify-start">
@@ -684,7 +684,7 @@ export default function Docs() {
                       </div>
                       <h2 className="text-white font-display text-2xl font-black mb-2">No documentation found</h2>
                       <p className="text-white/60 font-sans text-sm">We couldn't find any articles matching "{searchQuery}".</p>
-                      <button onClick={() => setSearchQuery('')} className="mt-6 px-6 py-2.5 bg-[#c084fc] text-black font-black font-display text-xs rounded-full border border-white/10 shadow-[2px_2px_0px_#000000] hover:-translate-y-0.5 hover:shadow-[3px_3px_0px_#000000] transition-all">Clear Search</button>
+                      <button onClick={() => setSearchQuery('')} className="mt-6 px-6 py-2.5 bg-[#c084fc] text-black font-black font-display text-xs rounded-full border border-white/10 shadow-[4px_4px_0px_#000000] hover:-translate-y-0.5 hover:shadow-[2px_2px_0px_#000000] transition-all">Clear Search</button>
                     </div>
                   ) : (
                     activePage.content
@@ -697,9 +697,9 @@ export default function Docs() {
                     interactive_playground.log
                   </span>
 
-                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl bg-[#13141f] border border-white/10">
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl bg-[#13141f]">
                     {/* Title selector bar */}
-                    <div className="bg-[#1b1c2b] px-5 py-3 border-b-4 border-black flex items-center justify-between gap-4 font-display">
+                    <div className="bg-[#1b1c2b] px-5 py-3 flex items-center justify-between gap-4 font-display">
                       <div className="flex gap-2">
                         {Object.keys(PLAYGROUND_SNIPPETS).map((lang) => {
                           const isSelected = sandboxLang === lang
@@ -707,7 +707,7 @@ export default function Docs() {
                             <button
                               key={lang}
                               onClick={() => setSandboxLang(lang)}
-                              className={`relative px-4 py-1.5 rounded-full text-[10px] font-mono border border-white/10 font-black uppercase tracking-wider transition-all duration-300 ${isSelected ? 'text-black bg-[#ff8ba7] shadow-[1.5px_1.5px_0px_#000000]' : 'text-white/60 bg-[#13141f] shadow-[1px_1px_0px_#000000]'}`}
+                              className={`relative px-4 py-1.5 rounded-full text-[10px] font-mono font-black uppercase tracking-wider transition-all duration-300 ${isSelected ? 'text-black bg-[#ff8ba7]' : 'text-white/60 bg-transparent hover:text-white'}`}
                             >
                               {lang}
                             </button>
@@ -727,13 +727,13 @@ export default function Docs() {
                     </div>
 
                     {/* Copy command bar inside the playground card */}
-                    <div className="bg-[#13141f] px-5 py-4 border-t-4 border-black flex items-center justify-between gap-4">
+                    <div className="bg-[#13141f] px-5 py-4 flex items-center justify-between gap-4">
                       <span className="text-[10px] font-mono font-extrabold text-white/55">
                         $ {PLAYGROUND_SNIPPETS[sandboxLang].command}
                       </span>
                       <button
                         onClick={() => handleCopy(PLAYGROUND_SNIPPETS[sandboxLang].code, sandboxLang)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full border border-white/10 text-xs font-black uppercase tracking-wider transition-all shrink-0 ${copiedId === sandboxLang ? 'bg-emerald-300 text-black shadow-[1px_1px_0px_#000000] translate-x-0.5 translate-y-0.5' : 'bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg shadow-[0_0_15px_rgba(8,145,178,0.4)] shadow-none'}`}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-display font-black uppercase tracking-wider transition-all border-[3px] border-black shrink-0 ${copiedId === sandboxLang ? 'bg-emerald-300 text-black shadow-[2px_2px_0px_#000000] translate-y-0.5' : 'bg-emerald-300 text-black shadow-[4px_4px_0px_#000000] hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_#000000]'}`}
                       >
                         {copiedId === sandboxLang ? (
                           <>
@@ -752,7 +752,7 @@ export default function Docs() {
                 </div>
 
                 {/* Previous / Next Navigation Page Paging */}
-                <div className="mt-16 pt-8 border-t-3 border-black flex justify-between items-center gap-4">
+                <div className="mt-16 pt-8 border-t border-white/10 flex justify-between items-center gap-4">
                   {currentPageIndex > 0 ? (
                     <button
                       onClick={() => {
@@ -786,7 +786,7 @@ export default function Docs() {
         </main>
 
         {/* Scroll-Spy "On This Page" Outline Sidebar */}
-        <aside className="hidden xl:flex w-56 shrink-0 flex-col sticky top-32 max-h-[calc(100vh-10rem)] overflow-y-auto pl-4 border-l-3 border-black scrollbar-none font-display">
+        <aside className="hidden xl:flex w-56 shrink-0 flex-col sticky top-32 max-h-[calc(100vh-10rem)] overflow-y-auto pl-4 border-l border-white/10 scrollbar-none font-display">
           <div className="text-[10px] font-black uppercase tracking-wider text-white/40 mb-5 font-mono flex items-center gap-1.5">
             document_index.sys
           </div>

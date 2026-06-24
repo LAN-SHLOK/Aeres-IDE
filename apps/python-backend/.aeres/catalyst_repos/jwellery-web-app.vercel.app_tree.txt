@@ -1,0 +1,2 @@
+[jwellery-web-app.vercel.app]
+|-- index.html (Website Content)

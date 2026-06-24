@@ -67,7 +67,7 @@ export default function DebugPanel() {
     setActiveAction(null)
   }, [activeTab?.path])
 
-  // ── Debug launch ─────────────────────────────────────────────────────────
+  // Debug launch
 
   async function handleLaunch() {
     if (!activeTab) return
@@ -124,7 +124,7 @@ export default function DebugPanel() {
     }
   }
 
-  // ── Run in Terminal ───────────────────────────────────────────────────────
+  // Run in Terminal
 
   async function handleRunInTerminal() {
     if (!activeTab || !window.electron) return
@@ -157,7 +157,7 @@ export default function DebugPanel() {
     }
   }
 
-  // ── Run Tests ─────────────────────────────────────────────────────────────
+  // Run Tests
 
   async function handleRunTests() {
     if (!activeTab || !window.electron) return

@@ -362,6 +362,17 @@ async fn check_diagnostics(file_path: String) -> Result<Value, String> {
 
 struct BackendState {
     port: Mutex<Option<u16>>,
+    process: Mutex<Option<std::process::Child>>,
+}
+
+impl Drop for BackendState {
+    fn drop(&mut self) {
+        if let Ok(mut lock) = self.process.lock() {
+            if let Some(mut child) = lock.take() {
+                let _ = child.kill();
+            }
+        }
+    }
 }
 
 #[tauri::command]
@@ -637,6 +648,7 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .manage(BackendState {
             port: Mutex::new(None),
+            process: Mutex::new(None),
         })
         .setup(|app| {
             let handle = app.handle().clone();
@@ -658,31 +670,99 @@ pub fn run() {
                     .spawn()
                     .expect("Failed to spawn sidecar");
 
-                #[cfg(not(debug_assertions))]
-                let (mut rx, mut _child) = handle
-                    .shell()
-                    .sidecar("backend")
-                    .expect("Failed to setup sidecar")
-                    .env("BACKEND_PORT", port.to_string())
-                    .spawn()
-                    .expect("Failed to spawn sidecar");
-
-                while let Some(event) = rx.recv().await {
-                    match event {
-                        CommandEvent::Stdout(line) => {
-                            println!("sidecar output: {}", String::from_utf8_lossy(&line));
+                #[cfg(debug_assertions)]
+                {
+                    let log_file = std::env::temp_dir().join("aeres_sidecar.log");
+                    let _ = std::fs::write(&log_file, "Starting sidecar...\n");
+                    
+                    while let Some(event) = rx.recv().await {
+                        match event {
+                            CommandEvent::Stdout(line) => {
+                                let text = format!("sidecar output: {}\n", String::from_utf8_lossy(&line));
+                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file) {
+                                    let _ = f.write_all(text.as_bytes());
+                                }
+                            }
+                            CommandEvent::Stderr(line) => {
+                                let text = format!("sidecar error: {}\n", String::from_utf8_lossy(&line));
+                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file) {
+                                    let _ = f.write_all(text.as_bytes());
+                                }
+                            }
+                            CommandEvent::Terminated(payload) => {
+                                let text = format!("sidecar terminated: {:?}\n", payload.code);
+                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file) {
+                                    let _ = f.write_all(text.as_bytes());
+                                }
+                            }
+                            CommandEvent::Error(err) => {
+                                let text = format!("sidecar event error: {}\n", err);
+                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file) {
+                                    let _ = f.write_all(text.as_bytes());
+                                }
+                            }
+                            _ => {}
                         }
-                        CommandEvent::Stderr(line) => {
-                            eprintln!("sidecar error: {}", String::from_utf8_lossy(&line));
-                        }
-                        CommandEvent::Terminated(payload) => {
-                            eprintln!("sidecar terminated: {:?}", payload.code);
-                        }
-                        CommandEvent::Error(err) => {
-                            eprintln!("sidecar event error: {}", err);
-                        }
-                        _ => {}
                     }
+                }
+
+                #[cfg(not(debug_assertions))]
+                {
+                    use tauri::path::BaseDirectory;
+                    let resource_path = handle
+                        .path()
+                        .resolve("resources/backend/backend.exe", BaseDirectory::Resource)
+                        .expect("Failed to resolve backend resource path");
+                    
+                    let backend_dir = resource_path.parent().expect("Failed to get backend parent dir");
+                    
+                    let mut cmd = Command::new(&resource_path);
+                    cmd.current_dir(backend_dir)
+                       .env("BACKEND_PORT", port.to_string())
+                       .stdout(Stdio::piped())
+                       .stderr(Stdio::piped());
+                       
+                    #[cfg(target_os = "windows")]
+                    {
+                        use std::os::windows::process::CommandExt;
+                        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+                    }
+                    
+                    let mut child = cmd.spawn().expect("Failed to spawn sidecar");
+                        
+                    let stdout = child.stdout.take().expect("Failed to open stdout");
+                    let stderr = child.stderr.take().expect("Failed to open stderr");
+                    
+                    *state.process.lock().unwrap() = Some(child);
+                    
+                    let log_file = std::env::temp_dir().join("aeres_sidecar.log");
+                    let _ = std::fs::write(&log_file, format!("Starting sidecar at {:?}...\n", resource_path));
+                    
+                    let log_file_out = log_file.clone();
+                    std::thread::spawn(move || {
+                        let reader = BufReader::new(stdout);
+                        for line in reader.lines() {
+                            if let Ok(l) = line {
+                                let text = format!("sidecar output: {}\n", l);
+                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file_out) {
+                                    let _ = f.write_all(text.as_bytes());
+                                }
+                            }
+                        }
+                    });
+                    
+                    let log_file_err = log_file.clone();
+                    std::thread::spawn(move || {
+                        let reader = BufReader::new(stderr);
+                        for line in reader.lines() {
+                            if let Ok(l) = line {
+                                let text = format!("sidecar error: {}\n", l);
+                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file_err) {
+                                    let _ = f.write_all(text.as_bytes());
+                                }
+                            }
+                        }
+                    });
                 }
             });
 

@@ -15,14 +15,26 @@ if (-Not (Test-Path "venv")) {
 Write-Host "`n[2/4] Installing dependencies & Building Python Sidecar..."
 pip install -r requirements.txt
 pip install pyinstaller
-python -m PyInstaller --onefile --name backend-x86_64-pc-windows-msvc --hidden-import uvicorn --hidden-import fastapi --hidden-import tree_sitter --hidden-import tree_sitter_python --hidden-import tree_sitter_javascript --hidden-import pydantic --hidden-import pydantic_settings main.py
+python -m PyInstaller -y --onedir --name backend --hidden-import uvicorn --hidden-import fastapi --hidden-import tree_sitter --hidden-import tree_sitter_python --hidden-import tree_sitter_javascript --hidden-import pydantic --hidden-import pydantic_settings main.py
 
-Write-Host "`n[3/4] Moving sidecar to Tauri binaries folder..."
+Write-Host "`n[3/4] Moving backend directory to Tauri resources folder..."
 cd $rootDir
-if (-Not (Test-Path "apps\desktop-client\src-tauri\binaries")) {
-    New-Item -ItemType Directory -Force -Path "apps\desktop-client\src-tauri\binaries" | Out-Null
+if (Test-Path "apps\desktop-client\src-tauri\resources\backend") {
+    Remove-Item -Recurse -Force -Path "apps\desktop-client\src-tauri\resources\backend"
 }
-Move-Item -Force -Path "apps\python-backend\dist\backend-x86_64-pc-windows-msvc.exe" -Destination "apps\desktop-client\src-tauri\binaries\backend-x86_64-pc-windows-msvc.exe"
+if (-Not (Test-Path "apps\desktop-client\src-tauri\resources")) {
+    New-Item -ItemType Directory -Force -Path "apps\desktop-client\src-tauri\resources" | Out-Null
+}
+Copy-Item -Recurse -Force -Path "apps\python-backend\dist\backend" -Destination "apps\desktop-client\src-tauri\resources\backend"
+
+if (Test-Path "apps\python-backend\.env") {
+    Write-Host "Copying .env file to resources (stripping personal user keys)..."
+    Get-Content "apps\python-backend\.env" | Where-Object { 
+        $_ -notmatch "^GROQ_API_KEY" -and 
+        $_ -notmatch "^GOOGLE_API_KEY" -and 
+        $_ -notmatch "^GITHUB_TOKEN" 
+    } | Set-Content "apps\desktop-client\src-tauri\resources\backend\.env"
+}
 
 Write-Host "`n[4/4] Building final Tauri MSI & EXE Installers..."
 cd apps\desktop-client

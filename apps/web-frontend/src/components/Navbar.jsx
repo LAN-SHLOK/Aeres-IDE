@@ -7,41 +7,33 @@ export default function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
 
-  // Cozy marshmallow tabs with thick outlines & block shadow offsets
   const activeTabClass = (path) => {
     const isActive = location.pathname === path
     return isActive 
-      ? 'bg-[#c084fc] border border-white/10 text-black shadow-[3px_3px_0px_#000000] font-black px-5 py-2 rounded-full scale-105 transition-all duration-300'
-      : 'bg-[#1b1c2b] border border-white/10 text-white/70 hover:text-white hover:bg-[#ff8ba7]/20 shadow-[2px_2px_0px_#000000] hover:shadow-[3px_3px_0px_#000000] px-5 py-2 rounded-full hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all duration-300'
+      ? 'bg-[#c084fc] border-[3px] border-black text-black font-black px-5 py-2 rounded-full text-xs shadow-[3px_3px_0px_#000000] uppercase tracking-wider'
+      : 'bg-[#1b1c2b] border-[3px] border-black text-white/70 hover:text-white shadow-[3px_3px_0px_#000000] px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all'
   }
 
   return (
     <nav className="fixed left-0 right-0 top-0 z-[100] flex h-20 items-center justify-between border-b-4 border-black bg-[#13141f] px-6 md:px-10 shadow-[0_4px_0px_rgba(0,0,0,0.06)] font-sans">
       
-      {/* Cute Sweet Monitor Logo with thick border */}
+      {/* Logo */}
       <Link to="/" className="flex items-center gap-3.5 no-underline group">
-        <div className="bg-[#ff8ba7] border border-white/10 p-1.5 rounded-2xl shadow-[3px_3px_0px_#000000] group-hover:rotate-6 transition duration-300 flex items-center justify-center shrink-0">
-          {/* Developer Monitor Screen SVG */}
-          <svg className="w-5.5 h-5.5 text-black" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <rect x="2" y="3" width="20" height="13" rx="2" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 17v4M8 21h8M6 8h12" />
-            <circle cx="18" cy="13" r="1.5" fill="currentColor" />
-          </svg>
-        </div>
-        <span className="font-display text-xl font-bold text-white tracking-tight group-hover:text-[#ff8ba7] transition">
-          Aeres <span className="bg-[#fef08a] text-black px-2.5 py-0.5 border border-white/10 rounded-xl shadow-[2.5px_2.5px_0px_#000000] text-[10px] uppercase font-mono tracking-widest font-black">IDE</span>
+        <div className="w-3 h-3 bg-[#ff8ba7] rounded-full"></div>
+        <span className="font-display text-xl font-bold text-white tracking-tight transition">
+          Aeres <span className="bg-[#fef08a] text-black px-2.5 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-widest font-black ml-1">IDE</span>
         </span>
       </Link>
 
       {/* Marshmallow tabs */}
       <div className="absolute left-1/2 hidden -translate-x-1/2 gap-3.5 md:flex items-center">
-        <Link to="/" className={`${activeTabClass('/')} no-underline text-xs uppercase tracking-wider font-display`}>
+        <Link to="/" className={`${activeTabClass('/')} no-underline font-display`}>
           Home
         </Link>
-        <Link to="/docs" className={`${activeTabClass('/docs')} no-underline text-xs uppercase tracking-wider font-display`}>
+        <Link to="/docs" className={`${activeTabClass('/docs')} no-underline font-display`}>
           Docs
         </Link>
-        <Link to="/pricing" className={`${activeTabClass('/pricing')} no-underline text-xs uppercase tracking-wider font-display`}>
+        <Link to="/pricing" className={`${activeTabClass('/pricing')} no-underline font-display`}>
           Pricing
         </Link>
       </div>
@@ -54,14 +46,14 @@ export default function Navbar() {
           <>
             <Link
               to="/dashboard"
-              className="bg-[#fae3d9] border border-white/10 text-black shadow-[2.5px_2.5px_0px_#000000] px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider no-underline hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
+              className="bg-[#fae3d9] border-[3px] border-black text-black px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider no-underline transition-all hover:-translate-y-0.5 active:translate-y-0.5 shadow-[3px_3px_0px_#000000]"
             >
               Dashboard
             </Link>
             <SignOutButton>
               <button
                 type="button"
-                className="cursor-pointer bg-[#1b1c2b] border border-white/10 text-white/70 hover:text-white shadow-[2.5px_2.5px_0px_#000000] px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#000000] transition-all"
+                className="cursor-pointer bg-[#1b1c2b] border-[3px] border-black text-white/70 hover:text-white px-5 py-2 rounded-full text-xs font-bold uppercase tracking-wider transition-all hover:-translate-y-0.5 active:translate-y-0.5 shadow-[3px_3px_0px_#000000]"
               >
                 Sign Out
               </button>
@@ -72,14 +64,14 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => navigate('/auth')}
-              className="cursor-pointer border-none bg-transparent text-xs font-black uppercase tracking-wider text-white/60 hover:text-white transition"
+              className="cursor-pointer border-[3px] border-black bg-white px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider text-black hover:bg-gray-100 transition-all hover:-translate-y-0.5 active:translate-y-0.5 shadow-[3px_3px_0px_#000000]"
             >
               Login
             </button>
             <button
               type="button"
               onClick={() => redirectToAuthForDownload()}
-              className="cursor-pointer bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg shadow-[0_0_15px_rgba(8,145,178,0.4)] text-xs uppercase tracking-wider text-black"
+              className="cursor-pointer bg-[#2dd4bf] border-[3px] border-black text-black px-6 py-2 rounded-full text-xs font-black uppercase tracking-wider transition-all hover:-translate-y-0.5 active:translate-y-0.5 shadow-[4px_4px_0px_#000000]"
             >
               Download
             </button>

@@ -17,6 +17,7 @@ const DebugPanel = lazy(() => import('./components/Sidebar/DebugPanel.jsx'))
 // Main Content
 import CodeCanvas from './components/Editor/CodeCanvas.jsx'
 const JupyterCanvas = lazy(() => import('./components/Editor/JupyterCanvas.jsx'))
+const DatabaseViewer = lazy(() => import('./components/Editor/DatabaseViewer.jsx'))
 const DependencyRadar = lazy(() => import('./components/Panels/DependencyRadar.jsx'))
 const CausalBlameMap = lazy(() => import('./components/Panels/CausalBlameMap.jsx'))
 const ArchVisualizer = lazy(() => import('./components/Panels/ArchVisualizer.jsx'))
@@ -28,7 +29,6 @@ const ProblemsPanel = lazy(() => import('./components/Panels/ProblemsPanel.jsx')
 const ContractSnapshot = lazy(() => import('./components/Panels/ContractSnapshot.jsx'))
 const TemporalPanel = lazy(() => import('./components/Panels/TemporalPanel.jsx'))
 const FocusSessionManager = lazy(() => import('./components/Panels/FocusSessionManager.jsx'))
-const MutationPanel = lazy(() => import('./components/Panels/MutationPanel.jsx'))
 const WebPreviewPanel = lazy(() => import('./components/Panels/WebPreviewPanel.jsx'))
 const ApiSandboxPanel = lazy(() => import('./components/Panels/ApiSandboxPanel.jsx'))
 const HealthDashboard = lazy(() => import('./components/Panels/HealthDashboard.jsx').then(m => ({ default: m.HealthDashboard })))
@@ -48,6 +48,7 @@ import AeresSettingsModal from './components/Overlays/AeresSettingsModal.jsx'
 import SnippetsModal from './components/Overlays/SnippetsModal.jsx'
 import RateLimitModal from './components/Overlays/RateLimitModal.jsx'
 import NewProjectWizard from './components/Overlays/NewProjectWizard.jsx'
+import OnboardingModal from './components/Overlays/OnboardingModal.jsx'
 
 const ACTIVITY_ICONS = [
   { id: 'files', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>, label: 'Explorer' },
@@ -57,13 +58,12 @@ const ACTIVITY_ICONS = [
   { id: 'extensions', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m21 16-4-4 4-4"/><path d="M11 7 7 11l4 4"/><path d="m5 16-4-4 4-4"/></svg>, label: 'Extensions' },
   { id: 'testing', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v7.5"/><path d="M14 2v7.5"/><path d="M8.5 13a4 4 0 1 1 7 0L22 20H2l6.5-7Z"/></svg>, label: 'Testing' },
   { id: 'contract', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>, label: 'Contract Snapshots' },
-  { id: 'mutation', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>, label: 'Mutation Tester' },
-  { id: 'perf', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>, label: 'Performance' },
+  { id: 'perf', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>, label: 'Performance' },
   { id: 'radar', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="m12 12 4 4"/><path d="m12 12-4-4"/><path d="m12 12 4-4"/><path d="m12 12-4 4"/></svg>, label: 'Dependency Radar' },
   { id: 'arch', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, label: 'Architecture Visualizer' },
   { id: 'sunburst', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="9" strokeDasharray="4 4" /></svg>, label: 'Workspace Sunburst Matrix' },
   { id: 'preview', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>, label: 'Device Lab Simulator' },
-  { id: 'api', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>, label: 'Aeres API Sandbox' },
+  { id: 'api', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>, label: 'Aeres API Sandbox' },
 ]
 
 export default function App() {
@@ -101,6 +101,7 @@ export default function App() {
   const [snippetsOpen, setSnippetsOpen] = useState(false)
   const [rateLimitOpen, setRateLimitOpen] = useState(false)
   const [newProjectWizardOpen, setNewProjectWizardOpen] = useState(false)
+  const [apiConfigured, setApiConfigured] = useState(true)
 
   useEffect(() => {
     // Dynamic theme migration: Default existing users (or first-time users) to 'cutie-dark'
@@ -149,8 +150,37 @@ export default function App() {
         }
       })
     }
-    if (e.sidecar?.getPort) { e.sidecar.getPort().then(port => { if (port) setBackendUrl(`http://127.0.0.1:${port}`) }) }
+    if (e.sidecar?.getPort) { 
+      e.sidecar.getPort().then(port => { 
+        if (port) {
+          const url = `http://127.0.0.1:${port}`
+          setBackendUrl(url)
+          // Check if API keys are configured (BYOK)
+          fetch(`${url}/api/keys`)
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.is_configured === false) {
+                setApiConfigured(false)
+              }
+            })
+            .catch(err => console.error("Failed to check keys:", err))
+        }
+      }) 
+    }
   }, [setAuthStatus, setBackendUrl])
+
+  useEffect(() => {
+    // Check if Groq API key is configured. If not, pop up settings.
+    const state = useStore.getState();
+    const settings = state.editorSettings || {};
+    const hasSeenPrompt = localStorage.getItem('aeres-api-key-prompt-seen');
+    if (!settings.groqApiKey && !hasSeenPrompt) {
+      setTimeout(() => {
+        setAeresSettingsOpen({ category: 'chat' });
+        localStorage.setItem('aeres-api-key-prompt-seen', 'true');
+      }, 1500); // Wait a second for app to settle
+    }
+  }, [setAeresSettingsOpen])
 
   useEffect(() => {
     // Inject active theme class name to document element for targeted retro styles
@@ -365,7 +395,7 @@ export default function App() {
     return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }
   }, [termDragging, setTerminalPanelHeight])
 
-  // ── GLOBAL LSP Diagnostics Listener ──
+  // GLOBAL LSP Diagnostics Listener
   useEffect(() => {
     const e = window.electron
     if (!e?.lsp?.onDiagnostics) return
@@ -459,6 +489,17 @@ export default function App() {
                 >
                   <span>Open Aeres User Settings</span>
                   <span className="text-[9px] text-slate-500 font-mono">Ctrl+,</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettingsOpen(false)
+                    setApiConfigured(false)
+                  }}
+                  className="w-full text-left px-3 py-2 hover:bg-[#007acc] hover:text-white flex justify-between items-center transition-colors duration-100"
+                >
+                  <span className="text-pink-400 font-medium">Configure API Keys ✨</span>
                 </button>
 
                 <div className="h-px bg-slate-800/80 my-1" />
@@ -603,7 +644,6 @@ export default function App() {
                   {activeSidebarTab === 'extensions' && <ExtensionPanel />}
                   {activeSidebarTab === 'testing' && <TestingPanel />}
                   {activeSidebarTab === 'contract' && <ContractSnapshot />}
-                  {activeSidebarTab === 'mutation' && <MutationPanel />}
                 </Suspense>
               </ErrorBoundary>
             </div>
@@ -630,7 +670,13 @@ export default function App() {
                   activeSidebarTab === 'preview' ? <WebPreviewPanel /> :
                   activeSidebarTab === 'api' ? <ApiSandboxPanel /> :
                   activeRightTab === 'causemap' ? <CausalBlameMap /> : 
-                  (useStore.getState().tabs.find(t => t.id === useStore.getState().activeTabId)?.path?.endsWith('.ipynb') ? <JupyterCanvas /> : <CodeCanvas />)}
+                  (() => {
+                     const _at = useStore.getState().tabs.find(t => t.id === useStore.getState().activeTabId)
+                     const _name = _at?.name?.toLowerCase() || ''
+                     if (_at?.path?.endsWith('.ipynb')) return <JupyterCanvas />
+                     if (['.db','.sqlite','.sqlite3','.s3db','.sl3'].some(ext => _name.endsWith(ext))) return <DatabaseViewer />
+                     return <CodeCanvas />
+                   })()}
               </Suspense>
             </ErrorBoundary>
           </div>
@@ -725,6 +771,7 @@ export default function App() {
       {snippetsOpen && <SnippetsModal onClose={() => setSnippetsOpen(false)} />}
       {rateLimitOpen && <RateLimitModal onClose={() => setRateLimitOpen(false)} />}
       {newProjectWizardOpen && <NewProjectWizard onClose={() => setNewProjectWizardOpen(false)} />}
+      {!apiConfigured && <OnboardingModal onComplete={() => setApiConfigured(true)} />}
     </div>
   )
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useStore } from '../../store.js'
 import { getTestFileName, getTestFrameworkName, detectTestCommand } from '../../utils/projectRunner.js'
 
-// ── Language quality badge config ────────────────────────────────────────────
+// Language quality badge config
 function QualityBadge({ callCount }) {
   if (callCount === 0) return (
     <span className="text-[9px] font-bold tracking-wider bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded leading-none border border-slate-700/50">STATIC</span>
@@ -59,7 +59,7 @@ export default function ContractSnapshot() {
     setFramework(getTestFrameworkName(activeTab.language))
   }, [activeTab?.language])
 
-  // ── Test generation ───────────────────────────────────────────────────────
+  // Test generation
 
   async function handleGenerate(fn) {
     if (!activeTab) return
@@ -172,7 +172,7 @@ Ensure the test file compiles immediately with no placeholders.`
     }
   }
 
-  // ── Run test in terminal ───────────────────────────────────────────────────
+  // Run test in terminal
 
   async function handleRunTest(fn) {
     if (!activeTab || !window.electron) return
@@ -209,7 +209,7 @@ Ensure the test file compiles immediately with no placeholders.`
     }
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // Render
 
   if (!activeTab) return (
     <div className="p-8 text-center text-aeres-muted text-sm">Open a file to see observed behaviors.</div>
@@ -324,7 +324,7 @@ Ensure the test file compiles immediately with no placeholders.`
   )
 }
 
-// ── Local test generation fallback ───────────────────────────────────────────
+// Local test generation fallback
 
 function _generateLocalFallback(fn, activeTab) {
   const lang = activeTab.language || 'javascript'

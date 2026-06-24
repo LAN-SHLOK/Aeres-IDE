@@ -1,4 +1,4 @@
-﻿import { SignOutButton, useAuth, useUser } from '@clerk/clerk-react'
+import { SignOutButton, useAuth, useUser } from '@clerk/clerk-react'
 import { useEffect } from 'react'
 import SmartDownload from '../components/SmartDownload.jsx'
 import { setAuthToken } from '../utils/apiClient.js'
@@ -98,7 +98,7 @@ export default function Dashboard() {
 
             {/* SmartDownload button - now perfectly styled without nested layout double border bug */}
             <div className="mb-6 flex justify-center">
-              <SmartDownload className="bg-purple-600 hover:bg-purple-500 text-white rounded-lg shadow-[0_0_15px_rgba(168,85,247,0.4)] text-xs uppercase tracking-wider font-display font-bold" />
+              <SmartDownload className="bg-purple-600 hover:bg-purple-500 text-white rounded-full px-6 py-3.5 shadow-[0_0_15px_rgba(168,85,247,0.4)] text-xs uppercase tracking-wider font-display font-bold transition-all hover:-translate-y-0.5" />
             </div>
 
             {/* Verification instruction block */}

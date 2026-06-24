@@ -99,8 +99,8 @@ export default function AuthPortal() {
           <SignIn
             forceRedirectUrl={source === 'ide' ? '/auth?source=ide' : undefined}
             signUpForceRedirectUrl={source === 'ide' ? '/auth?source=ide' : undefined}
-            afterSignInUrl={source === 'ide' ? '/auth?source=ide' : undefined}
-            afterSignUpUrl={source === 'ide' ? '/auth?source=ide' : undefined}
+            fallbackRedirectUrl={source === 'ide' ? '/auth?source=ide' : undefined}
+            signUpFallbackRedirectUrl={source === 'ide' ? '/auth?source=ide' : undefined}
             appearance={{
               variables: {
                 colorPrimary: '#ff8ba7',
