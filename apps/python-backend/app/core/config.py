@@ -20,6 +20,9 @@ user_config_dir = platformdirs.user_config_dir("AeresIDE", "Aeres")
 os.makedirs(user_config_dir, exist_ok=True)
 user_env_path = os.path.join(user_config_dir, "config.env")
 
+user_data_dir = platformdirs.user_data_dir("AeresIDE", "Aeres")
+os.makedirs(user_data_dir, exist_ok=True)
+
 # Force local user .env to override project .env and system env
 load_dotenv(dotenv_path=project_env_path, override=False)
 load_dotenv(dotenv_path=user_env_path, override=True)
@@ -32,7 +35,7 @@ class Settings(BaseSettings):
     GITHUB_TOKEN: str = ""
     CLERK_SECRET_KEY: str = ""
     CLERK_JWT_ISSUER: str = ""
-    CHROMA_DB_PATH: str = "../../data/chroma_db"
+    CHROMA_DB_PATH: str = os.path.join(user_data_dir, "chroma_db")
     EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
     GROQ_CHAT_MODEL: str = "llama-3.3-70b-versatile"

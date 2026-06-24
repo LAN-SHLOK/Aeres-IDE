@@ -43,7 +43,7 @@ export function HealthDashboard() {
     setRightPanelOpen(true)
     
     const prompt = `Please fix the following issue in ${issue.file}: ${issue.message}. Suggested fix: ${issue.suggested_fix}`
-    window.dispatchEvent(new CustomEvent('aeres:send-agent-prompt', { detail: { prompt } }))
+    document.dispatchEvent(new CustomEvent('aeres:send-agent-prompt', { detail: prompt }))
     
     if (issue.file && issue.file !== 'System') {
        openTab({ path: issue.file, title: issue.file.split('/').pop() || issue.file })

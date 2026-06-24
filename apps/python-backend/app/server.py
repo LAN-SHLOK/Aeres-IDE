@@ -30,7 +30,6 @@ from app.api.endpoints import (
 )
 from app.core.file_watcher import file_watcher
 from app.scrapers.cron_scraper import start_cron_scraper
-
 def create_app() -> FastAPI:
     application = FastAPI(
         title="Aeres IDE Backend",
@@ -45,7 +44,7 @@ def create_app() -> FastAPI:
         
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^tauri://localhost$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

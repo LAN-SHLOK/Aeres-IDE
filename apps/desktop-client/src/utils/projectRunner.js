@@ -247,7 +247,17 @@ if (fs.existsSync(profPath)) {
   // Erlang
   if (lower.endsWith('.erl')) return `escript "${filePath}"`
   // HTML
-  if (lower.endsWith('.html') || lower.endsWith('.htm')) return 'open-browser'
+  if (lower.endsWith('.html') || lower.endsWith('.htm')) {
+    try {
+      const store = useStore.getState()
+      const rootPath = store.rootPath
+      if (rootPath) {
+        const projCmd = await detectProjectCommand(rootPath)
+        if (projCmd) return projCmd
+      }
+    } catch {}
+    return 'open-browser'
+  }
   // React / Next.js / Framework components — detect project dev server
   if (lower.endsWith('.jsx') || lower.endsWith('.tsx')) {
     try {

@@ -460,7 +460,7 @@ export default function CodeCanvas() {
     useStore.setState({ activeTerminalId: id })
     setTimeout(() => {
       const isMac = window.electron.isMac
-      const openCmd = isMac ? 'open' : 'start ""'
+      const openCmd = isMac ? 'open' : 'Invoke-Item'
       window.electron.terminal.write(id, `npx -y live-server "${activeTab.path}" || ${openCmd} "${activeTab.path}"\r`)
     }, 500)
   }, [activeTab, addTerminal, setTerminalPanelOpen])
@@ -496,7 +496,7 @@ export default function CodeCanvas() {
       useStore.setState({ activeTerminalId: id })
       setTimeout(() => {
         const isMac = window.electron.isMac
-        const openCmd = isMac ? 'open' : 'start ""'
+        const openCmd = isMac ? 'open' : 'Invoke-Item'
         // Run live-server (auto-installs if needed) or fallback to basic open
         window.electron.terminal.write(id, `npx -y live-server "${activeTab.path}" || ${openCmd} "${activeTab.path}"\r`)
       }, 500)
@@ -643,9 +643,30 @@ export default function CodeCanvas() {
       { name: 'aeres:debug-step-out', handler: handleDebugStepOut },
       { name: 'aeres:editor-back', handler: () => editor?.trigger('keyboard', 'cursorUndo') },
       { name: 'aeres:editor-forward', handler: () => editor?.trigger('keyboard', 'cursorRedo') },
+      { name: 'aeres:editor-last-edit', handler: () => editor?.trigger('keyboard', 'workbench.action.navigateToLastEditLocation') },
+      { name: 'aeres:editor-next', handler: () => {
+          const store = useStore.getState();
+          const idx = store.tabs.findIndex(t => t.id === store.activeTabId);
+          if (idx !== -1 && store.tabs.length > 0) store.setActiveTab(store.tabs[(idx + 1) % store.tabs.length].id);
+      }},
+      { name: 'aeres:editor-prev', handler: () => {
+          const store = useStore.getState();
+          const idx = store.tabs.findIndex(t => t.id === store.activeTabId);
+          if (idx !== -1 && store.tabs.length > 0) store.setActiveTab(store.tabs[(idx - 1 + store.tabs.length) % store.tabs.length].id);
+      }},
+      { name: 'aeres:editor-symbols', handler: () => editor?.trigger('keyboard', 'editor.action.quickOutline') },
+      { name: 'aeres:editor-goto-bracket', handler: () => editor?.trigger('keyboard', 'editor.action.jumpToBracket') },
       { name: 'aeres:editor-goto-line', handler: () => editor?.trigger('keyboard', 'editor.action.gotoLine') },
       { name: 'aeres:open-live-server', handler: handleOpenLiveServer },
       { name: 'aeres:run-active-file', handler: handleRunFile },
+      { name: 'aeres:modernize', handler: () => {
+          if (!activeTab || !activeTab.path) return
+          useStore.getState().setBatchModernizeState({
+            depName: 'Current File',
+            files: [{ path: activeTab.path, originalCode: '', fixedCode: '', status: 'pending' }],
+            currentIndex: 0
+          })
+      } },
       { name: 'aeres:new-terminal', handler: () => {
           useStore.setState({ terminalPanelOpen: true })
           setTimeout(() => window.dispatchEvent(new CustomEvent('aeres:select-terminal-tab', { detail: 'terminal' })), 50)
@@ -861,6 +882,49 @@ export default function CodeCanvas() {
               setEditorInstance(editor)
               setEditorLoaded(true)
 
+              const editorDisposables = []
+
+              // Auto-close HTML/JSX tags
+              const tagDisposable = editor.onKeyUp((e) => {
+                if (e.keyCode === monaco.KeyCode.RightAngle || e.browserEvent?.key === '>') {
+                  const model = editor.getModel()
+                  const pos = editor.getPosition()
+                  if (!model || !pos) return
+                  
+                  const textUntilPosition = model.getValueInRange({
+                    startLineNumber: pos.lineNumber,
+                    startColumn: 1,
+                    endLineNumber: pos.lineNumber,
+                    endColumn: pos.column
+                  })
+                  
+                  const match = textUntilPosition.match(/<([a-zA-Z][a-zA-Z0-9:\-]*)[^>]*>$/)
+                  if (match) {
+                    const tag = match[1]
+                    const voidElements = ['area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr']
+                    if (!voidElements.includes(tag.toLowerCase())) {
+                      const closingTag = `</${tag}>`
+                      const textAfter = model.getValueInRange({
+                        startLineNumber: pos.lineNumber,
+                        startColumn: pos.column,
+                        endLineNumber: pos.lineNumber,
+                        endColumn: pos.column + closingTag.length + 2
+                      })
+                      
+                      if (!textAfter.startsWith(`</${tag}`)) {
+                        editor.executeEdits('auto-close-tag', [{
+                          range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column),
+                          text: closingTag,
+                          forceMoveMarkers: true
+                        }])
+                        editor.setPosition(pos)
+                      }
+                    }
+                  }
+                }
+              })
+              editorDisposables.push(tagDisposable)
+
               // Setup Emmet for rapid boilerplate and element creation
               try {
                 emmetHTML(monaco)
@@ -896,7 +960,7 @@ export default function CodeCanvas() {
                   } catch (err) {}
                 }
 
-                monaco.languages.registerCompletionItemProvider(['javascript', 'python', 'typescript'], {
+                const completionDisposable = monaco.languages.registerCompletionItemProvider(['javascript', 'python', 'typescript'], {
                   provideCompletionItems: (model, position) => {
                     return new Promise((resolve) => {
                       if (lspWs.readyState !== WebSocket.OPEN) {
@@ -934,11 +998,12 @@ export default function CodeCanvas() {
                     })
                   }
                 })
+                editorDisposables.push(completionDisposable)
               }
 
               // Register debounced AI Inline Completion Provider
               let autocompleteTimer = null
-              monaco.languages.registerInlineCompletionsProvider({ pattern: '**/*' }, {
+              const inlineDisposable = monaco.languages.registerInlineCompletionsProvider({ pattern: '**/*' }, {
                 provideInlineCompletions: async (model, position, context, token) => {
                   const e = window.electron
                   if (!e?.rag?.autocomplete) return { items: [] }
@@ -1270,7 +1335,7 @@ export default function CodeCanvas() {
                 }
               }
 
-              monaco.languages.registerHoverProvider({ pattern: '**/*' }, {
+              const hoverDisposable = monaco.languages.registerHoverProvider({ pattern: '**/*' }, {
                 provideHover: (model, position) => {
                   const word = model.getWordAtPosition(position)
                   if (!word) return null
@@ -1346,6 +1411,14 @@ export default function CodeCanvas() {
                     ]
                   }
                 }
+              })
+              
+              editorDisposables.push(inlineDisposable, hoverDisposable)
+              
+              editor.onDidDispose(() => {
+                editorDisposables.forEach(d => d.dispose())
+                if (lspWs) lspWs.close()
+                if (autocompleteTimer) clearTimeout(autocompleteTimer)
               })
 
               // Disable both semantic and syntax validation from Monaco's built-in TypeScript worker.
@@ -1748,7 +1821,7 @@ export default function CodeCanvas() {
           )}
 
           {/* Group 1: Navigation */}
-          <button onClick={() => { document.dispatchEvent(new CustomEvent('aeres:git-blame')); setContextMenu({ visible: false }) }}
+          <button onClick={() => { triggerMonacoAction('aeres.causalBlame'); setContextMenu({ visible: false }) }}
             className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-amber-400 hover:bg-amber-400 hover:text-black hover:font-bold rounded-xl transition-all border border-dashed border-amber-400/30 hover:border-solid hover:border-black mb-1.5"
           >
             <span>Trace cause chain (Git Blame)</span>

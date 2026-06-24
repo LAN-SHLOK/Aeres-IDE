@@ -97,32 +97,36 @@ const DOCUMENTATION_SECTIONS = [
         id: 'introduction',
         title: 'Introduction',
         icon: Icons.file,
-        header: 'Aeres IDE: Next-Generation Local Multi-Agent Workspace',
+        header: 'Aeres IDE: The Agentic Developer Workspace',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Welcome to the Aeres IDE developer manual. Aeres is a high-fidelity development sandbox built for offline-first speed, intelligence, and seamless code orchestration. Combining local abstract syntax tree (AST) evaluations with background terminal runner integration, Aeres delivers the visual styling of premium web hubs with staff-level software engineering autonomy.
+              Aeres IDE is a fully-local, high-performance development environment built on Tauri (Rust) and React. It deeply integrates autonomous AI agents powered by Groq's LLM inference into every layer of the development workflow — from code editing and debugging to dependency scanning and architecture visualization.
             </p>
 
             <div className="my-8 flex gap-4 p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[4px_4px_0px_#000000] relative overflow-hidden group">
               {Icons.alert}
               <div className="relative z-10 font-sans text-left">
-                <span className="text-white font-black text-sm block mb-1">Architecture Philosophy</span>
+                <span className="text-white font-black text-sm block mb-1">Local-First Architecture</span>
                 <span className="text-white/60 text-xs font-bold leading-relaxed block text-left">
-                  Aeres operates under a strict offline-first, local-first mandate. All AST parsing, syntax diagnostics, code indexing, and key neural workflows can run completely on the developer's hardware without leaking intellectual property to cloud aggregators.
+                  Your source code never leaves your machine. All AI inference calls go through your own API keys (Groq BYOK). All file operations, git commands, and terminal sessions run locally via Tauri's native Rust backend. No telemetry is sent externally.
                 </span>
               </div>
             </div>
 
-            <h3 className="text-lg font-black text-white mt-10 mb-4 font-display text-left">Core Principles</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 my-6 text-left">
+            <h3 className="text-lg font-black text-white mt-10 mb-4 font-display text-left">Three-Layer Architecture</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 my-6 text-left">
               <div className="p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[3px_3px_0px_#000000]">
-                <span className="font-extrabold text-white block mb-2 font-display">AST-Driven Intelligence</span>
-                <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Intelligence works by parsing syntax trees (ASTs) rather than simple text prediction, eliminating typical text hallucinatory blocks.</p>
+                <span className="font-extrabold text-white block mb-2 font-display">Tauri Desktop Shell</span>
+                <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Rust-powered native layer handling PTY terminals, file system access, syntax diagnostics, and OS-level window management.</p>
               </div>
               <div className="p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[3px_3px_0px_#000000]">
-                <span className="font-extrabold text-white block mb-2 font-display">Self-Correction Loops</span>
-                <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Integrated pseudoterminals allow the AI to run builds, intercept tracebacks, surgical edit, and verify until the code is 100% green.</p>
+                <span className="font-extrabold text-white block mb-2 font-display">React Frontend</span>
+                <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Monaco Editor, xterm.js terminals, D3 visualizations, Zustand state management, and Framer Motion animations.</p>
+              </div>
+              <div className="p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[3px_3px_0px_#000000]">
+                <span className="font-extrabold text-white block mb-2 font-display">Python AI Backend</span>
+                <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">FastAPI server with 22 endpoint modules, AI agent loop, RAG engine (ChromaDB), LSP bridge, and Groq LLM gateway.</p>
               </div>
             </div>
           </div>
@@ -132,253 +136,489 @@ const DOCUMENTATION_SECTIONS = [
         id: 'quickstart',
         title: 'Quick Start',
         icon: Icons.file,
-        header: 'Setup & CLI Onboarding',
+        header: 'Installation and Setup',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Mount the global terminal sidecar utility and command hooks to your system path to seamlessly initialize new workspaces and launch local services.
+              Aeres IDE requires three components: Node.js (v18+), Python 3.10+, and Rust with the Tauri CLI. Follow these steps to get the full IDE running locally.
             </p>
 
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">1. Environment Provisioning</h3>
-            <p className="text-white/60 text-xs font-bold mb-4 leading-relaxed font-sans text-left">
-              Provision the CLI package globally using standard package managers. This registers all LSP listeners and bridge protocols:
-            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">1. Clone the Repository</h3>
             <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-              $ npm install -g aeres-cli
+              git clone https://github.com/LAN-SHLOK/Aeres-IDE.git<br />
+              cd Aeres-IDE
             </pre>
 
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">2. Workspace mounting</h3>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">2. Start the AI Backend</h3>
             <p className="text-white/60 text-xs font-bold mb-4 leading-relaxed font-sans text-left">
-              Mount the target source tree path to prepare the indexing database:
+              The backend is a Python FastAPI server that powers all AI features, LSP bridging, and code analysis:
             </p>
             <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-              $ aeres init --workspace ./my-typescript-app
+              cd apps/python-backend<br />
+              python -m venv venv<br />
+              venv\Scripts\activate     # Windows<br />
+              pip install -r requirements.txt<br />
+              <br />
+              # Add your API key<br />
+              echo GROQ_API_KEY=your_key_here &gt; .env<br />
+              <br />
+              # Start the server<br />
+              uvicorn app.server:app --reload --port 8008
             </pre>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">3. Start the Tauri Frontend</h3>
+            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
+              cd apps/desktop-client<br />
+              npm install<br />
+              npm run dev
+            </pre>
+
+            <div className="my-8 flex gap-4 p-5 rounded-3xl bg-[#13141f] border border-white/10 shadow-[4px_4px_0px_#000000]">
+              {Icons.alert}
+              <div className="font-sans text-left">
+                <span className="text-white font-black text-sm block mb-1">API Key Setup</span>
+                <span className="text-white/60 text-xs font-bold leading-relaxed block text-left">
+                  Get a free Groq API key at console.groq.com. You can also configure it later inside the IDE via Settings &gt; Chat &gt; Groq API Key, or through the Onboarding modal that appears on first launch.
+                </span>
+              </div>
+            </div>
           </div>
         )
       }
     ]
   },
   {
-    category: 'UNIVERSAL LANGUAGE SUPPORT',
+    category: 'EDITOR',
     pages: [
       {
-        id: 'universal-lsp',
-        title: 'Universal LSP Support',
+        id: 'monaco-editor',
+        title: 'Code Editor',
         icon: Icons.file,
-        header: 'Zero-config Language Servers for all frameworks',
+        header: 'Monaco Editor with Full IDE Capabilities',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres IDE comes with native built-in integration for Language Server Protocol (LSP). Instead of relying on rigid, single-language bindings, the editor automatically spins up the correct Language Server based on the file you open.
+              The code editor is powered by Monaco (the same engine behind VS Code). It provides syntax highlighting for 50+ languages, multi-cursor editing, code folding, bracket matching, find & replace, and inline diff views.
             </p>
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How It Works</h3>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Editor Features</h3>
             <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
-              <li><strong>Auto-Detection:</strong> When you open a `.go`, `.rs`, `.py`, or `.ts` file, the Sidecar immediately launches `gopls`, `rust-analyzer`, `jedi`, or `typescript-language-server` respectively.</li>
-              <li><strong>Custom LSP Configs:</strong> You can explicitly map custom commands by creating a `.aeres/lsp.json` file in your workspace to override the default servers.</li>
-              <li><strong>High-Performance Bindings:</strong> The Monaco editor connects to these servers using a custom background WebSocket stream to guarantee ultra-low latency autocomplete, hover info, and diagnostics.</li>
+              <li><strong>HTML Auto-Close Tags:</strong> When you type a closing &gt; in HTML or JSX files, the editor automatically inserts the corresponding closing tag and positions your cursor between them.</li>
+              <li><strong>Minimap:</strong> A code overview minimap on the right side of the editor. Toggleable in Settings.</li>
+              <li><strong>Word Wrap:</strong> Toggle with Alt+Z or configure in Settings.</li>
+              <li><strong>Code Folding:</strong> Collapse code blocks with Ctrl+Shift+[.</li>
+              <li><strong>Multi-Cursor:</strong> Alt+Click to add cursors. Ctrl+D to select next match.</li>
+              <li><strong>Breadcrumb Bar:</strong> Shows the file path hierarchy above the editor for quick navigation.</li>
+              <li><strong>Tab Management:</strong> Drag tabs to reorder. Right-click for options. Ctrl+W to close. Ctrl+Shift+T to reopen.</li>
             </ul>
           </div>
         )
       },
       {
-        id: 'universal-dap',
-        title: 'Universal Debugging (DAP)',
+        id: 'keyboard-shortcuts',
+        title: 'Keyboard Shortcuts',
         icon: Icons.file,
-        header: 'Debug Any Language Locally',
+        header: 'Complete Keyboard Shortcut Reference',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres IDE implements the Debug Adapter Protocol (DAP) natively. This allows you to attach debuggers to nearly any programming language without switching to a different IDE.
+              Aeres IDE supports VS Code-compatible keyboard shortcuts. You can also customize them via File &gt; Preferences &gt; Keyboard Shortcuts (Ctrl+K Ctrl+S).
             </p>
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Standardized Configuration</h3>
-            <p className="text-white/60 text-xs font-bold mb-4 leading-relaxed font-sans text-left">
-              Aeres fully supports standard `.vscode/launch.json` and `.aeres/launch.json` formats. Define your configurations identically to VS Code:
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">General</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-8 text-left">
+              <span className="text-white/60 font-bold">Ctrl+Shift+P</span><span className="text-white font-extrabold">Command Palette</span>
+              <span className="text-white/60 font-bold">Ctrl+P</span><span className="text-white font-extrabold">Quick Open File</span>
+              <span className="text-white/60 font-bold">Ctrl+,</span><span className="text-white font-extrabold">Open Settings</span>
+              <span className="text-white/60 font-bold">Ctrl+`</span><span className="text-white font-extrabold">Toggle Terminal</span>
+              <span className="text-white/60 font-bold">Ctrl+N</span><span className="text-white font-extrabold">New File</span>
+              <span className="text-white/60 font-bold">Ctrl+O</span><span className="text-white font-extrabold">Open Folder</span>
+              <span className="text-white/60 font-bold">Ctrl+S</span><span className="text-white font-extrabold">Save</span>
+              <span className="text-white/60 font-bold">F11</span><span className="text-white font-extrabold">Toggle Full Screen</span>
+            </div>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Navigation</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-8 text-left">
+              <span className="text-white/60 font-bold">F12</span><span className="text-white font-extrabold">Go to Definition</span>
+              <span className="text-white/60 font-bold">Shift+F12</span><span className="text-white font-extrabold">Find References</span>
+              <span className="text-white/60 font-bold">Ctrl+G</span><span className="text-white font-extrabold">Go to Line</span>
+              <span className="text-white/60 font-bold">Ctrl+Shift+O</span><span className="text-white font-extrabold">Go to Symbol</span>
+              <span className="text-white/60 font-bold">Ctrl+Shift+\</span><span className="text-white font-extrabold">Go to Bracket</span>
+              <span className="text-white/60 font-bold">F8</span><span className="text-white font-extrabold">Next Problem</span>
+              <span className="text-white/60 font-bold">Shift+F8</span><span className="text-white font-extrabold">Previous Problem</span>
+            </div>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Sidebar & Panels</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-8 text-left">
+              <span className="text-white/60 font-bold">Ctrl+Shift+E</span><span className="text-white font-extrabold">File Explorer</span>
+              <span className="text-white/60 font-bold">Ctrl+Shift+F</span><span className="text-white font-extrabold">Search</span>
+              <span className="text-white/60 font-bold">Ctrl+Shift+G</span><span className="text-white font-extrabold">Source Control</span>
+              <span className="text-white/60 font-bold">Ctrl+Shift+D</span><span className="text-white font-extrabold">Debug Panel</span>
+              <span className="text-white/60 font-bold">Ctrl+Shift+X</span><span className="text-white font-extrabold">Extensions</span>
+              <span className="text-white/60 font-bold">Ctrl+Alt+C</span><span className="text-white font-extrabold">AI Chat Panel</span>
+              <span className="text-white/60 font-bold">Ctrl+Alt+A</span><span className="text-white font-extrabold">AI Agent Panel</span>
+            </div>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Debugging</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-8 text-left">
+              <span className="text-white/60 font-bold">F5</span><span className="text-white font-extrabold">Start Debugging</span>
+              <span className="text-white/60 font-bold">Shift+F5</span><span className="text-white font-extrabold">Stop Debugging</span>
+              <span className="text-white/60 font-bold">F10</span><span className="text-white font-extrabold">Step Over</span>
+              <span className="text-white/60 font-bold">F11</span><span className="text-white font-extrabold">Step Into</span>
+              <span className="text-white/60 font-bold">Shift+F11</span><span className="text-white font-extrabold">Step Out</span>
+            </div>
+          </div>
+        )
+      },
+      {
+        id: 'database-viewer',
+        title: 'Database Viewer',
+        icon: Icons.file,
+        header: 'Browse SQLite Databases Inside the IDE',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              When you click on a .db, .sqlite, or .sqlite3 file in the file explorer, Aeres automatically opens the built-in Database Viewer instead of trying to display raw binary content. The viewer lets you browse tables, view data, and inspect schemas directly inside the IDE.
             </p>
-            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-              &#123;<br />
-              &nbsp;&nbsp;"version": "0.2.0",<br />
-              &nbsp;&nbsp;"configurations": [<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&#123;<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"type": "node",<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"request": "launch",<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"name": "Launch Program",<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"program": "$&#123;workspaceFolder&#125;/index.js"<br />
-              &nbsp;&nbsp;&nbsp;&nbsp;&#125;<br />
-              &nbsp;&nbsp;]<br />
-              &#125;
-            </pre>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How It Works</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Auto-Detection:</strong> Files with .db, .sqlite, or .sqlite3 extensions are automatically routed to the Database Viewer.</li>
+              <li><strong>Table Browser:</strong> Lists all tables in the database. Click a table to view its rows in a formatted data grid.</li>
+              <li><strong>Backend API:</strong> The viewer communicates with the /api/db endpoint on the Python backend, which uses Python's sqlite3 module.</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        id: 'jupyter-notebooks',
+        title: 'Jupyter Notebooks',
+        icon: Icons.file,
+        header: 'Run .ipynb Notebooks Inside Aeres',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Aeres IDE includes a built-in Jupyter Notebook renderer. When you open a .ipynb file, it is displayed in a notebook-style interface with code cells, markdown cells, and output rendering.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Features</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Cell Execution:</strong> Run individual cells and see output inline.</li>
+              <li><strong>Markdown Preview:</strong> Markdown cells are rendered with proper formatting.</li>
+              <li><strong>Kernel Bridge:</strong> The /api/jupyter endpoint on the Python backend manages kernel lifecycle and cell execution.</li>
+            </ul>
           </div>
         )
       }
     ]
   },
   {
-    category: 'CORE DIAGNOSTICS',
+    category: 'AI FEATURES',
     pages: [
+      {
+        id: 'rag-chat',
+        title: 'AI Chat & Agentic Loop',
+        icon: Icons.file,
+        header: 'Autonomous AI Agent with Full Codebase Access',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The AI Chat panel (Ctrl+Alt+C) is the primary interface for interacting with the Aeres AI agent. You can ask questions about your codebase, request refactors, or let the agent autonomously plan and execute multi-step code changes.
+            </p>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Agent Tool-Use Loop</h3>
+            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
+              The AI agent operates in a tool-use loop powered by Groq (Llama-3.3-70B). It can invoke the following tools autonomously:
+            </p>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>read_file:</strong> Read any file in your workspace to understand context.</li>
+              <li><strong>edit_file:</strong> Apply surgical line-range edits using unified diffs.</li>
+              <li><strong>create_file:</strong> Create new files in your project.</li>
+              <li><strong>run_command:</strong> Execute shell commands and observe output.</li>
+              <li><strong>search_codebase:</strong> Search across all workspace files using ripgrep-style matching.</li>
+              <li><strong>list_directory:</strong> Browse the file tree to discover project structure.</li>
+            </ul>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">RAG Engine</h3>
+            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
+              The chat is augmented with a Retrieval-Augmented Generation engine backed by ChromaDB. When you ingest documentation or your codebase, the RAG engine creates vector embeddings (using the all-MiniLM-L6-v2 model) that are searched during every query to provide relevant context to the LLM.
+            </p>
+          </div>
+        )
+      },
+      {
+        id: 'health-scanner',
+        title: 'Health Scanner',
+        icon: Icons.file,
+        header: 'AI-Powered Project Health Analysis',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The Health Scanner (accessible from the bottom panel) analyzes your entire project for deprecated APIs, code smells, security issues, and outdated patterns. It uses an AI agent backed by a curated deprecation database to produce actionable findings.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Workflow</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Scan:</strong> Click "Run Health Scan" to analyze the open project. The backend scans all source files and checks them against the deprecation database.</li>
+              <li><strong>Review:</strong> Findings are displayed as cards showing the issue, severity, affected file, and recommended fix.</li>
+              <li><strong>Fix Automatically:</strong> Click the "Fix Automatically" button on any finding. The AI agent reads the affected file, generates a targeted code fix, and applies the diff directly.</li>
+            </ul>
+          </div>
+        )
+      },
       {
         id: 'dependency-radar',
         title: 'Dependency Radar',
         icon: Icons.file,
-        header: 'AST-Level circular import radar and CVE audits',
+        header: 'Interactive Dependency Visualization and CVE Scanning',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres IDE introduces the **Dependency Radar** panel, powered by deep AST scanning and interactive visual layouts. Rather than just listing package names in a simple lock file, Dependency Radar maps circular file dependencies and tracks vulnerable ecosystems in real time.
+              The Dependency Radar panel scans your project's package manifest files (package.json, requirements.txt, etc.) and builds an interactive D3 force-directed graph of all dependencies.
             </p>
-            
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">System Integrity Metrics</h3>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Capabilities</h3>
             <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
-              <li><strong>D3 Force-Directed Layout:</strong> Renders a highly interactive radial node network of all workspace imports.</li>
-              <li><strong>Circular Link Detection:</strong> Instantly flags problematic circular dependency files before compiling.</li>
-              <li><strong>Vulnerability Warnings:</strong> Connects to security registries, identifying specific CVE hashes and listing release updates.</li>
-              <li><strong>Breaking Changes Audit:</strong> Auto-fetches release logs from GitHub, notifying developers about boundary disruptions in deprecated dependency tiers.</li>
+              <li><strong>D3 Force Graph:</strong> Visualizes dependencies as an interactive node network. Click nodes to see version info, maintainers, and health metrics.</li>
+              <li><strong>Vulnerability Detection:</strong> Checks dependencies against known CVE databases and flags insecure versions.</li>
+              <li><strong>Outdated Detection:</strong> Highlights packages with available updates and shows latest stable versions.</li>
+              <li><strong>AI Notes:</strong> Right-click any dependency to generate AI-powered analysis of what it does and whether safer alternatives exist.</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        id: 'temporal-lens',
+        title: 'Temporal Lens',
+        icon: Icons.file,
+        header: 'Per-Function Runtime Performance Profiling',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The Temporal Lens automatically profiles your code every time you run it through the IDE's Run button. It tracks execution time per function and builds a rolling 20-run history to help you identify performance regressions.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Supported Languages</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Python:</strong> Uses cProfile to capture function-level timing. A temporal runner script is auto-generated in .aeres/temporal_runner.py.</li>
+              <li><strong>JavaScript/TypeScript:</strong> Uses Node.js --cpu-prof to generate CPU profiles. A temporal runner is auto-generated in .aeres/temporal_runner.js.</li>
+            </ul>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How to Use</h3>
+            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
+              Simply click the Run button (or press the Run shortcut) on any Python or JS/TS file. The profiling data is automatically saved to .aeres/temporal_lens.json and displayed as inline decorations in the editor — showing millisecond latency next to each function definition.
+            </p>
+          </div>
+        )
+      },
+      {
+        id: 'contract-snapshots',
+        title: 'Contract Snapshots',
+        icon: Icons.file,
+        header: 'Runtime Behavior Observation and Test Generation',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The Contract Snapshot system observes function inputs and outputs during runtime to build behavioral contracts. From these observations, it can automatically generate unit tests that enforce the observed behavior.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Workflow</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Record:</strong> During code execution, the contract observer records function call signatures, argument types, and return values.</li>
+              <li><strong>View Observations:</strong> Open the Contract Snapshots panel to see all recorded observations per function.</li>
+              <li><strong>Generate Tests:</strong> Click "Generate Snapshot Tests" to have the AI produce unit test code (e.g., test_fn.py or fn.test.ts) based on the observed runtime behavior.</li>
+            </ul>
+          </div>
+        )
+      }
+    ]
+  },
+  {
+    category: 'CODE INTELLIGENCE',
+    pages: [
+      {
+        id: 'lsp-integration',
+        title: 'LSP Integration',
+        icon: Icons.file,
+        header: 'Language Server Protocol for Multi-Language Support',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Aeres IDE connects to language servers via a WebSocket bridge hosted on the Python backend. When you open a file, the editor establishes a connection to the LSP endpoint and registers providers for autocomplete, hover documentation, and signature help.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Supported Languages</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>JavaScript/TypeScript:</strong> typescript-language-server</li>
+              <li><strong>Python:</strong> jedi-language-server or pylsp</li>
+              <li><strong>Rust:</strong> rust-analyzer</li>
+              <li><strong>Go:</strong> gopls</li>
+              <li><strong>C/C++:</strong> clangd</li>
+            </ul>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Features Provided</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Autocomplete:</strong> Context-aware code completions as you type.</li>
+              <li><strong>Hover Info:</strong> Hover over any symbol to see its type, documentation, and source.</li>
+              <li><strong>Signature Help:</strong> Function parameter hints appear as you type arguments.</li>
+              <li><strong>Go to Definition:</strong> F12 to jump to a symbol's definition.</li>
+              <li><strong>Find References:</strong> Shift+F12 to find all usages of a symbol across the workspace.</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        id: 'syntax-diagnostics',
+        title: 'Syntax Diagnostics',
+        icon: Icons.file,
+        header: 'Real-Time Error Detection in the Editor',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Aeres runs syntax checks on every file save. For Python files, the Rust backend runs py_compile and ruff to detect syntax errors and linting issues. Errors appear as red squiggly underlines directly in the editor, and warnings appear as yellow underlines.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How Diagnostics Work</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Python:</strong> The Tauri Rust backend invokes py_compile to catch SyntaxError, IndentationError, and TabError. Results are returned as Monaco markers with line numbers and severity levels.</li>
+              <li><strong>JavaScript/TypeScript:</strong> Diagnostics come from the LSP language server in real-time.</li>
+              <li><strong>Problems Panel:</strong> All diagnostics across open files are aggregated in the Problems panel (Ctrl+Shift+M).</li>
+              <li><strong>Navigation:</strong> Press F8 to jump to the next error, Shift+F8 for the previous error.</li>
             </ul>
           </div>
         )
       },
       {
         id: 'causal-blame',
-        title: 'Causal Blame Graph',
+        title: 'Causal Blame Maps',
         icon: Icons.file,
-        header: 'Directed regression chains from Git telemetry',
+        header: 'Trace Git Blame Chains to Find Root Causes',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Debugging logical errors is simple with Aeres's **Causal Blame Map** panel. By clicking function declarations inside the Monaco code canvas, developers can generate targeted regression timelines that point back directly through Git commit chains.
+              The Causal Blame Map panel lets you select a function in the editor and trace its git blame chain. It uses the AI to analyze which commits introduced changes, why they were made, and how they relate to the current state of the code.
             </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Directed Commit Tracebacks</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
-              The Electron backend builds a directed graph with specialized links tracking bug propagation. For instance, if an OutOfMemory traceback occurs, the engine back-traces line parameters across structural refactors, mapping the error node back to the causal commit automatically:
-            </p>
-            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-[Error Line 142] --caused--&gt; [Commit a8e90f: Swapped bounds] --caused--&gt; [Commit d5b12a]
-            </pre>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Usage</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Select a function</strong> in the editor, then open the Causal Blame panel from the bottom panel tabs.</li>
+              <li><strong>The panel displays</strong> a directed graph showing commit chains, with AI-generated summaries of what each commit changed and its potential impact on the current bug or behavior.</li>
+              <li><strong>Requires:</strong> The project must be a git repository with commit history.</li>
+            </ul>
           </div>
         )
       },
       {
-        id: 'mutation-testing',
-        title: 'AST Mutation Testing',
+        id: 'architecture-visualizer',
+        title: 'Architecture Visualizer',
         icon: Icons.file,
-        header: 'Isolated mutant synthesis and test coverage sweeps',
+        header: 'Full Project Architecture Blueprint',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              To guarantee absolute test suite rigor, Aeres features the **Mutation Panel**. The core runner clones your workspace buffer directories into sandboxed memory folders, systematically injecting minor syntax mutations.
+              The Architecture Visualizer generates a full interactive blueprint of your project's structure. It scans all source files, detects import relationships, and renders an interactive D3 node-link diagram showing how modules connect.
             </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Mutator Synthesis Rules</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 my-6 font-sans text-left">
-              <div className="p-5 rounded-3xl border border-white/10 bg-[#13141f] shadow-[3px_3px_0px_#000000]">
-                <span className="font-extrabold text-white block mb-2 font-display">Binary Bounds Mutation</span>
-                <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Swaps comparison boundaries (e.g. replacing &lt; with &lt;=) to verify boundary-condition assertions.</p>
-              </div>
-              <div className="p-5 rounded-3xl border border-white/10 bg-[#13141f] shadow-[3px_3px_0px_#000000]">
-                <span className="font-extrabold text-white block mb-2 font-display">Boolean Operator Flips</span>
-                <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">Alters logic flows (switching true to false) to double-check that test coverage catches logical changes.</p>
-              </div>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Features</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Automatic Scanning:</strong> Detects project structure by parsing imports and module references.</li>
+              <li><strong>Interactive Graph:</strong> Pan, zoom, and click nodes to see file details and connections.</li>
+              <li><strong>Circular Detection:</strong> Highlights circular imports that could cause runtime issues.</li>
+            </ul>
+          </div>
+        )
+      }
+    ]
+  },
+  {
+    category: 'GIT & VERSION CONTROL',
+    pages: [
+      {
+        id: 'git-panel',
+        title: 'Git Integration',
+        icon: Icons.file,
+        header: 'Full Git Workflow Inside the IDE',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Aeres IDE includes a complete Git panel accessible via Ctrl+Shift+G in the sidebar. All git operations are handled by the Python backend's /api/git endpoints which execute git commands locally.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Supported Operations</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Status & Diff:</strong> View changed files with color-coded indicators. Click a file to see the inline diff.</li>
+              <li><strong>Stage & Unstage:</strong> Stage individual files or all changes with one click.</li>
+              <li><strong>Commit:</strong> Write commit messages. Use the "AI Generate" button to auto-generate a commit message from the staged diff using Groq.</li>
+              <li><strong>Branch Management:</strong> Create, switch, and delete branches from the dropdown.</li>
+              <li><strong>Push, Pull, Fetch:</strong> Sync with remote repositories. Supports credential entry for private repos.</li>
+              <li><strong>Stash & Pop:</strong> Save and restore work-in-progress changes.</li>
+              <li><strong>Init:</strong> Initialize a new git repository in the current workspace.</li>
+              <li><strong>Add Remote:</strong> Configure remote repository URLs for push/pull.</li>
+            </ul>
+          </div>
+        )
+      }
+    ]
+  },
+  {
+    category: 'DEBUGGING & RUNNING',
+    pages: [
+      {
+        id: 'debugger',
+        title: 'Integrated Debugger',
+        icon: Icons.file,
+        header: 'Debug Adapter Protocol (DAP) Based Debugging',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Aeres includes a full graphical debugger powered by the Debug Adapter Protocol (DAP). It supports Node.js and Python debugging with breakpoints, step controls, variable inspection, call stack navigation, and a debug console.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How to Debug</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Set Breakpoints:</strong> Click in the gutter next to a line number to set a breakpoint (red dot).</li>
+              <li><strong>Start Debugging:</strong> Press F5 or click Run &gt; Start Debugging. The debugger launches your file and pauses at breakpoints.</li>
+              <li><strong>Step Controls:</strong> F10 (Step Over), F11 (Step Into), Shift+F11 (Step Out).</li>
+              <li><strong>Variable Inspector:</strong> View local and global variables in the Debug sidebar panel.</li>
+              <li><strong>Call Stack:</strong> Navigate through the function call stack to understand execution flow.</li>
+              <li><strong>Debug Console:</strong> Evaluate expressions in the context of the paused execution.</li>
+              <li><strong>Stop:</strong> Press Shift+F5 to terminate the debug session.</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        id: 'project-runner',
+        title: 'Project Runner',
+        icon: Icons.file,
+        header: 'Smart File and Project Execution',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The Run button in the editor toolbar automatically detects the correct command to execute your file based on its language and project context. It supports 30+ languages and all major frameworks.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Supported Languages</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-8 text-left">
+              <span className="text-white/60 font-bold">.py</span><span className="text-white font-extrabold">python "file.py"</span>
+              <span className="text-white/60 font-bold">.js / .ts</span><span className="text-white font-extrabold">node / npx tsx</span>
+              <span className="text-white/60 font-bold">.html</span><span className="text-white font-extrabold">Live Server or Django runserver</span>
+              <span className="text-white/60 font-bold">.java</span><span className="text-white font-extrabold">javac + java</span>
+              <span className="text-white/60 font-bold">.rs</span><span className="text-white font-extrabold">cargo run</span>
+              <span className="text-white/60 font-bold">.go</span><span className="text-white font-extrabold">go run</span>
+              <span className="text-white/60 font-bold">.cpp / .c</span><span className="text-white font-extrabold">g++ + execute</span>
+              <span className="text-white/60 font-bold">.jsx / .tsx</span><span className="text-white font-extrabold">Detects npm run dev</span>
             </div>
+
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Smart Project Detection</h3>
+            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
+              When you hit Run on an HTML file inside a Django project (one with manage.py), the runner intelligently starts the Django dev server instead of Live Server. For React/Next.js projects, it detects package.json and runs the dev script.
+            </p>
           </div>
         )
       },
       {
-        id: 'temporal-lens',
-        title: 'Temporal Lens Profiling',
+        id: 'live-server',
+        title: 'Live Server',
         icon: Icons.file,
-        header: 'Asynchronous CPU Execution Latency Sweeps',
+        header: 'One-Click HTML Preview Server',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              The **Temporal Lens** is a high-speed runtime execution profiler integrated natively into the Aeres Desktop runner. By leveraging low-level active CPU hooks, it maps latency metrics for function calls, loops, and external queries asynchronously.
+              For standalone HTML files, Aeres provides a built-in Live Server that auto-installs via npx and serves your HTML file with hot-reload at a local port.
             </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How the Telemetry works</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
-              Unlike traditional bulky profilers that freeze thread states, the Temporal Lens polls active latency metrics at standard intervals (4000ms updates) directly from the background runtime sidecar context. It aggregates:
-            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How to Use</h3>
             <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
-              <li><strong>Total Execution Time:</strong> Cumulate duration in milliseconds compiled for all captured blocks.</li>
-              <li><strong>Average Latency:</strong> Standard duration computed across total calls.</li>
-              <li><strong>P95 Distribution Percentile:</strong> Highlights outliers and heavy database query bounds before compilation leaks into production threads.</li>
-              <li><strong>SVG Sparklines:</strong> Visualizes historical trends dynamically right inside the sidebar layout.</li>
-            </ul>
-          </div>
-        )
-      },
-      {
-        id: 'contract-observations',
-        title: 'Contract Testing Scanner',
-        icon: Icons.file,
-        header: 'Automatic boundary captures and test synthesis',
-        content: (
-          <div>
-            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres features a revolutionary **Contract Observations** scanner. While executing tests or running logic in the workspace, background telemetry probes record input parameters, output return scopes, and variable types to map structural invariants.
-            </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Automated Snapshot Generation</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
-              When enough unique call observations are recorded, Aeres maps edge-case thresholds. Developers can click 'Generate Snapshot Tests' to automatically generate virtual test suites (such as test_fn.py or fn.test.ts) that enforce verified boundaries without manual script writing:
-            </p>
-            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-const res = await window.electron.contract.generate(&#123;<br />
-&nbsp;&nbsp;file_path: activeTab.path,<br />
-&nbsp;&nbsp;function_name: fn,<br />
-&nbsp;&nbsp;language: activeTab.language<br />
-&#125;);
-            </pre>
-          </div>
-        )
-      }
-    ]
-  },
-  {
-    category: 'ADVANCED AI OPERATIONS',
-    pages: [
-      {
-        id: 'model-provisioning',
-        title: 'Local Model Provisioning',
-        icon: Icons.file,
-        header: 'Zero data leakage offline neural setups',
-        content: (
-          <div>
-            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres supports complete offline operation, routing LLM completions and multi-agent loops to local executors to secure target intellectual properties completely.
-            </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Ollama Runner Configuration</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
-              Install Ollama locally and pull high-performance completion structures (e.g. Qwen-2.5-Coder or Llama-3 8B). Then update the Aeres configuration parameters inside your root settings:
-            </p>
-            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-&#123;<br />
-&nbsp;&nbsp;"aeres.ai.provider": "ollama",<br />
-&nbsp;&nbsp;"aeres.ai.model": "qwen2.5-coder:7b",<br />
-&nbsp;&nbsp;"aeres.ai.endpoint": "http://127.0.0.1:11434",<br />
-&nbsp;&nbsp;"aeres.ai.local_fallback": true<br />
-&#125;
-            </pre>
-          </div>
-        )
-      },
-      {
-        id: 'terminal-healing',
-        title: 'Pseudoterminal Orchestration',
-        icon: Icons.file,
-        header: 'Shell Interceptions & Autonomous Error Patches',
-        content: (
-          <div>
-            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              The Aeres **Self-Healing Terminal** framework runs commands within low-overhead pseudoterminal (pty) streams. When a build tool or script exits with non-zero codes, the traceback hooks capture stderr frames directly.
-            </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">The Compile-Repair Hook Lifecycle</h3>
-            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
-              <li><strong>Traceback Capture:</strong> The sidecar grabs detailed compiler errors (such as missing declarations or typos).</li>
-              <li><strong>AST Mutator Patching:</strong> The LibCST logic core edits source coordinates precisely rather than guessing lines.</li>
-              <li><strong>Assertion Sweep:</strong> Refreshes the build command in background sandbox memory to verify that the repair is syntactically correct before merging.</li>
+              <li><strong>From Editor:</strong> Open any HTML file, then click the "Open with Live Server" button in the editor toolbar (or use Alt+L).</li>
+              <li><strong>From File Tree:</strong> Right-click any .html file in the sidebar and select "Open with Live Server".</li>
+              <li><strong>From Command Palette:</strong> Ctrl+Shift+P and type "Live Server".</li>
+              <li><strong>Auto-Install:</strong> If live-server is not installed globally, it is automatically installed via npx on first use.</li>
             </ul>
           </div>
         )
@@ -386,136 +626,76 @@ const res = await window.electron.contract.generate(&#123;<br />
     ]
   },
   {
-    category: 'PRODUCTIVITY SUITE',
+    category: 'CONFIGURATION',
     pages: [
       {
-        id: 'focus-sessions',
-        title: 'Focus Session Snapshots',
+        id: 'api-keys',
+        title: 'API Keys & BYOK',
         icon: Icons.file,
-        header: 'One-Click Workspace Restorations & Layout Syncs',
+        header: 'Bring Your Own Key Configuration',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres features **Focus Sessions** to capture full developer context instantly. Pressing `Ctrl+Shift+S` prompts the environment to freeze current buffer layouts, active terminals, and panel coordinates.
+              Aeres IDE uses a Bring-Your-Own-Key (BYOK) model. All API keys are stored locally on your machine in a platform-specific config directory (managed by platformdirs). Keys are never transmitted externally except to the LLM provider you configure.
             </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Restoring Workspace Context</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
-              Focus Sessions are stored locally. Restoring a session recreates the exact state, opening Monaco editors at the exact cursor line, restoring shell commands, and re-provisioning the active panel selections:
-            </p>
-            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-// Invokes local session restore stream<br />
-await window.electron.sessions.restore(&#123;<br />
-&nbsp;&nbsp;sessionId: "target-session-uuid"<br />
-&#125;);
-            </pre>
-          </div>
-        )
-      },
-      {
-        id: 'multiverse-variants',
-        title: 'Multiverse Variant Synthesis',
-        icon: Icons.file,
-        header: 'Parallel Code Syntheses Comparison Panel',
-        content: (
-          <div>
-            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              When solving complex design decisions or resolving refactor requests, the **Multiverse AI Variant** generator synthesizes three parallel, syntactically verified variants (Variants A, B, and C) side-by-side.
-            </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Comparative Analysis & Merges</h3>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Available Keys</h3>
             <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
-              <li><strong>Variant A (Performant):</strong> Optimized for raw memory boundaries and execution speeds.</li>
-              <li><strong>Variant B (Resilient):</strong> Includes comprehensive boundary assertions and try-except error fallbacks.</li>
-              <li><strong>Variant C (Concise):</strong> Maximizes code cleanliness and functional brevity.</li>
+              <li><strong>GROQ_API_KEY:</strong> Required for all AI features (chat, agent, health scan, modernize, auto-commit). Get a free key at console.groq.com.</li>
+              <li><strong>GOOGLE_API_KEY:</strong> Optional. Used for the diagram engine if configured.</li>
+              <li><strong>GITHUB_TOKEN:</strong> Optional. Enables private repository access for git operations.</li>
             </ul>
-            <p className="text-white/60 text-xs font-bold leading-relaxed font-sans text-left">
-              Clicking 'Apply Variant' instructs the AST mutator core to merge structural changes into the code buffer instantly.
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Where Keys Are Stored</h3>
+            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
+              Keys are saved to a config.env file inside your platform's user config directory (e.g., C:\Users\you\AppData\Local\Aeres\AeresIDE\config.env on Windows). You can also set them via the .env file in the python-backend folder, or through the Onboarding modal / Settings panel in the IDE.
             </p>
           </div>
         )
       },
       {
-        id: 'macros-keybindings',
-        title: 'Macros & Keybindings',
+        id: 'security-model',
+        title: 'Security Model',
         icon: Icons.file,
-        header: 'Custom Vim Motions & AST Macros',
+        header: 'How Aeres Protects Your Code and Credentials',
         content: (
           <div>
             <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres supports deep vim motion emulation and custom AST macros. Bind complex refactoring logic directly to standard keyboard shortcuts.
+              Security is built into every layer of Aeres IDE. Here is a summary of all security measures in place:
             </p>
-
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Custom Keymap Configuration</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
-              Define your own global macros in the workspace `keymap.json`:
-            </p>
-            <pre className="bg-[#09090e] border border-white/10 shadow-[3px_3px_0px_#000000] rounded-3xl p-4 font-mono text-xs text-white font-extrabold select-all mb-8 leading-relaxed text-left">
-&#123;<br />
-&nbsp;&nbsp;"keybindings": [<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&#123; "key": "ctrl+shift+r", "command": "aeres.mutator.flipBounds" &#125;,<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&#123; "key": "alt+m", "command": "aeres.panels.toggleMutation" &#125;<br />
-&nbsp;&nbsp;]<br />
-&#125;
-            </pre>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Security Architecture</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>CORS Policy:</strong> The backend uses a strict allow_origin_regex that only permits requests from localhost, 127.0.0.1, and tauri://localhost. External websites cannot access your local backend.</li>
+              <li><strong>JWT Authentication:</strong> Production deployments use Clerk JWT (RS256) with JWKS auto-rotation. In local development, authentication gracefully degrades to a stub user.</li>
+              <li><strong>API Key Isolation:</strong> Keys are stored in user-specific directories via platformdirs, never in the project repository. The /api/keys endpoint masks key values in responses.</li>
+              <li><strong>File Access:</strong> All file operations go through Tauri's IPC bridge with OS-native permission controls.</li>
+              <li><strong>Terminal Safety:</strong> Terminals use native PTY via the portable-pty Rust crate. No shell injection is possible through the UI.</li>
+              <li><strong>WebSocket Scope:</strong> LSP and DAP WebSocket connections are scoped to 127.0.0.1 only.</li>
+            </ul>
           </div>
         )
-      }
-    ]
-  },
-  {
-    category: 'SYSTEM ARCHITECTURE',
-    pages: [
+      },
       {
-        id: 'tech-stack',
-        title: 'System Technology Stack',
+        id: 'settings-reference',
+        title: 'Settings Reference',
         icon: Icons.file,
-        header: 'High-Performance Hybrid Architecture',
+        header: 'All Available IDE Settings',
         content: (
           <div>
-            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-8">
-              Aeres's unified stack is optimized to deliver 60fps interaction paradigms in the client portal backed by lightning-fast neural reasoning models.
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Open Settings with Ctrl+, or via File &gt; Preferences &gt; Settings. Settings are organized into categories in the sidebar. You can also open the raw JSON by clicking the JSON icon in the Settings header.
             </p>
-
-            <div className="space-y-6 text-left">
-              <div>
-                <span className="text-xs font-mono text-[#ff8ba7] font-extrabold uppercase tracking-wider block mb-2">Desktop & Web Client (React / Electron)</span>
-                <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans">
-                  <li><strong>React 18 & Vite:</strong> Drives fast, dynamic layouts, HMR bindings, and lightning assembly.</li>
-                  <li><strong>Zustand:</strong> Minimizes render paths for tab configurations, terminal metrics, and git logs.</li>
-                  <li><strong>Framer Motion:</strong> Silk-like, micro-animating card indicators and scrolling physics.</li>
-                  <li><strong>Monaco Editor:</strong> Powers smooth text canvas rendering, code syntax styling, and multi-cursors.</li>
-                </ul>
-              </div>
-
-              <div>
-                <span className="text-xs font-mono text-[#ff8ba7] font-extrabold uppercase tracking-wider block mb-2">Core AI Engine Backend (FastAPI / Groq)</span>
-                <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans">
-                  <li><strong>FastAPI & WebSockets:</strong> Delivers asynchronous JSON hooks and live AI streaming chunks.</li>
-                  <li><strong>Groq Gateway:</strong> Connects local systems directly to Llama-3 70B & Vision APIs running at 300+ t/s.</li>
-                  <li><strong>LibCST & AST Parsers:</strong> Compiles, modifies, and mutates source files securely without standard text replacements.</li>
-                  <li><strong>Ripgrep:</strong> Powers ultra-fast workspace string finders and imports mappings.</li>
-                </ul>
-              </div>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Available Settings</h3>
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono mb-8 text-left">
+              <span className="text-white/60 font-bold">Font Size</span><span className="text-white font-extrabold">Editor font size in pixels (default: 14)</span>
+              <span className="text-white/60 font-bold">Font Family</span><span className="text-white font-extrabold">JetBrains Mono, Fira Code, Source Code Pro</span>
+              <span className="text-white/60 font-bold">Tab Size</span><span className="text-white font-extrabold">2, 4, or 8 spaces</span>
+              <span className="text-white/60 font-bold">Word Wrap</span><span className="text-white font-extrabold">off, on, wordWrapColumn, bounded</span>
+              <span className="text-white/60 font-bold">Minimap</span><span className="text-white font-extrabold">Show/hide the code minimap</span>
+              <span className="text-white/60 font-bold">Auto Save</span><span className="text-white font-extrabold">off, afterDelay, onFocusChange</span>
+              <span className="text-white/60 font-bold">Format On Save</span><span className="text-white font-extrabold">Auto-format on save</span>
+              <span className="text-white/60 font-bold">Color Theme</span><span className="text-white font-extrabold">9 themes: Cozy Y2K Dark, Nordic Frost, etc.</span>
+              <span className="text-white/60 font-bold">Groq API Key</span><span className="text-white font-extrabold">Configure under Chat category</span>
+              <span className="text-white/60 font-bold">Workspace Trust</span><span className="text-white font-extrabold">Prompt before opening untrusted folders</span>
             </div>
-          </div>
-        )
-      },
-      {
-        id: 'telemetry-structures',
-        title: 'Secure Telemetry',
-        icon: Icons.file,
-        header: 'Zero-Emission Local Metrics',
-        content: (
-          <div>
-            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Unlike cloud IDEs, Aeres keeps all crash telemetry and usage metrics strictly on your local disk inside an encrypted SQLite database.
-            </p>
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Data Isolation Policies</h3>
-            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
-              <li><strong>Offline Analytics:</strong> Flamegraphs and causal blames are never sent externally.</li>
-              <li><strong>Local Encryption:</strong> Your `settings.json` secrets are encrypted using AES-256 GCM.</li>
-            </ul>
           </div>
         )
       }

@@ -269,7 +269,7 @@ function FileContextMenu({
     useStore.setState({ activeTerminalId: id })
     setTimeout(() => {
       const isMac = window.electron.isMac
-      const openCmd = isMac ? 'open' : 'start ""'
+      const openCmd = isMac ? 'open' : 'Invoke-Item'
       window.electron.terminal.write(id, `npx -y live-server "${node.path}" || ${openCmd} "${node.path}"\r`)
     }, 500)
     onClose()
@@ -575,7 +575,11 @@ export default function FileTree() {
       if (!e) return
       setLoadingFile(node.path)
       try {
-        const content = await e.fs.readFile(node.path)
+        const isDb = ['.db', '.sqlite', '.sqlite3', '.s3db', '.sl3'].some(ext => node.name.toLowerCase().endsWith(ext))
+        let content = ''
+        if (!isDb) {
+          content = await e.fs.readFile(node.path)
+        }
         const lang = detectLanguage(node.name)
         openTab({ path: node.path, name: node.name, language: lang, content })
       } catch (err) {

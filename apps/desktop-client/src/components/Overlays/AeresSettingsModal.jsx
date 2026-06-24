@@ -44,7 +44,8 @@ const sidebarCategories = [
   { id: 'features', name: 'Features', hasSub: true },
   { id: 'application', name: 'Application', hasSub: true },
   { id: 'security', name: 'Security', hasSub: true },
-  { id: 'extensions', name: 'Extensions', hasSub: true }
+  { id: 'extensions', name: 'Extensions', hasSub: true },
+  { id: 'userGuide', name: 'User Guide', hasSub: false }
 ]
 
 export default function AeresSettingsModal({ onClose, initialCategory, initialTab }) {
@@ -458,7 +459,72 @@ export default function AeresSettingsModal({ onClose, initialCategory, initialTa
               </div>
             )}
 
-            {filteredSettings.length === 0 ? (
+            {selectedCategory === 'userGuide' ? (
+              <div className="text-[#cccccc] space-y-8 pr-4">
+                <section>
+                  <h3 className="text-[14px] font-semibold text-white mb-3">Getting Started Checklist</h3>
+                  <ul className="list-disc pl-5 space-y-2 text-[#969696] leading-relaxed">
+                    <li><strong className="text-[#cccccc]">Start Backend:</strong> Run <code className="bg-[#3c3c3c] px-1.5 py-0.5 rounded text-white font-mono">uvicorn app.server:app --reload --port 8008</code> in the python-backend folder.</li>
+                    <li><strong className="text-[#cccccc]">Start Frontend:</strong> Run <code className="bg-[#3c3c3c] px-1.5 py-0.5 rounded text-white font-mono">npm run dev</code> in the desktop-client folder.</li>
+                    <li><strong className="text-[#cccccc]">Set API Key:</strong> Add your Groq API key in Settings &gt; Chat.</li>
+                  </ul>
+                </section>
+
+                <section>
+                  <h3 className="text-[14px] font-semibold text-white mb-3">Keyboard Shortcuts</h3>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[#969696]">
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>Command Palette</span><span className="text-[#007acc] font-mono">Ctrl+Shift+P</span></div>
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>Settings</span><span className="text-[#007acc] font-mono">Ctrl+,</span></div>
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>Toggle Terminal</span><span className="text-[#007acc] font-mono">Ctrl+`</span></div>
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>AI Chat Panel</span><span className="text-[#007acc] font-mono">Ctrl+Alt+C</span></div>
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>AI Agent Panel</span><span className="text-[#007acc] font-mono">Ctrl+Alt+A</span></div>
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>File Explorer</span><span className="text-[#007acc] font-mono">Ctrl+Shift+E</span></div>
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>Source Control</span><span className="text-[#007acc] font-mono">Ctrl+Shift+G</span></div>
+                    <div className="flex justify-between border-b border-[#2d2d2d] pb-1"><span>Start Debugging</span><span className="text-[#007acc] font-mono">F5</span></div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="text-[14px] font-semibold text-white mb-3">Panels & Features</h3>
+                  <div className="space-y-4 text-[#969696] leading-relaxed">
+                    <div>
+                      <strong className="text-[#cccccc] block mb-0.5">Database Viewer</strong>
+                      Click any <code className="text-white">.db</code> or <code className="text-white">.sqlite</code> file in the explorer to open the built-in database table viewer.
+                    </div>
+                    <div>
+                      <strong className="text-[#cccccc] block mb-0.5">Live Server & Project Runner</strong>
+                      Click the Run button (top right of editor) or use Alt+L for Live Server. Aeres auto-detects Python, JS, Node, Django, and React projects.
+                    </div>
+                    <div>
+                      <strong className="text-[#cccccc] block mb-0.5">Health Scanner</strong>
+                      Available in the bottom panel. Scans the workspace for deprecated code and generates AI auto-fixes.
+                    </div>
+                    <div>
+                      <strong className="text-[#cccccc] block mb-0.5">Dependency Radar</strong>
+                      Available in the bottom panel. Visualizes project dependencies as an interactive graph and checks for CVE vulnerabilities.
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h3 className="text-[14px] font-semibold text-white mb-3">Troubleshooting FAQ</h3>
+                  <div className="space-y-4 text-[#969696] leading-relaxed">
+                    <div>
+                      <strong className="text-[#cccccc] block mb-0.5">Q: AI features are failing or returning errors.</strong>
+                      A: Ensure the Python backend is running on port 8008 and your GROQ_API_KEY is configured in Settings.
+                    </div>
+                    <div>
+                      <strong className="text-[#cccccc] block mb-0.5">Q: Git panel shows "Not a git repository".</strong>
+                      A: Use the "Initialize Repository" button in the Git panel or run <code className="text-white">git init</code> in the terminal.
+                    </div>
+                    <div>
+                      <strong className="text-[#cccccc] block mb-0.5">Q: Terminal says "failed to run 'cargo metadata'... program not found"</strong>
+                      A: Aeres runs inside a Tauri wrapper which requires Rust. Install Rust & Cargo from <code className="text-white">rustup.rs</code>, restart your terminal, and try again.
+                    </div>
+                  </div>
+                </section>
+              </div>
+            ) : filteredSettings.length === 0 ? (
               <div className="text-[#969696] py-4">No settings found.</div>
             ) : (
               <div className="space-y-6 max-w-2xl">

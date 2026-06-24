@@ -8,7 +8,7 @@ from typing import List, Dict
 from app.core.security import get_current_user
 from app.rag_engine.ast_parser import parse_python_file, parse_js_file, parse_generic_file
 from app.rag_engine.vector_db import store_catalyst_nodes
-from app.core.config import settings
+from app.core.config import settings, user_data_dir
 
 router = APIRouter()
 
@@ -25,7 +25,7 @@ async def ingest_repository(req: IngestRepoRequest, user: dict = Depends(get_cur
     if "github.com" not in req.github_url:
         repo_name = req.github_url.replace("https://", "").replace("http://", "").replace("/", "_")
         
-    base_dir = os.path.join(os.getcwd(), ".aeres", "catalyst_repos")
+    base_dir = os.path.join(user_data_dir, "catalyst_repos")
     os.makedirs(base_dir, exist_ok=True)
     repo_path = os.path.join(base_dir, repo_name)
     
@@ -168,7 +168,7 @@ async def query_issue(req: QueryIssueRequest, request: dict = Depends(get_curren
     from app.rag_engine.groq_gateway import groq_complete
     
     # Read the full tree structure
-    base_dir = os.path.join(os.getcwd(), ".aeres", "catalyst_repos")
+    base_dir = os.path.join(user_data_dir, "catalyst_repos")
     tree_file_path = os.path.join(base_dir, f"{req.repo_name}_tree.txt")
     tree_context = ""
     if os.path.exists(tree_file_path):
@@ -228,7 +228,7 @@ async def diagram_blueprint(req: QueryIssueRequest, request: dict = Depends(get_
             
     # Also grab the _tree.txt
     tree_context = ""
-    base_dir = os.path.join(os.getcwd(), ".aeres", "catalyst_repos")
+    base_dir = os.path.join(user_data_dir, "catalyst_repos")
     tree_path = os.path.join(base_dir, f"{repo_name}_tree.txt")
     if os.path.exists(tree_path):
         with open(tree_path, "r", encoding="utf-8") as f:

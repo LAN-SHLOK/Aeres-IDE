@@ -217,7 +217,11 @@ async fn check_diagnostics(file_path: String) -> Result<Value, String> {
                             for msg in messages {
                                 let message = msg.get("message").and_then(|m| m.as_str()).unwrap_or("Unknown error").to_string();
                                 let code = msg.get("code").and_then(|c| c.as_str()).unwrap_or("");
-                                let severity = if message.contains("error") { "Error".to_string() } else { "Warning".to_string() };
+                                let severity = if message.to_lowercase().contains("error") || code.starts_with("E") || code.starts_with("F") { 
+                                    "Error".to_string() 
+                                } else { 
+                                    "Warning".to_string() 
+                                };
                                 
                                 diagnostics.push(Diagnostic {
                                     source: format!("ruff({})", code),

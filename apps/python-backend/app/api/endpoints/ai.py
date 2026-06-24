@@ -23,7 +23,8 @@ router = APIRouter()
 async def codebase_chat(req: RagQueryRequest, user: dict = Depends(get_current_user)):
     """General chat about the codebase."""
     try:
-        agent = CodebaseAgent(root_path=os.getcwd())
+        root = req.root_path if hasattr(req, 'root_path') and req.root_path else os.getcwd()
+        agent = CodebaseAgent(root_path=root)
         answer = await agent.answer_question(req.question, file_context=req.context)
         return {"answer": answer}
     except Exception as e:
