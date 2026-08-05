@@ -8,6 +8,7 @@ export default function CausalBlameMap() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [showChain, setShowChain] = useState(true)
   const svgRef = useRef(null)
 
   useEffect(() => {
@@ -20,9 +21,10 @@ export default function CausalBlameMap() {
         if (!e?.git?.causalChain) throw new Error('Git Bridge not available')
 
         const json = await e.git.causalChain({
-          repoPath: target.repoPath,
-          filePath: target.filePath,
-          functionName: target.functionName,
+          repo_path: target.repoPath,
+          file_path: target.filePath,
+          function_name: target.functionName,
+          error_message: target.errorMessage || '',
         })
         
         if (json.error) setError(json.error)
@@ -72,6 +74,15 @@ export default function CausalBlameMap() {
       .attr('height', '100%')
       .attr('fill', 'url(#blueprint-grid)')
 
+    // Container for zoomable content
+    const g = svg.append('g')
+    
+    // Add zoom support
+    const zoom = d3.zoom().on('zoom', (event) => {
+      g.attr('transform', event.transform)
+    })
+    svg.call(zoom)
+
     // Define arrows
     svg.append('defs').append('marker')
       .attr('id', 'arrowhead')
@@ -87,7 +98,7 @@ export default function CausalBlameMap() {
       .attr('fill', '#475569') // slate-600
       .style('stroke', 'none')
 
-    const link = svg.append('g')
+    const link = g.append('g')
       .selectAll('line')
       .data(formattedEdges)
       .join('line')
@@ -96,7 +107,7 @@ export default function CausalBlameMap() {
       .attr('stroke-dasharray', d => d.label === 'caused' ? '0' : '4')
       .attr('marker-end', 'url(#arrowhead)')
 
-    const node = svg.append('g')
+    const node = g.append('g')
       .selectAll('g')
       .data(data.nodes)
       .join('g')
@@ -113,17 +124,17 @@ export default function CausalBlameMap() {
         .on('end', dragended))
 
     node.append('rect')
-      .attr('x', -25)
+      .attr('x', d => d.id === 'error' ? -50 : -25)
       .attr('y', -12)
-      .attr('width', 50)
+      .attr('width', d => d.id === 'error' ? 100 : 50)
       .attr('height', 24)
       .attr('rx', 2)
-      .attr('fill', d => d.type === 'error' ? '#ef4444' : d.isCausal ? '#7C3AED' : '#334155')
+      .attr('fill', d => d.type === 'error' ? '#0ea5e9' : d.isCausal ? '#7C3AED' : '#334155')
       .attr('stroke', '#1e293b')
       .attr('stroke-width', 1)
 
     node.append('text')
-      .text(d => d.id === 'error' ? '!' : d.hash || '?')
+      .text(d => d.id === 'error' ? (data.function || 'CURRENT') : d.hash || '?')
       .attr('text-anchor', 'middle')
       .attr('dy', '.35em')
       .attr('fill', 'white')
@@ -180,7 +191,7 @@ export default function CausalBlameMap() {
           {loading && <div className="w-3 h-3 border-2 border-aeres-violet border-t-transparent rounded-full animate-spin"></div>}
           <button
             onClick={() => {
-              useStore.setState({ causalTarget: null, activeRightTab: null })
+              useStore.setState({ causalTarget: null, activeRightTab: 'chat' })
             }}
             className="flex items-center gap-1 px-2 py-1 text-[10px] font-bold text-slate-400 hover:text-white bg-slate-800/60 hover:bg-red-500/20 border border-slate-700/50 hover:border-red-500/40 rounded transition-all active:scale-95"
             title="Close Causal Blame Map"
@@ -201,9 +212,14 @@ export default function CausalBlameMap() {
       </div>
 
       {data?.nodes?.length > 0 && (
-        <div className="p-3 bg-aeres-surface/40 border-t border-aeres-border max-h-48 overflow-y-auto">
-          <h4 className="text-[10px] font-bold text-aeres-muted uppercase mb-2">Recent Chain</h4>
-          {data.nodes.filter(n => n.type === 'commit').map(n => (
+        <div className={`bg-aeres-surface/40 border-t border-aeres-border transition-all ${showChain ? 'max-h-48 overflow-y-auto p-3' : 'p-2'}`}>
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-[10px] font-bold text-aeres-muted uppercase">Recent Chain</h4>
+            <button onClick={() => setShowChain(!showChain)} className="text-[10px] font-bold text-aeres-violet hover:text-white transition-colors px-2 py-0.5 rounded bg-aeres-bg/50">
+              {showChain ? 'Hide ↓' : 'Show ↑'}
+            </button>
+          </div>
+          {showChain && data.nodes.filter(n => n.type === 'commit').map(n => (
             <div key={n.id} className="group flex items-start gap-2 mb-2 last:mb-0">
               <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${n.isCausal ? 'bg-aeres-violet shadow-[0_0_8px_rgba(124,58,237,0.5)]' : 'bg-aeres-border'}`} />
               <div>

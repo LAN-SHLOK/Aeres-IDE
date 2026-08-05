@@ -41,7 +41,7 @@ class CodebaseAgent:
         user_prompt = f"Context:\n{full_context}\n\nQuestion: {question}"
         
         try:
-            answer = await groq_complete(system_prompt, user_prompt, max_tokens=1000, api_key=self.api_key)
+            answer = await groq_complete(system_prompt, user_prompt, max_tokens=4096, api_key=self.api_key)
             return answer
         except Exception as e:
             print(f"[CodebaseAgent] Groq error: {e}")
@@ -73,15 +73,17 @@ class CodebaseAgent:
         )
         
         try:
-            raw = await groq_complete(system_prompt, user_prompt, max_tokens=4000, temperature=0.1, model=settings.GROQ_MODEL, api_key=self.api_key)
+            raw = await groq_complete(system_prompt, user_prompt, max_tokens=8192, temperature=0.1, model="llama-3.3-70b-versatile", api_key=self.api_key)
             
             # Try to parse JSON from the response
             cleaned = raw.strip()
-            # Strip markdown code fences if present
-            if cleaned.startswith("```"):
-                lines = cleaned.split("\n")
-                cleaned = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
-            
+            import re
+            json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+            if json_match:
+                cleaned = json_match.group(0)
+            else:
+                raise json.JSONDecodeError("No JSON block found", cleaned, 0)
+                
             result = json.loads(cleaned)
             result["file_path"] = file_path  # ensure correct path
             return result

@@ -102,78 +102,81 @@ if __name__ == '__main__': main()
         await window.electron.fs.createFolder(aeresDir)
         const runnerPath = `${aeresDir}${sep}temporal_runner.js`
         const runnerCode = `
-const { spawnSync } = require('child_process');
+const inspector = require('inspector');
 const fs = require('fs');
 const path = require('path');
-const target = process.argv[2];
-const isTsx = target.endsWith('.ts') || target.endsWith('.tsx');
-const aeresDir = path.join(process.cwd(), '.aeres');
-if (!fs.existsSync(aeresDir)) fs.mkdirSync(aeresDir);
-const profPath = path.join(aeresDir, 'temp.cpuprofile');
-if (fs.existsSync(profPath)) fs.unlinkSync(profPath);
-let cmd = 'node';
-let args = ['--cpu-prof', '--cpu-prof-interval=10', '--cpu-prof-dir=' + aeresDir, '--cpu-prof-name=temp.cpuprofile', target];
-if (isTsx) {
-    cmd = 'npx';
-    process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --cpu-prof --cpu-prof-interval=10 --cpu-prof-dir="' + aeresDir + '" --cpu-prof-name=temp.cpuprofile';
-    args = ['tsx', target];
-}
-spawnSync(cmd, args, { stdio: 'inherit', env: process.env });
-if (fs.existsSync(profPath)) {
-    try {
-        const profile = JSON.parse(fs.readFileSync(profPath, 'utf8'));
-        const nodes = profile.nodes;
-        const newData = {};
-        for (const node of nodes) {
-            const callFrame = node.callFrame;
-            if (!callFrame || !callFrame.url) continue;
-            let filePath = callFrame.url;
-            if (filePath.startsWith('file://')) {
-                filePath = filePath.replace('file://', '');
-                if (process.platform === 'win32' && filePath.startsWith('/')) filePath = filePath.slice(1);
+const session = new inspector.Session();
+session.connect();
+session.post('Profiler.enable', () => {
+    session.post('Profiler.setSamplingInterval', { interval: 1000 }, () => {
+        session.post('Profiler.start', () => {
+            setInterval(() => {
+                session.post('Profiler.stop', (err, { profile }) => {
+                    if (!err && profile) processProfile(profile);
+                    session.post('Profiler.start');
+                });
+            }, 2000).unref();
+        });
+    });
+});
+function processProfile(profile) {
+    const aeresDir = path.join(process.cwd(), '.aeres');
+    if (!fs.existsSync(aeresDir)) fs.mkdirSync(aeresDir);
+    const nodes = profile.nodes;
+    const newData = {};
+    for (const node of nodes) {
+        const callFrame = node.callFrame;
+        if (!callFrame || !callFrame.url) continue;
+        let filePath = callFrame.url;
+        if (filePath.startsWith('file://')) {
+            filePath = filePath.replace('file://', '');
+            if (process.platform === 'win32' && filePath.startsWith('/')) filePath = filePath.slice(1);
+        }
+        if (!path.isAbsolute(filePath)) continue;
+        filePath = path.resolve(filePath);
+        if (filePath.includes('node_modules') || filePath.includes('node:')) continue;
+        const line = callFrame.lineNumber + 1;
+        const name = callFrame.functionName || '(anonymous)';
+        const hitCount = node.hitCount || 0;
+        if (hitCount === 0) continue;
+        const durationMs = hitCount * 1; 
+        if (!newData[filePath]) newData[filePath] = [];
+        newData[filePath].push({ line, name, durationMs, calls: 1 });
+    }
+    const outFile = path.join(aeresDir, 'temporal_lens.json');
+    let historyData = {};
+    if (fs.existsSync(outFile)) {
+        try { historyData = JSON.parse(fs.readFileSync(outFile, 'utf8')); } catch(e){}
+    }
+    let updated = false;
+    for (const [filename, functions] of Object.entries(newData)) {
+        if (!historyData[filename]) historyData[filename] = [];
+        const existingFuncs = {};
+        for (const f of historyData[filename]) existingFuncs[f.line + '_' + f.name] = f;
+        for (const new_f of functions) {
+            updated = true;
+            const key = new_f.line + '_' + new_f.name;
+            if (existingFuncs[key]) {
+                const hist = existingFuncs[key].history || [];
+                hist.unshift(new_f.durationMs);
+                if (hist.length > 20) hist.length = 20;
+                existingFuncs[key].durationMs = hist.reduce((a,b)=>a+b,0)/hist.length;
+                existingFuncs[key].calls = (existingFuncs[key].calls || 0) + 1;
+                existingFuncs[key].history = hist;
+            } else {
+                new_f.history = [new_f.durationMs];
+                existingFuncs[key] = new_f;
             }
-            // Node.js cpu profiles often use raw absolute paths, not file://
-            if (!path.isAbsolute(filePath)) continue;
-            filePath = path.resolve(filePath);
-            if (filePath.includes('node_modules') || filePath.includes('node:')) continue;
-            const line = callFrame.lineNumber + 1;
-            const name = callFrame.functionName || '(anonymous)';
-            const hitCount = node.hitCount || 0;
-            const durationMs = hitCount * 1; 
-            if (!newData[filePath]) newData[filePath] = [];
-            newData[filePath].push({ line, name, durationMs, calls: 1 });
         }
-        const outFile = path.join(aeresDir, 'temporal_lens.json');
-        let historyData = {};
-        if (fs.existsSync(outFile)) {
-            try { historyData = JSON.parse(fs.readFileSync(outFile, 'utf8')); } catch(e){}
-        }
-        for (const [filename, functions] of Object.entries(newData)) {
-            if (!historyData[filename]) historyData[filename] = [];
-            const existingFuncs = {};
-            for (const f of historyData[filename]) existingFuncs[f.line + '_' + f.name] = f;
-            for (const new_f of functions) {
-                const key = new_f.line + '_' + new_f.name;
-                if (existingFuncs[key]) {
-                    const hist = existingFuncs[key].history || [];
-                    hist.unshift(new_f.durationMs);
-                    if (hist.length > 20) hist.length = 20;
-                    existingFuncs[key].durationMs = hist.reduce((a,b)=>a+b,0)/hist.length;
-                    existingFuncs[key].calls = (existingFuncs[key].calls || 0) + 1;
-                    existingFuncs[key].history = hist;
-                } else {
-                    new_f.history = [new_f.durationMs];
-                    existingFuncs[key] = new_f;
-                }
-            }
-            historyData[filename] = Object.values(existingFuncs);
-        }
+        historyData[filename] = Object.values(existingFuncs);
+    }
+    if (updated) {
         fs.writeFileSync(outFile, JSON.stringify(historyData));
-    } catch(e) {}
+    }
 }
 `.trim()
         await window.electron.fs.writeFile(runnerPath, runnerCode)
-        return `node "${runnerPath}" "${filePath}"`
+        return isTs ? `npx tsx --require "${runnerPath}" "${filePath}"` : `node --require "${runnerPath}" "${filePath}"`
       }
     } catch (e) {}
     if (isTs) return `npx tsx "${filePath}"`

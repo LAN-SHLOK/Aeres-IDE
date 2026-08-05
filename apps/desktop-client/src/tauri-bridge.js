@@ -122,12 +122,12 @@ window.electron = {
       // Open the web-frontend auth page in the user's default browser
       try {
         const { open } = await import('@tauri-apps/plugin-shell')
-        const webUrl = `http://localhost:5173/auth?source=${source || 'ide'}`
+        const webUrl = `https://aeres-ide-web-frontend.vercel.app/auth?source=${source || 'ide'}`
         await open(webUrl)
       } catch (e) {
         console.error('[auth.openBrowser] Failed:', e)
         // Fallback: open via window.open (won't work in Tauri webview but worth trying)
-        window.open(`http://localhost:5173/auth?source=${source || 'ide'}`, '_blank')
+        window.open(`https://aeres-ide-web-frontend.vercel.app/auth?source=${source || 'ide'}`, '_blank')
       }
     },
     openExternal: async (url) => {
@@ -391,7 +391,7 @@ window.electron = {
     healthScan: async (opts) => await fetchProxy('/api/analyze/health', 'POST', opts),
     callGraph: async (filePath, rootPath) => await fetchProxy(`/api/analyze/call_graph?file_path=${encodeURIComponent(filePath)}&root_path=${encodeURIComponent(rootPath)}`, 'GET'),
     autocomplete: async (opts) => await fetchProxy('/api/rag/autocomplete', 'POST', opts),
-    modernize: async (code, path) => {
+    modernize: async (code, path, onData, depName) => {
       try {
         let port = 8008;
         try { port = await invoke('get_backend_port') } catch(e) {}
@@ -409,11 +409,19 @@ window.electron = {
         const headers = { 'Content-Type': 'application/json' }
         if (groqApiKey) headers['x-groq-api-key'] = groqApiKey
 
+        const payload = { content: code, path: path }
+        if (depName) payload.dep_name = depName
+
         const res = await fetch(url, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ content: code, path: path })
+          body: JSON.stringify(payload)
         })
+        if (!res.ok) {
+           const errText = await res.text()
+           if (onData) onData({ type: 'error', message: `Server error ${res.status}: ${errText.substring(0, 50)}` })
+           return
+        }
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -427,7 +435,7 @@ window.electron = {
             if (line.startsWith('data: ')) {
               try {
                 const data = JSON.parse(line.substring(6))
-                if (window.__aeresAnalyzeStreamCb) window.__aeresAnalyzeStreamCb(data)
+                if (onData) onData(data)
               } catch (e) {}
             }
           }
@@ -435,10 +443,6 @@ window.electron = {
       } catch (e) {
         console.error('Modernize stream error:', e)
       }
-    },
-    onStream: (cb) => {
-      window.__aeresAnalyzeStreamCb = cb
-      return () => { window.__aeresAnalyzeStreamCb = null }
     }
   },
 
@@ -536,6 +540,7 @@ window.electron = {
 
   // RAG / AI Agent
   rag: {
+    agentEdit: async (opts) => await fetchProxy('/api/rag/agent-edit', 'POST', opts),
     query: async (question, context) => await fetchProxy('/api/rag/query', 'POST', { question, context }),
     onAgentStep: (cb) => {
       window.__aeresRagStreamCb = cb
@@ -545,7 +550,7 @@ window.electron = {
       try {
         let port = 8000;
         try { port = await invoke('get_backend_port') } catch(e) {}
-        const url = `http://127.0.0.1:${port}/api/rag/agent_stream`
+        const url = `http://127.0.0.1:${port}/api/rag/agent-stream`
         
         let groqApiKey = ''
         try {
@@ -564,6 +569,12 @@ window.electron = {
           headers,
           body: JSON.stringify(opts)
         })
+        
+        if (!res.ok) {
+           const errText = await res.text();
+           throw new Error(`HTTP ${res.status}: ${errText}`);
+        }
+        
         const reader = res.body.getReader()
         const decoder = new TextDecoder()
         let buffer = ''
@@ -644,6 +655,14 @@ window.electron = {
   },
 
   // LSP
+  extensions: {
+    marketplace: async () => await fetchProxy('/api/extensions/marketplace', 'GET'),
+    installed: async (rootPath) => await fetchProxy('/api/extensions/installed', 'POST', { rootPath }),
+    install: async (id, rootPath) => await fetchProxy('/api/extensions/install', 'POST', { id, rootPath }),
+    uninstall: async (id, rootPath) => await fetchProxy('/api/extensions/uninstall', 'POST', { id, rootPath }),
+    loadLocal: async (sourcePath, rootPath) => await fetchProxy('/api/extensions/load_local', 'POST', { sourcePath, rootPath })
+  },
+
   lsp: {
     start: async () => {},
     notify: async () => {},

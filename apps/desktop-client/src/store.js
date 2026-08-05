@@ -285,7 +285,7 @@ export const useStore = create(
       theme: 'cutie-dark',
       fileIconTheme: 'material-icons',
       productIconTheme: 'default',
-      installedExtensions: ['aeres-ai-core'], // Aeres AI Core is installed by default
+      installedExtensions: [], // Fetched dynamically now
       disabledExtensions: [],
 
       setSidebarWidth: (w) => set({ sidebarWidth: w }),
@@ -305,22 +305,41 @@ export const useStore = create(
       setProductIconTheme: (theme) => set({ productIconTheme: theme }),
       serverUrl: null,
       setServerUrl: (url) => set({ serverUrl: url }),
-      installExtension: (id) => set((s) => {
-        if (s.installedExtensions.includes(id)) return {}
+      setInstalledExtensions: (list) => set({ installedExtensions: list }),
+      installExtension: async (id) => {
+        const state = get()
+        if (state.installedExtensions.includes(id)) return
+        if (window.electron?.extensions && state.rootPath) {
+          try {
+            await window.electron.extensions.install(id, state.rootPath)
+          } catch(e) {
+            console.error('Failed to install extension:', e)
+            return
+          }
+        }
+        set((s) => ({ installedExtensions: [...s.installedExtensions, id] }))
         import('./utils/extensionHost.js').then(({ extensionHost }) => {
           extensionHost.loadExtension(id)
         })
-        return { installedExtensions: [...s.installedExtensions, id] }
-      }),
-      uninstallExtension: (id) => set((s) => {
+      },
+      uninstallExtension: async (id) => {
+        const state = get()
+        if (window.electron?.extensions && state.rootPath) {
+          try {
+            await window.electron.extensions.uninstall(id, state.rootPath)
+          } catch(e) {
+            console.error('Failed to uninstall extension:', e)
+            return
+          }
+        }
+        set((s) => ({
+          installedExtensions: s.installedExtensions.filter(x => x !== id),
+          disabledExtensions: s.disabledExtensions.filter(x => x !== id)
+        }))
         import('./utils/extensionHost.js').then(({ extensionHost }) => {
           extensionHost.unloadExtension(id)
         })
-        return {
-          installedExtensions: s.installedExtensions.filter(x => x !== id),
-          disabledExtensions: s.disabledExtensions.filter(x => x !== id)
-        }
-      }),
+      },
       toggleDisableExtension: (id) => set((s) => {
         const isCurrentlyDisabled = s.disabledExtensions.includes(id)
         import('./utils/extensionHost.js').then(({ extensionHost }) => {

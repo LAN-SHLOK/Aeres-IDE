@@ -84,10 +84,10 @@ export default function ApiSandboxPanel() {
       
       try {
         // Format it nicely
-        const parsed = JSON.parse(data.payload)
-        setBody(JSON.stringify(parsed, null, 2))
+        const payloadObj = typeof data.payload === 'string' ? JSON.parse(data.payload) : data.payload
+        setBody(JSON.stringify(payloadObj, null, 2))
       } catch (e) {
-        setBody(data.payload)
+        setBody(typeof data.payload === 'object' ? JSON.stringify(data.payload, null, 2) : String(data.payload))
       }
     } catch (err) {
       console.error(err)

@@ -99,7 +99,7 @@ def get_folder_structure(file_path: str) -> str:
 
 
 async def run_modernize_pipeline(
-    file_content: str, file_path: str, api_key: str = None
+    file_content: str, file_path: str, dep_name: str = None, api_key: str = None
 ) -> AsyncGenerator[str, None]:
     """Run the modernization pipeline using AST Rule Generation."""
     language = detect_language(file_path)
@@ -108,9 +108,30 @@ async def run_modernize_pipeline(
     if not flags:
         # Fallback to AI Analysis for anything not in the DB
         folder_structure = await asyncio.to_thread(get_folder_structure, file_path)
-        prompt = f"Analyze this {language} file for ANY deprecated functions, legacy patterns, or framework-specific lint warnings (e.g., using <img> instead of next/image in Next.js, or old React patterns). If the file is already modern and optimal, output exactly the word 'NO_DEPRECATIONS'. Otherwise, output ONLY the fully modernized and fixed source code. Do NOT output markdown or explanations, just the raw code.\n\nFile:\n```\n{file_content}\n```"
+        dep_instruction = f"CRITICAL: The user wants to completely remove the '{dep_name}' dependency from this file. You MUST rewrite the file to use modern native equivalents (e.g. fetch, axios, native fs) instead of '{dep_name}'." if dep_name else ""
         
-        from app.rag_engine.groq_gateway import generate_modernize_rule, enforce_syntax_only
+        prompt = f"""You are an expert Principal Engineer. Your task is to perform a comprehensive modernization and refactoring of the following {language} file.
+
+{dep_instruction}
+
+Analyze the file for:
+1. Deprecated functions and legacy patterns.
+2. Missing or weak typing (add robust type hints for Python/TypeScript).
+3. Suboptimal async/await logic or blocking operations.
+4. Old framework-specific patterns (e.g., legacy React patterns, old Next.js routing/image tags).
+5. Code readability, performance anti-patterns, and standard library best practices.
+
+
+If the file is already perfectly modern and optimal, output exactly the word 'NO_DEPRECATIONS'.
+Otherwise, output ONLY the fully modernized and fixed source code. 
+CRITICAL: Do NOT output markdown, explanations, or wrap the code in ```. Output the raw, completely rewritten file from start to finish. Do NOT truncate the file.
+
+File:
+```
+{file_content}
+```
+"""
+        
         raw_content = await generate_modernize_rule(prompt, api_key=api_key)
         new_file_content = enforce_syntax_only(raw_content)
         
@@ -144,7 +165,7 @@ async def run_modernize_pipeline(
                 source_url = rag_results[0]["source_url"]
 
             # Prompt now asks for the entire modernized file
-            prompt = assemble_strict_prompt(current_content, context, flag.function_name, folder_structure)
+            prompt = assemble_strict_prompt(current_content, context, flag.function_name, folder_structure, dep_name=dep_name)
 
             yield json.dumps({
                 "type": "flag_found",
@@ -162,6 +183,8 @@ async def run_modernize_pipeline(
             yield json.dumps({"type": "code_chunk", "content": current_content})
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             yield json.dumps({
                 "type": "flag_found",
                 "flag": flag.model_dump(),

@@ -73,6 +73,9 @@ export default function DatabaseViewer() {
     if (!selectedTable || !filePath || !backendUrl || queryMode) return
     setTableLoading(true)
     setError(null)
+    setColumns([])
+    setRows([])
+    setTotal(0)
 
     fetch(`${backendUrl}/api/db/table`, {
       method: 'POST',
@@ -85,7 +88,13 @@ export default function DatabaseViewer() {
       }),
     })
       .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        if (!res.ok) {
+          return res.json().then(errData => {
+            throw new Error(errData.detail || `HTTP ${res.status}`)
+          }).catch(() => {
+            throw new Error(`HTTP ${res.status}`)
+          })
+        }
         return res.json()
       })
       .then(data => {

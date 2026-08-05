@@ -80,11 +80,18 @@ async fn debug_launch(app: AppHandle, file_path: String, cwd: Option<String>) ->
     DEBUG_PROCESSES.lock().unwrap().insert(session_id.clone(), child);
     
     let app_clone1 = app.clone();
+    let session_id_clone = session_id.clone();
     thread::spawn(move || {
         let reader = BufReader::new(stdout);
         for line in reader.lines() {
             if let Ok(l) = line {
                 let _ = app_clone1.emit("debug:output", format!("{}\n", l));
+            }
+        }
+        // Reap zombie process and remove from map when stdout closes
+        if let Ok(mut lock) = DEBUG_PROCESSES.lock() {
+            if let Some(mut child) = lock.remove(&session_id_clone) {
+                let _ = child.wait();
             }
         }
         let _ = app_clone1.emit("debug:terminated", ());
@@ -107,6 +114,7 @@ async fn debug_launch(app: AppHandle, file_path: String, cwd: Option<String>) ->
 async fn debug_stop(session_id: String) -> Result<(), String> {
     if let Some(mut child) = DEBUG_PROCESSES.lock().unwrap().remove(&session_id) {
         let _ = child.kill();
+        let _ = child.wait(); // Reap zombie
     }
     Ok(())
 }
@@ -186,7 +194,7 @@ async fn check_diagnostics(file_path: String) -> Result<Value, String> {
                 }
             }
             
-            if diagnostics.is_empty() {
+            if diagnostics.is_empty() && ext == "js" {
                 let node_cmd = "node";
                 if let Ok(output) = std::process::Command::new(node_cmd).args(["-c", &file_path]).output() {
                     if !output.status.success() {
@@ -239,26 +247,53 @@ async fn check_diagnostics(file_path: String) -> Result<Value, String> {
             }
             
             if diagnostics.is_empty() {
-                if let Ok(output) = std::process::Command::new(python_cmd).args(["-m", "py_compile", &file_path]).output() {
-                    if !output.status.success() {
-                        let stderr = String::from_utf8_lossy(&output.stderr);
-                        if let Some(first_line) = stderr.lines().next() {
-                            diagnostics.push(Diagnostic {
-                                source: "python-syntax".to_string(),
-                                message: first_line.to_string(),
-                                line: 1,
-                                severity: "Error".to_string(),
-                                start_column: None, end_line: None, end_column: None,
-                            });
+                let python_script = r#"
+import sys, ast, json
+try:
+    with open(sys.argv[1], 'r', encoding='utf-8') as f:
+        ast.parse(f.read())
+except SyntaxError as e:
+    print(json.dumps([{"message": str(e.msg), "line": e.lineno or 1}]))
+except Exception:
+    pass
+"#;
+                if let Ok(output) = std::process::Command::new(python_cmd)
+                    .args(["-c", python_script, &file_path])
+                    .output() 
+                {
+                    if let Ok(json_str) = String::from_utf8(output.stdout) {
+                        if let Ok(parsed) = serde_json::from_str::<Value>(&json_str) {
+                            if let Some(arr) = parsed.as_array() {
+                                for err in arr {
+                                    diagnostics.push(Diagnostic {
+                                        source: "python-syntax".to_string(),
+                                        message: err.get("message").and_then(|m| m.as_str()).unwrap_or("Syntax Error").to_string(),
+                                        line: err.get("line").and_then(|l| l.as_i64()).unwrap_or(1) as i32,
+                                        severity: "Error".to_string(),
+                                        start_column: None, end_line: None, end_column: None,
+                                    });
+                                }
+                            }
                         }
                     }
                 }
             }
         },
         "rs" => {
-            let dir = path.parent().unwrap_or(Path::new("."));
+            let mut root_dir = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+            // Traverse upwards to find Cargo.toml so we run in the workspace root
+            let mut current = root_dir.clone();
+            loop {
+                if current.join("Cargo.toml").exists() {
+                    root_dir = current;
+                    break;
+                }
+                if !current.pop() {
+                    break;
+                }
+            }
             let output = std::process::Command::new("cargo")
-                .current_dir(dir)
+                .current_dir(&root_dir)
                 .args(["check", "--message-format=json"])
                 .output();
                 
@@ -366,13 +401,13 @@ async fn check_diagnostics(file_path: String) -> Result<Value, String> {
 
 struct BackendState {
     port: Mutex<Option<u16>>,
-    process: Mutex<Option<std::process::Child>>,
+    process: Mutex<Option<tauri_plugin_shell::process::CommandChild>>,
 }
 
 impl Drop for BackendState {
     fn drop(&mut self) {
         if let Ok(mut lock) = self.process.lock() {
-            if let Some(mut child) = lock.take() {
+            if let Some(child) = lock.take() {
                 let _ = child.kill();
             }
         }
@@ -386,23 +421,49 @@ async fn get_backend_port(state: State<'_, BackendState>) -> Result<u16, String>
 }
 
 const SKIP_DIRS: &[&str] = &[
-    ".git", "node_modules", "__pycache__", ".next", "target", "dist", ".vscode", ".idea",
+    ".git", "node_modules", "__pycache__", ".next", "target", "dist", ".vscode", ".idea", "venv", ".venv",
 ];
 
-fn build_tree(path: &std::path::Path) -> Value {
-    let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+fn build_tree(path: &std::path::Path, node_count: &mut usize) -> Value {
     let path_str = path.to_string_lossy().to_string();
+
+    if *node_count >= 10000 {
+        return serde_json::json!({
+            "name": "[⚠️ Workspace too large. Truncated at 10,000 files]",
+            "path": path_str,
+            "type": "file"
+        });
+    }
+
+    *node_count += 1;
+    let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
 
     if path.is_dir() {
         let mut children = Vec::new();
         if let Ok(entries) = std::fs::read_dir(path) {
             for entry in entries.flatten() {
+                if *node_count >= 10000 {
+                    children.push(serde_json::json!({
+                        "name": "[⚠️ Workspace too large. Truncated at 10,000 files]",
+                        "path": path_str,
+                        "type": "file"
+                    }));
+                    break;
+                }
+
                 let entry_path = entry.path();
                 let entry_name = entry_path.file_name().unwrap_or_default().to_string_lossy().to_string();
                 if entry_path.is_dir() && SKIP_DIRS.contains(&entry_name.as_str()) {
                     continue;
                 }
-                children.push(build_tree(&entry_path));
+                
+                let child = build_tree(&entry_path, node_count);
+                let is_warning = child.get("name").and_then(|v| v.as_str()) == Some("[⚠️ Workspace too large. Truncated at 10,000 files]");
+                children.push(child);
+                
+                if is_warning || *node_count >= 10000 {
+                    break;
+                }
             }
         }
         // Sort: directories first, then files, alphabetically within each group
@@ -439,7 +500,8 @@ async fn get_tree(path: String) -> Result<Value, String> {
     if !root.exists() {
         return Err("Path does not exist".to_string());
     }
-    let tree = build_tree(root);
+    let mut node_count = 0;
+    let tree = build_tree(root, &mut node_count);
     // Return just the children array for the root directory
     if let Some(children) = tree.get("children") {
         Ok(children.clone())
@@ -524,6 +586,7 @@ async fn new_window(app: AppHandle) -> Result<(), String> {
 struct PtyInstance {
     master: Box<dyn portable_pty::MasterPty + Send>,
     writer: Box<dyn Write + Send>,
+    child: Box<dyn portable_pty::Child + Send + Sync>,
 }
 
 lazy_static::lazy_static! {
@@ -548,7 +611,7 @@ async fn create_terminal(app: AppHandle, cwd: Option<String>) -> Result<Value, S
         cmd.cwd(dir);
     }
     
-    let _child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
+    let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
     let term_id = uuid::Uuid::new_v4().to_string();
     
     let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
@@ -557,6 +620,7 @@ async fn create_terminal(app: AppHandle, cwd: Option<String>) -> Result<Value, S
     TERMINALS.lock().unwrap().insert(term_id.clone(), PtyInstance {
         master: pair.master,
         writer,
+        child,
     });
     
     let app_clone = app.clone();
@@ -591,7 +655,9 @@ async fn resize_terminal(id: String, rows: u16, cols: u16) -> Result<(), String>
 
 #[tauri::command]
 async fn kill_terminal(id: String) -> Result<(), String> {
-    TERMINALS.lock().unwrap().remove(&id);
+    if let Some(mut instance) = TERMINALS.lock().unwrap().remove(&id) {
+        let _ = instance.child.kill();
+    }
     Ok(())
 }
 
@@ -664,7 +730,16 @@ pub fn run() {
                 let state: State<BackendState> = handle.state();
                 *state.port.lock().unwrap() = Some(port);
 
-                let backend_path = "C:\\Project\\Aether_IDE\\AERES-IDE\\apps\\python-backend\\main.py";
+                let backend_path = if std::path::Path::new("../../python-backend/main.py").exists() {
+                    "../../python-backend/main.py"
+                } else if std::path::Path::new("../python-backend/main.py").exists() {
+                    "../python-backend/main.py"
+                } else if std::path::Path::new("apps/python-backend/main.py").exists() {
+                    "apps/python-backend/main.py"
+                } else {
+                    "main.py" // Fallback
+                };
+                
                 #[cfg(debug_assertions)]
                 let (mut rx, mut _child) = handle
                     .shell()
@@ -673,6 +748,11 @@ pub fn run() {
                     .env("BACKEND_PORT", port.to_string())
                     .spawn()
                     .expect("Failed to spawn sidecar");
+                
+                #[cfg(debug_assertions)]
+                {
+                    *state.process.lock().unwrap() = Some(_child);
+                }
 
                 #[cfg(debug_assertions)]
                 {
@@ -712,61 +792,44 @@ pub fn run() {
 
                 #[cfg(not(debug_assertions))]
                 {
-                    use tauri::path::BaseDirectory;
-                    let resource_path = handle
-                        .path()
-                        .resolve("resources/backend/backend.exe", BaseDirectory::Resource)
-                        .expect("Failed to resolve backend resource path");
-                    
-                    let backend_dir = resource_path.parent().expect("Failed to get backend parent dir");
-                    
-                    let mut cmd = Command::new(&resource_path);
-                    cmd.current_dir(backend_dir)
-                       .env("BACKEND_PORT", port.to_string())
-                       .stdout(Stdio::piped())
-                       .stderr(Stdio::piped());
-                       
-                    #[cfg(target_os = "windows")]
-                    {
-                        use std::os::windows::process::CommandExt;
-                        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW
+                    match handle.shell().sidecar("backend") {
+                        Ok(mut cmd) => {
+                            cmd = cmd.env("BACKEND_PORT", port.to_string());
+                            match cmd.spawn() {
+                                Ok((mut rx, mut child)) => {
+                                    *state.process.lock().unwrap() = Some(child);
+                                    let log_file = std::env::temp_dir().join("aeres_sidecar.log");
+                                    let _ = std::fs::write(&log_file, "Starting production sidecar...\n");
+                                    
+                                    tauri::async_runtime::spawn(async move {
+                                        while let Some(event) = rx.recv().await {
+                                            match event {
+                                                CommandEvent::Stdout(line) => {
+                                                    let text = format!("sidecar output: {}\n", String::from_utf8_lossy(&line));
+                                                    if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file) {
+                                                        let _ = f.write_all(text.as_bytes());
+                                                    }
+                                                }
+                                                CommandEvent::Stderr(line) => {
+                                                    let text = format!("sidecar error: {}\n", String::from_utf8_lossy(&line));
+                                                    if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file) {
+                                                        let _ = f.write_all(text.as_bytes());
+                                                    }
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                    });
+                                }
+                                Err(e) => {
+                                    println!("Failed to spawn backend sidecar: {}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            println!("Failed to initialize backend sidecar command: {}", e);
+                        }
                     }
-                    
-                    let mut child = cmd.spawn().expect("Failed to spawn sidecar");
-                        
-                    let stdout = child.stdout.take().expect("Failed to open stdout");
-                    let stderr = child.stderr.take().expect("Failed to open stderr");
-                    
-                    *state.process.lock().unwrap() = Some(child);
-                    
-                    let log_file = std::env::temp_dir().join("aeres_sidecar.log");
-                    let _ = std::fs::write(&log_file, format!("Starting sidecar at {:?}...\n", resource_path));
-                    
-                    let log_file_out = log_file.clone();
-                    std::thread::spawn(move || {
-                        let reader = BufReader::new(stdout);
-                        for line in reader.lines() {
-                            if let Ok(l) = line {
-                                let text = format!("sidecar output: {}\n", l);
-                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file_out) {
-                                    let _ = f.write_all(text.as_bytes());
-                                }
-                            }
-                        }
-                    });
-                    
-                    let log_file_err = log_file.clone();
-                    std::thread::spawn(move || {
-                        let reader = BufReader::new(stderr);
-                        for line in reader.lines() {
-                            if let Ok(l) = line {
-                                let text = format!("sidecar error: {}\n", l);
-                                if let Ok(mut f) = std::fs::OpenOptions::new().append(true).open(&log_file_err) {
-                                    let _ = f.write_all(text.as_bytes());
-                                }
-                            }
-                        }
-                    });
                 }
             });
 
@@ -779,6 +842,21 @@ pub fn run() {
             read_file, write_file, create_folder, delete_path, rename_path, path_exists,
             new_window, check_diagnostics
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit => {
+                if let Ok(mut terminals) = TERMINALS.lock() {
+                    for (_, mut pty) in terminals.drain() {
+                        let _ = pty.child.kill();
+                    }
+                }
+                if let Ok(mut processes) = DEBUG_PROCESSES.lock() {
+                    for (_, mut p) in processes.drain() {
+                        let _ = p.kill();
+                    }
+                }
+            }
+            _ => {}
+        });
 }

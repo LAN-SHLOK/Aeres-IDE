@@ -99,7 +99,8 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
     
     window.electron.fs.searchInProject({
       rootPath: useStore.getState().rootPath,
-      query: dep.name
+      query: `(?:import|require).*['"]${dep.name}['"]`,
+      useRegex: true
     }).then((res) => {
       if (!isMounted) return
       const grouped = {}
@@ -108,7 +109,9 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
         // Avoid duplicate lines if multiple matches on same line
         if (!grouped[r.file].includes(r.line)) grouped[r.file].push(r.line)
       })
-      const groupedArray = Object.keys(grouped).map(f => ({ file: f, lines: grouped[f] }))
+      const groupedArray = Object.keys(grouped)
+        .filter(f => !f.endsWith('.json') && !f.endsWith('.lock') && !f.endsWith('.md'))
+        .map(f => ({ file: f, lines: grouped[f] }))
       // Sort by number of usages
       groupedArray.sort((a, b) => b.lines.length - a.lines.length)
       
@@ -312,6 +315,7 @@ function DepDetailPanel({ dep, onClose, addTerminal, setTerminalPanelOpen }) {
                       status: 'pending'
                     }))
                     setBatchState({ depName: dep.name, files, currentIndex: 0 })
+                    useStore.getState().setActiveSidebarTab('files')
                   }}
                   className="w-full mt-2 py-1.5 bg-aeres-violet text-white text-[10px] font-bold rounded shadow-md hover:bg-aeres-violet/80 transition-colors flex items-center justify-center gap-1.5"
                 >

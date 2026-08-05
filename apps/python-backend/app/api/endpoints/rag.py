@@ -27,7 +27,7 @@ class AgentEditRequest(BaseModel):
 async def rag_query(req: RagQueryRequest, request: Request, user: dict = Depends(get_current_user)):
     """Answer a question using CodebaseAgent (RAG + Context)."""
     api_key = request.headers.get("x-groq-api-key")
-    root = req.root_path or os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
+    root = req.root_path or os.path.expanduser("~")
     agent = CodebaseAgent(root_path=root, api_key=api_key)
     answer = await agent.answer_question(req.question, req.context)
     return {"answer": answer, "source_url": "", "confidence": 0.9}
@@ -36,7 +36,7 @@ async def rag_query(req: RagQueryRequest, request: Request, user: dict = Depends
 async def agent_edit(req: AgentEditRequest, request: Request, user: dict = Depends(get_current_user)):
     """Agentic edit: AI modifies a file based on instruction and returns the new content."""
     api_key = request.headers.get("x-groq-api-key")
-    root = req.root_path or os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
+    root = req.root_path or os.path.expanduser("~")
     agent = CodebaseAgent(root_path=root, api_key=api_key)
     result = await agent.agent_edit(req.instruction, req.file_path, req.file_content)
     return result
@@ -47,7 +47,7 @@ async def agent_stream(req: AgentStreamRequest, request: Request, user: dict = D
     Agentic coding assistant — streams step-by-step events via SSE.
     """
     api_key = request.headers.get("x-groq-api-key")
-    root = req.root_path or os.path.abspath(os.path.join(os.getcwd(), "..", ".."))
+    root = req.root_path or os.path.expanduser("~")
     
     async def event_generator():
         try:

@@ -1,14 +1,49 @@
 import React, { useState, useRef } from 'react'
+import { useStore } from '../../store.js'
 
 export default function WebPreviewPanel() {
   const [url, setUrl] = useState('')
   const [inputUrl, setInputUrl] = useState('')
   const [device, setDevice] = useState('desktop') // 'mobile', 'tablet', 'desktop'
   const [zoom, setZoom] = useState(100)
+  const [useProxy, setUseProxy] = useState(false)
+  const [isDetecting, setIsDetecting] = useState(false)
   
   // Panning state
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
+
+  const handleAutoDetect = async () => {
+    setIsDetecting(true)
+    // Prioritize 3000+, put 5173/5174 later, and 8080
+    const ports = [3000, 3001, 4200, 5173, 5174, 8000, 8080]
+    let found = false
+    
+    // Check both 127.0.0.1 and localhost to avoid IPv6/IPv4 resolution mismatches causing connection refused
+    for (const port of ports) {
+      if (window.location.port === port.toString()) continue;
+      
+      const hostsToTest = ['127.0.0.1', 'localhost']
+      for (const host of hostsToTest) {
+        try {
+          const testUrl = `http://${host}:${port}`
+          const res = await fetch(testUrl, { mode: 'no-cors' })
+          setUrl(testUrl)
+          setInputUrl(testUrl)
+          found = true
+          break
+        } catch (err) {
+          // Host/port combination not active, try next
+        }
+      }
+      if (found) break
+    }
+    
+    if (!found) {
+      alert("Could not detect any active dev servers on standard ports (3000, 5173, 8080, etc). Make sure your app is running.")
+    }
+    setIsDetecting(false)
+  }
 
   const iframeRef = useRef(null)
 
@@ -50,8 +85,8 @@ export default function WebPreviewPanel() {
     switch (device) {
       case 'mobile': return { width: 390, height: 844, bezelRadius: '2.5rem' } // iPhone 14 Pro
       case 'tablet': return { width: 820, height: 1180, bezelRadius: '1.5rem' } // iPad Air
-      case 'desktop': return { width: '100%', height: '100%', bezelRadius: '0px' }
-      default: return { width: '100%', height: '100%', bezelRadius: '0px' }
+      case 'desktop': return { width: 1440, height: 900, bezelRadius: '0px' } // Standard Laptop/Desktop
+      default: return { width: 1440, height: 900, bezelRadius: '0px' }
     }
   }
 
@@ -85,6 +120,19 @@ export default function WebPreviewPanel() {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           </button>
         </form>
+
+        <button 
+          onClick={handleAutoDetect}
+          disabled={isDetecting}
+          className="ml-3 px-3 py-1.5 text-xs font-bold rounded-lg bg-aeres-violet hover:bg-aeres-violet/80 text-white disabled:opacity-50 transition-colors shadow-lg flex items-center gap-1.5"
+        >
+          {isDetecting ? (
+            <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          )}
+          Auto-Detect
+        </button>
 
         {/* Device Toggles */}
         <div className="flex items-center gap-1.5 bg-[#161622] p-1 rounded-lg border border-slate-700/50 ml-4">
@@ -122,6 +170,19 @@ export default function WebPreviewPanel() {
             onChange={(e) => setZoom(e.target.value)}
             className="w-24 accent-aeres-violet cursor-pointer"
           />
+        </div>
+
+        {/* Proxy Toggle */}
+        <div className="flex items-center gap-2 ml-4">
+          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-400 hover:text-white transition-colors">
+            <input 
+              type="checkbox" 
+              checked={useProxy} 
+              onChange={(e) => setUseProxy(e.target.checked)}
+              className="accent-aeres-violet cursor-pointer"
+            />
+            Use Proxy
+          </label>
         </div>
 
       </div>
@@ -169,7 +230,7 @@ export default function WebPreviewPanel() {
           {url ? (
             <iframe
               ref={iframeRef}
-              src={url}
+              src={useProxy ? `${useStore.getState().backendUrl || 'http://127.0.0.1:8008'}/api/proxy/?target=${encodeURIComponent(url)}` : url}
               title="Aeres Live Preview"
               className={`w-full h-full border-none outline-none z-10 bg-white ${isPanning ? 'pointer-events-none' : ''}`}
               style={{ borderRadius: device !== 'desktop' ? '1.5rem' : '0px' }}

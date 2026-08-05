@@ -269,8 +269,10 @@ function FileContextMenu({
     useStore.setState({ activeTerminalId: id })
     setTimeout(() => {
       const isMac = window.electron.isMac
-      const openCmd = isMac ? 'open' : 'Invoke-Item'
-      window.electron.terminal.write(id, `npx -y live-server "${node.path}" || ${openCmd} "${node.path}"\r`)
+      const cmd = isMac 
+        ? `npx -y live-server "${node.path}" || open "${node.path}"`
+        : `npx -y live-server "${node.path}"; if (!$?) { Invoke-Item "${node.path}" }`
+      window.electron.terminal.write(id, `${cmd}\r`)
     }, 500)
     onClose()
   }

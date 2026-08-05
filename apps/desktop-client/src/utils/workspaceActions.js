@@ -14,10 +14,19 @@ import { useStore } from '../store.js'
  */
 export async function openFolderAndResetTerminals() {
   const e = window.electron
-  if (!e) return null
+  if (!e) {
+    alert("electron/tauri bridge is not defined!")
+    return null
+  }
 
   const result = await e.fs.openFolder()
-  if (!result) return null
+  if (!result) {
+    // If we're not in Tauri (e.g. Chrome), dialogOpen throws an error and returns null
+    if (!window.__TAURI_INTERNALS__ && !window.__TAURI_IPC__) {
+      alert("⚠️ You are running the IDE in a Web Browser! Native folder picking is disabled. Please open the actual Aeres IDE Desktop App window.")
+    }
+    return null
+  }
 
   const folderPath = Array.isArray(result) ? result[0] : result
   if (!folderPath) return null

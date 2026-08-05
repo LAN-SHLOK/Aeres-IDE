@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 export default function Footer() {
   const year = new Date().getFullYear()
   return (
@@ -15,10 +17,14 @@ export default function Footer() {
               A high-fidelity development sandbox built for offline-first speed, intelligence, and seamless code orchestration.
             </p>
             <div className="flex gap-3">
-              {['Twitter', 'GitHub', 'Discord'].map((social, i) => (
-                <button key={i} className="px-3 py-1.5 rounded-lg bg-[#1b1c2b] text-[10px] font-black uppercase hover:bg-[#ff8ba7] hover:text-black transition-colors">
-                  {social}
-                </button>
+              {[
+                { name: 'Twitter', href: 'https://twitter.com' },
+                { name: 'GitHub', href: 'https://github.com/LAN-SHLOK/Aeres-IDE' },
+                { name: 'Discord', href: 'https://discord.gg/RKM8VRNQy' }
+              ].map((social, i) => (
+                <a key={i} href={social.href} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-[#1b1c2b] text-[10px] font-black uppercase hover:bg-[#ff8ba7] hover:text-black transition-colors">
+                  {social.name}
+                </a>
               ))}
             </div>
           </div>
@@ -26,24 +32,45 @@ export default function Footer() {
           {/* Links Column 1 */}
           <div className="flex flex-col gap-3">
             <h4 className="font-black text-[#2dd4bf] uppercase tracking-wider text-[11px] mb-2 font-mono">Product</h4>
-            {['Download', 'Pricing', 'Changelog', 'Extensions'].map((link, i) => (
-              <a key={i} href="#" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link}</a>
+            {[
+              { name: 'Download', href: '/' },
+              { name: 'Pricing', href: '/pricing' },
+              { name: 'Changelog', href: '/changelog' },
+              { name: 'Extensions', href: '/extensions' }
+            ].map((link, i) => (
+              <Link key={i} to={link.href} className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link.name}</Link>
             ))}
           </div>
 
           {/* Links Column 2 */}
           <div className="flex flex-col gap-3">
             <h4 className="font-black text-[#fef08a] uppercase tracking-wider text-[11px] mb-2 font-mono">Resources</h4>
-            {['Documentation', 'API Reference', 'Community', 'Blog'].map((link, i) => (
-              <a key={i} href="#" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link}</a>
+            {[
+              { name: 'Documentation', href: '/docs', external: false },
+              { name: 'API Reference', href: '/docs', external: false },
+              { name: 'Community', href: 'https://discord.gg/RKM8VRNQy', external: true },
+              { name: 'Blog', href: '/blog', external: false }
+            ].map((link, i) => (
+              link.external ? 
+                <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link.name}</a>
+              :
+                <Link key={i} to={link.href} className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link.name}</Link>
             ))}
           </div>
 
           {/* Links Column 3 */}
           <div className="flex flex-col gap-3">
             <h4 className="font-black text-[#c084fc] uppercase tracking-wider text-[11px] mb-2 font-mono">Legal</h4>
-            {['Privacy Policy', 'Terms of Service', 'Security', 'License'].map((link, i) => (
-              <a key={i} href="#" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link}</a>
+            {[
+              { name: 'Privacy Policy', href: '/privacy', external: false },
+              { name: 'Terms of Service', href: '/terms', external: false },
+              { name: 'Security', href: '/security', external: false },
+              { name: 'License', href: 'https://github.com/LAN-SHLOK/Aeres-IDE/blob/main/LICENSE', external: true }
+            ].map((link, i) => (
+              link.external ? 
+                <a key={i} href={link.href} target="_blank" rel="noopener noreferrer" className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link.name}</a>
+              :
+                <Link key={i} to={link.href} className="text-white/60 text-xs font-bold hover:text-white transition-colors">{link.name}</Link>
             ))}
           </div>
         </div>

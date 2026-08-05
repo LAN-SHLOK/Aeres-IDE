@@ -25,6 +25,7 @@ def build():
         "--console",
         "--name", "backend",
         "--add-data", f"app{os.pathsep}app",
+        "--add-data", f"data{os.pathsep}data",
         "--add-data", f".env{os.pathsep}.",
         "--exclude-module", "PyQt5",
         "--exclude-module", "PyQt6",

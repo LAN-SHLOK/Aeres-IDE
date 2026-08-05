@@ -1,13 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '../../store.js'
-
-const EXTENSIONS_MARKETPLACE = [
-  { id: 'aeres-ai-core', name: "Aeres AI Core", desc: "Advanced code modernization & AI assistant features", author: "Aeres", popular: true },
-  { id: 'prettier-formatter', name: "Prettier Formatter", desc: "Fast code formatting on Save (Ctrl+S)", author: "Esben Petersen", popular: true },
-  { id: 'eslint', name: "ESLint", desc: "Integrates real-time static code checks in Problems", author: "Microsoft", popular: false },
-  { id: 'tailwind-intellisense', name: "Tailwind CSS", desc: "Intelligent class auto-completions in editor", author: "Tailwind Labs", popular: true },
-  { id: 'gitlens-elite', name: "GitLens Elite", desc: "Discreet inline blame annotations on editor lines", author: "GitKraken", popular: false }
-]
 
 export default function ExtensionsPanel() {
   const installed = useStore((s) => s.installedExtensions || [])
@@ -17,7 +9,28 @@ export default function ExtensionsPanel() {
   const toggleDisable = useStore((s) => s.toggleDisableExtension)
 
   const [downloadingIds, setDownloadingIds] = useState([])
+  const [runningIds, setRunningIds] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
+  const [loadLocalOpen, setLoadLocalOpen] = useState(false)
+  const [localPath, setLocalPath] = useState('')
+  const [marketplace, setMarketplace] = useState([])
+  const rootPath = useStore((s) => s.rootPath)
+  const setInstalled = useStore((s) => s.setInstalledExtensions) // Will add this to store.js
+
+  useEffect(() => {
+    if (!window.electron?.extensions) return
+    window.electron.extensions.marketplace()
+      .then(res => setMarketplace(res))
+      .catch(err => console.error("Failed to load marketplace:", err))
+      
+    if (rootPath) {
+      window.electron.extensions.installed(rootPath)
+        .then(res => {
+          if (setInstalled) setInstalled(res)
+        })
+        .catch(err => console.error("Failed to load installed:", err))
+    }
+  }, [rootPath])
 
   const handleInstall = (id) => {
     if (downloadingIds.includes(id)) return
@@ -28,7 +41,42 @@ export default function ExtensionsPanel() {
     }, 1500)
   }
 
-  const filteredMarketplace = EXTENSIONS_MARKETPLACE.filter(e => {
+  const handleRun = async (id) => {
+    if (runningIds.includes(id)) return
+    setRunningIds(prev => [...prev, id])
+    try {
+      if (window.aeresExtensionHost) {
+        await window.aeresExtensionHost.executeRun(id)
+        // Check the Output panel for results (notifications go there)
+      } else {
+        window.alert(`Extension host is not initialized. Try reloading the IDE.`)
+      }
+    } catch (err) {
+      window.alert(`Extension "${id}" failed: ${err.message}`)
+    } finally {
+      setRunningIds(prev => prev.filter(x => x !== id))
+    }
+  }
+
+  
+  const handleLoadLocal = async () => {
+    if (!localPath || !window.electron?.extensions || !rootPath) return
+    try {
+      const res = await window.electron.extensions.loadLocal(localPath, rootPath)
+      if (res && res.success) {
+        setLoadLocalOpen(false)
+        setLocalPath('')
+        if (setInstalled) {
+          const updated = await window.electron.extensions.installed(rootPath)
+          setInstalled(updated)
+        }
+      }
+    } catch (e) {
+      alert("Failed to load local extension: " + e.message)
+    }
+  }
+
+  const filteredMarketplace = marketplace.filter(e => {
     const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           e.desc.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesSearch
@@ -36,8 +84,33 @@ export default function ExtensionsPanel() {
 
   return (
     <div className="flex flex-col h-full bg-aeres-bg border-r border-aeres-border">
-      <div className="p-3 border-b border-aeres-border bg-aeres-surface shrink-0">
-        <h2 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Extensions</h2>
+      <div className="flex-none p-4 flex flex-col gap-3 relative z-10">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[11px] font-bold text-aeres-text tracking-widest uppercase">Extensions</h2>
+          <button 
+            onClick={() => setLoadLocalOpen(!loadLocalOpen)}
+            className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-[#7C3AED]/20 text-[#7C3AED] hover:bg-[#7C3AED]/40 border border-[#7C3AED]/30 transition-colors"
+          >
+            + Load Local
+          </button>
+        </div>
+        {loadLocalOpen && (
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              value={localPath}
+              onChange={(e) => setLocalPath(e.target.value)}
+              placeholder="C:\\Path\\To\\Extension" 
+              className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-[10px] focus:border-[#7C3AED] outline-none text-white"
+            />
+            <button 
+              onClick={handleLoadLocal}
+              className="px-2 py-1 bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-[10px] font-bold rounded"
+            >
+              Load
+            </button>
+          </div>
+        )}
         <input 
           type="text" 
           value={searchQuery}
@@ -72,6 +145,25 @@ export default function ExtensionsPanel() {
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-3 border-t border-slate-800/60 pt-2">
+                        <button
+                          onClick={() => handleRun(ext.id)}
+                          disabled={runningIds.includes(ext.id)}
+                          className={`text-[9px] font-bold px-2.5 py-1 rounded transition shadow-sm ${
+                            runningIds.includes(ext.id)
+                              ? 'bg-violet-600/50 text-white/70 cursor-not-allowed'
+                              : 'bg-violet-600 text-white hover:bg-violet-500'
+                          }`}
+                        >
+                          {runningIds.includes(ext.id) ? (
+                            <span className="flex items-center gap-1.5">
+                              <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Running...
+                            </span>
+                          ) : 'Run'}
+                        </button>
                         <button
                           onClick={() => toggleDisable(ext.id)}
                           className={`text-[9px] font-bold px-2.5 py-1 rounded transition ${

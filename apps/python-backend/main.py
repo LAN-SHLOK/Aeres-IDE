@@ -8,7 +8,7 @@ import uvicorn
 import asyncio
 
 if os.name == 'nt':
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 if getattr(sys, "frozen", False):
     import platformdirs

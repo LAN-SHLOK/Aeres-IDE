@@ -6,6 +6,7 @@ from app.core.config import settings
 from app.rag_engine.embedder import generate_embeddings
 
 _client: Optional[Any] = None
+_collection = None
 _catalyst_collection = None
 
 

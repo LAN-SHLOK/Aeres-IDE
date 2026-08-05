@@ -24,13 +24,23 @@ def trace_calls(frame, event, arg):
     def trace_return(frame, event, arg):
         if event == 'return':
             try:
-                # Use normalized target path for the API call
                 target_norm = os.path.normpath(FILE_PATH).lower().replace('\\', '/')
+                
+                def safe_serialize(val):
+                    try:
+                        json.dumps(val)
+                        return val
+                    except (TypeError, ValueError):
+                        return repr(val)
+                        
+                safe_args = [safe_serialize(a) for a in args]
+                safe_output = safe_serialize(arg)
+                
                 requests.post(f"{BACKEND_URL}/api/contracts/observe", json={
                     "file_path": target_norm,
                     "function_name": func_name,
-                    "inputs": args,
-                    "output": arg,
+                    "inputs": safe_args,
+                    "output": safe_output,
                     "error": None
                 }, timeout=0.1)
             except Exception as e:

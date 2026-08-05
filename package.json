@@ -15,8 +15,7 @@
     "build:web": "npm run build --workspace=aeres-web-frontend",
     "build:backend": "cmd /c \"cd apps/python-backend && venv\\Scripts\\python build_sidecar.py\"",
     "build:desktop": "npm run build --workspace=aeres-desktop-client",
-    "dist:desktop": "npm run dist --workspace=aeres-desktop-client",
-    "package:all": "npm run build:backend && npm run dist:desktop",
+    "package:all": "npm run build:backend && npm run build:desktop",
     "setup": "npm install && cd apps/python-backend && python -m venv venv && (venv\\Scripts\\pip install -r requirements.txt || ./venv/bin/pip install -r requirements.txt)"
   },
   "devDependencies": {

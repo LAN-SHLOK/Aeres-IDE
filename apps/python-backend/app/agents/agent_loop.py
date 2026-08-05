@@ -728,7 +728,7 @@ async def run_agent_loop(
             response = await groq_tool_complete(
                 messages=messages,
                 tools=AGENT_TOOLS,
-                max_tokens=4000,
+                max_tokens=8192,
                 temperature=0.1,
                 api_key=api_key,
             )
@@ -747,7 +747,7 @@ async def run_agent_loop(
                     response = await groq_tool_complete(
                         messages=messages,
                         tools=AGENT_TOOLS,
-                        max_tokens=4000,
+                        max_tokens=8192,
                         temperature=0.1,
                         api_key=api_key,
                     )

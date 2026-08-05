@@ -1,12 +1,24 @@
-import subprocess, ast, json, re, sys
+import subprocess, ast, json, re, sys, os, shutil
 from pathlib import Path
 from typing import List, Dict, Optional
 
 def git(args: List[str], cwd: str) -> str:
     try:
-        # On Windows, shell=True is highly recommended to resolve git from PATH perfectly
-        use_shell = sys.platform == 'win32'
-        result = subprocess.run(["git"] + args, cwd=cwd, capture_output=True, text=True, check=False, shell=use_shell)
+        git_exe = shutil.which("git")
+        if not git_exe and sys.platform == 'win32':
+            for candidate in [
+                r"C:\Program Files\Git\cmd\git.exe",
+                r"C:\Program Files (x86)\Git\cmd\git.exe",
+                os.path.expanduser(r"~\AppData\Local\Programs\Git\cmd\git.exe"),
+            ]:
+                if os.path.isfile(candidate):
+                    git_exe = candidate
+                    break
+        if not git_exe:
+            git_exe = "git"
+            
+        use_shell = sys.platform == 'win32' and git_exe == "git"
+        result = subprocess.run([git_exe] + args, cwd=cwd, capture_output=True, text=True, check=False, shell=use_shell)
         return result.stdout.strip()
     except Exception as e:
         print(f"[CausalTracer] Git error: {e}")

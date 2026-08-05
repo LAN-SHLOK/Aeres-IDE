@@ -5,10 +5,8 @@ import { Camera, Clipboard } from 'lucide-react'
 import EditorTabs from './EditorTabs.jsx'
 import { useStore } from '../../store.js'
 import { emmetHTML, emmetCSS, emmetJSX } from 'emmet-monaco-es'
-
 import WelcomeScreen from './WelcomeScreen.jsx'
 import BatchModernizeView from './BatchModernizeView.jsx'
-
 import useTemporalLens from './TemporalLens.jsx'
 
 export default function CodeCanvas() {
@@ -120,7 +118,8 @@ export default function CodeCanvas() {
 
     Object.entries(themeColors).forEach(([themeId, config]) => {
       monaco.editor.defineTheme(themeId, {
-        base: themeId === 'cutie-light' ? 'vs' : 'vs-dark',
+        base: themeId === 'cutie-light' ? 'vs' :
+         'vs-dark',
         inherit: true,
         rules: [
           { token: 'comment', foreground: themeId === 'cutie-dark' ? '8e85aa' : themeId === 'cutie-light' ? '8a7f93' : themeId === 'aeres' ? '8e85aa' : '6272a4', fontStyle: 'italic' },
@@ -254,57 +253,6 @@ export default function CodeCanvas() {
 
   const handleOpenInlineChat = () => {
     document.dispatchEvent(new CustomEvent('aeres:focus-chat'))
-  }
-
-
-  const handleRunJupyter = async () => {
-    if (activeTab?.language !== 'python') {
-      const store = useStore.getState();
-      store.appendOutputLog('error', "Jupyter execution is only available for Python files.");
-      store.setActiveSidebarTab('output');
-      return
-    }
-    // Open terminal panel to show output
-    setTerminalPanelOpen(true)
-    const backendPort = useStore.getState().backendUrl?.split(':').pop() || 8008
-    try {
-      const sessionId = 'jupyter-' + Date.now()
-      const appendOutput = useStore.getState().appendOutputLog
-      appendOutput('info', 'Executing Jupyter cell...')
-      document.dispatchEvent(new CustomEvent('aeres:select-terminal-tab', { detail: 'output' }))
-      
-      const res = await fetch(`${useStore.getState().backendUrl}/api/jupyter/execute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, code: activeTab.content || localContent })
-      })
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
-        buffer = lines.pop() // keep incomplete chunks in the buffer
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const dataStr = line.slice(6)
-            if (dataStr === '[DONE]') break
-            try {
-              const parsed = JSON.parse(dataStr)
-              if (parsed.text) appendOutput('info', parsed.text.trim())
-              if (parsed.data && parsed.data['text/plain']) appendOutput('info', parsed.data['text/plain'].trim())
-              if (parsed.evalue) appendOutput('error', `${parsed.ename}: ${parsed.evalue}`)
-            } catch (e) {}
-          }
-        }
-      }
-      appendOutput('success', 'Jupyter execution complete.')
-    } catch (e) {
-      console.error("Jupyter execution failed:", e)
-      useStore.getState().appendOutputLog('error', 'Jupyter execution failed: ' + e.message)
-    }
   }
 
   const handleExplain = () => {
@@ -460,8 +408,10 @@ export default function CodeCanvas() {
     useStore.setState({ activeTerminalId: id })
     setTimeout(() => {
       const isMac = window.electron.isMac
-      const openCmd = isMac ? 'open' : 'Invoke-Item'
-      window.electron.terminal.write(id, `npx -y live-server "${activeTab.path}" || ${openCmd} "${activeTab.path}"\r`)
+      const cmd = isMac 
+        ? `npx -y live-server "${activeTab.path}" || open "${activeTab.path}"`
+        : `npx -y live-server "${activeTab.path}"; if (!$?) { Invoke-Item "${activeTab.path}" }`
+      window.electron.terminal.write(id, `${cmd}\r`)
     }, 500)
   }, [activeTab, addTerminal, setTerminalPanelOpen])
 
@@ -496,9 +446,10 @@ export default function CodeCanvas() {
       useStore.setState({ activeTerminalId: id })
       setTimeout(() => {
         const isMac = window.electron.isMac
-        const openCmd = isMac ? 'open' : 'Invoke-Item'
-        // Run live-server (auto-installs if needed) or fallback to basic open
-        window.electron.terminal.write(id, `npx -y live-server "${activeTab.path}" || ${openCmd} "${activeTab.path}"\r`)
+        const cmd = isMac 
+          ? `npx -y live-server "${activeTab.path}" || open "${activeTab.path}"`
+          : `npx -y live-server "${activeTab.path}"; if (!$?) { Invoke-Item "${activeTab.path}" }`
+        window.electron.terminal.write(id, `${cmd}\r`)
       }, 500)
       return
     }
@@ -547,7 +498,7 @@ export default function CodeCanvas() {
         
         // Trigger extension host
         import('../../utils/extensionHost.js').then(({ extensionHost }) => {
-          extensionHost.triggerSave(activeTab.path)
+          extensionHost.triggerSave({ path: activeTab.path })
         })
       } catch (err) {
         console.error('[CodeCanvas] Save error:', err)
@@ -822,6 +773,10 @@ export default function CodeCanvas() {
     return () => disposable.dispose()
   }, [activeTab?.path, hasGitLens, editorLoaded])
 
+  if (batchModernizeState) {
+    return <BatchModernizeView />
+  }
+
   if (!activeTab) {
     return (
       <div className="flex h-full flex-col">
@@ -829,10 +784,6 @@ export default function CodeCanvas() {
         <WelcomeScreen />
       </div>
     )
-  }
-
-  if (batchModernizeState) {
-    return <BatchModernizeView />
   }
 
   return (
@@ -1432,12 +1383,12 @@ export default function CodeCanvas() {
                 })
                 
                 monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
-                  noSemanticValidation: true,
-                  noSyntaxValidation: true,
+                  noSemanticValidation: true, // Disable semantic checking (to avoid false positive import errors)
+                  noSyntaxValidation: false,  // Enable syntax checking (catches basic syntax errors immediately)
                 })
                 monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
-                  noSemanticValidation: true,
-                  noSyntaxValidation: true,
+                  noSemanticValidation: true, 
+                  noSyntaxValidation: false,
                 })
               }
 
@@ -1539,8 +1490,10 @@ export default function CodeCanvas() {
                   
                   setTimeout(() => {
                     const isMac = window.electron.isMac
-                    const openCmd = isMac ? 'open' : 'start ""'
-                    window.electron.terminal.write(id, `npx -y live-server "${activeTab.path}" || ${openCmd} "${activeTab.path}"\r`)
+                    const cmd = isMac 
+                      ? `npx -y live-server "${activeTab.path}" || open "${activeTab.path}"`
+                      : `npx -y live-server "${activeTab.path}"; if (!$?) { Invoke-Item "${activeTab.path}" }`
+                    window.electron.terminal.write(id, `${cmd}\r`)
                   }, 500)
                 },
               })
@@ -1763,7 +1716,7 @@ export default function CodeCanvas() {
               wordWrap: editorSettings.wordWrap,
               minimap: { enabled: editorSettings.minimap },
               automaticLayout: true,
-              contextmenu: true,
+              contextmenu: false,
               fixedOverflowWidgets: true,
               formatOnType: true,
               formatOnPaste: true,
@@ -1935,15 +1888,6 @@ export default function CodeCanvas() {
           >
             <span>Review</span>
           </button>
-
-          {activeTab?.language === 'python' && (
-            <button onClick={() => { handleRunJupyter(); setContextMenu({ visible: false }) }}
-              className="w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-emerald-400 hover:bg-emerald-400 hover:text-black hover:font-bold rounded-xl transition-all border border-dashed border-emerald-400/30 hover:border-solid hover:border-black mt-1.5"
-            >
-              <span>Run in Jupyter</span>
-              <span className="text-[9px] opacity-65 font-mono">Shift+Enter</span>
-            </button>
-          )}
 
           <div className="h-[1px] bg-black/25 my-1" />
 

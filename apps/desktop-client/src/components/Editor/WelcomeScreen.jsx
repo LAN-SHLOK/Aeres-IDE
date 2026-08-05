@@ -62,6 +62,13 @@ export default function WelcomeScreen() {
 
               <div className="w-full space-y-4">
                 <button
+                  onClick={() => window.dispatchEvent(new CustomEvent('aeres:open-catalyst'))}
+                  className="w-full py-2 bg-gradient-to-r from-pink-400 to-violet-500 border-2.5 border-black rounded-full shadow-[2px_2px_0px_#000] font-black text-xs uppercase tracking-wider hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#000] transition-all flex items-center justify-center gap-2 text-white"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                  Launch Catalyst
+                </button>
+                <button
                   onClick={handleOpenFolder}
                   className="w-full py-2 bg-[#a7f3d0] border-2.5 border-black rounded-full shadow-[2px_2px_0px_#000] font-black text-xs uppercase tracking-wider hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[1px_1px_0px_#000] transition-all flex items-center justify-center gap-2"
                 >
@@ -121,6 +128,13 @@ export default function WelcomeScreen() {
           <div>
             <h1 className="text-3xl font-light text-white/90 mb-6">Aeres IDE</h1>
             <div className="space-y-4">
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('aeres:open-catalyst'))}
+                className="flex items-center gap-3 text-[13px] text-aeres-violet hover:underline decoration-aeres-violet/50 underline-offset-4"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+                Launch Catalyst Workspace
+              </button>
               <button
                 onClick={handleOpenFolder}
                 className="flex items-center gap-3 text-[13px] text-aeres-blue hover:underline decoration-aeres-blue/50 underline-offset-4"

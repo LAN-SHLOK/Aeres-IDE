@@ -1,9 +1,9 @@
-import { SignOutButton, useUser } from '@clerk/clerk-react'
+import { SignOutButton, useAuth } from '@clerk/clerk-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { redirectToAuthForDownload } from '../utils/authRedirect.js'
 
 export default function Navbar() {
-  const { isSignedIn, isLoaded } = useUser()
+  const { isSignedIn, isLoaded } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -19,7 +19,7 @@ export default function Navbar() {
       
       {/* Logo */}
       <Link to="/" className="flex items-center gap-3.5 no-underline group">
-        <div className="w-3 h-3 bg-[#ff8ba7] rounded-full"></div>
+        <img src="/logo.png" alt="Aeres IDE Logo" className="w-8 h-8 rounded-xl shadow-lg border border-slate-700/50" />
         <span className="font-display text-xl font-bold text-white tracking-tight transition">
           Aeres <span className="bg-[#fef08a] text-black px-2.5 py-0.5 rounded-full text-[10px] uppercase font-mono tracking-widest font-black ml-1">IDE</span>
         </span>
@@ -40,9 +40,7 @@ export default function Navbar() {
 
       {/* Actions */}
       <div className="flex items-center gap-3">
-        {!isLoaded ? (
-          <div className="w-5 h-5 rounded-full border-2 border-[#ff8ba7] border-t-transparent animate-spin" />
-        ) : isSignedIn ? (
+        {isSignedIn ? (
           <>
             <Link
               to="/dashboard"

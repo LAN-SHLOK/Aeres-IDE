@@ -36,9 +36,11 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: str = ""
     CLERK_JWT_ISSUER: str = ""
     CHROMA_DB_PATH: str = os.path.join(user_data_dir, "chroma_db")
-    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
-    GROQ_CHAT_MODEL: str = "llama-3.3-70b-versatile"
+    EMBEDDING_MODEL: str = "BAAI/bge-small-en-v1.5"
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_CHAT_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_FAST_MODEL: str = "llama-3.1-8b-instant"
+    GROQ_VISION_MODEL: str = "llama-3.2-90b-vision-preview"
     MAX_SCRAPE_PAGES: int = 3
     CHUNK_SIZE: int = 500
     CHUNK_OVERLAP: int = 50

@@ -35,7 +35,7 @@ async def generate_commit(body: CommitGenerateRequest, user: dict = Depends(get_
     system = "You are an expert developer. Read the provided git diff and write a concise, conventional commit message. Return ONLY the commit message itself, nothing else."
     user_prompt = f"Diff:\n{body.diff[:4000]}"
     try:
-        msg = await groq_complete(system, user_prompt, max_tokens=100, temperature=0.3)
+        msg = await groq_complete(system, user_prompt, max_tokens=100, temperature=0.3, intelligence_level="fast")
         return {"message": msg.strip()}
     except Exception as e:
         return {"message": "Update code"}

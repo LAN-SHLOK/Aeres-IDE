@@ -153,7 +153,7 @@ export default function WorkspaceSunburst() {
       .attr('text-anchor', 'middle')
       .style('user-select', 'none')
       .selectAll('text')
-      .data(root.descendants().filter(d => d.depth && (d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 12))
+      .data(root.descendants().filter(d => d.depth && (d.x1 - d.x0) > 0.05 && ((d.y0 + d.y1) / 2 * (d.x1 - d.x0) > 25)))
       .join('text')
       .attr('transform', function(d) {
         const x = (d.x0 + d.x1) / 2 * 180 / Math.PI

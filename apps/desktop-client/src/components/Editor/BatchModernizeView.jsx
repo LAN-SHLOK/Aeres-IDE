@@ -15,40 +15,57 @@ export default function BatchModernizeView() {
   const currentFile = batchState?.files[activeFileIndex]
   const isAllDone = batchState?.files.every(f => f.status === 'accepted' || f.status === 'rejected' || f.status === 'error')
 
-  // Run modernization pipeline for the current file if it's pending
+  // Background processing for the currently active file
   useEffect(() => {
-    if (!currentFile || !window.electron) return
-    
+    if (!batchState || !window.electron) return
     let isCancelled = false
 
-    const runPipeline = async () => {
-      if (currentFile.status !== 'pending') return
-
+    const processCurrentFile = async () => {
+      const state = useStore.getState()
+      if (!state.batchModernizeState) return
+      
+      const fileItem = state.batchModernizeState.files[activeFileIndex]
+      if (!fileItem || fileItem.status !== 'pending') return
+      
       try {
         setBatchStatus(activeFileIndex, 'modernizing')
         
         // 1. Read Original
-        const originalContent = await window.electron.fs.readFile(currentFile.path)
+        const originalContent = await window.electron.fs.readFile(fileItem.path)
         setBatchStatus(activeFileIndex, 'modernizing', { originalCode: originalContent, fixedCode: '' })
 
-        // 2. Setup Stream Listener
-        window.electron.analyze.onStream((chunk) => {
-          if (isCancelled) return
-          if (!chunk) return
-          
-          if (chunk.type === 'done' || chunk.type === 'no_deprecations') {
-            setBatchStatus(activeFileIndex, 'review')
-          } else if (chunk.type === 'error') {
-            setBatchStatus(activeFileIndex, 'error', { errorMsg: chunk.message || 'Error occurred' })
-          } else if (chunk.type === 'code_chunk') {
-            // we use a functional update pattern by pulling current state
-            const currentCode = useStore.getState().batchModernizeState.files[activeFileIndex].fixedCode || ''
-            setBatchStatus(activeFileIndex, 'modernizing', { fixedCode: chunk.content }) // chunk.content has full code for AST replaces
+        // 2. Setup Promise to await stream completion for this file
+        await new Promise((resolve) => {
+          const onData = (chunk) => {
+            if (isCancelled) {
+              resolve()
+              return
+            }
+            if (!chunk) return
+            
+            if (chunk.type === 'done' || chunk.type === 'no_deprecations') {
+              setBatchStatus(activeFileIndex, 'review')
+              resolve()
+            } else if (chunk.type === 'error') {
+              setBatchStatus(activeFileIndex, 'error', { errorMsg: chunk.message || 'Error occurred' })
+              resolve()
+            } else if (chunk.type === 'code_chunk') {
+              setBatchStatus(activeFileIndex, 'modernizing', { fixedCode: chunk.content })
+            }
           }
-        })
 
-        // 3. Start Analysis
-        await window.electron.analyze.modernize(originalContent, currentFile.path)
+          // 3. Start Analysis
+          window.electron.analyze.modernize(originalContent, fileItem.path, onData, batchState?.depName).then(() => {
+            const current = useStore.getState().batchModernizeState?.files[activeFileIndex]
+            if (current && current.status === 'modernizing') {
+              setBatchStatus(activeFileIndex, 'error', { errorMsg: 'Stream ended abruptly without data' })
+            }
+            resolve()
+          }).catch(err => {
+            setBatchStatus(activeFileIndex, 'error', { errorMsg: err.message })
+            resolve()
+          })
+        })
       } catch (err) {
         if (!isCancelled) {
           console.error('[BatchModernize] error:', err)
@@ -57,10 +74,17 @@ export default function BatchModernizeView() {
       }
     }
 
-    runPipeline()
+    processCurrentFile()
 
-    return () => { isCancelled = true }
-  }, [currentFile?.path, currentFile?.status, activeFileIndex, setBatchStatus])
+    return () => { 
+      isCancelled = true 
+      const state = useStore.getState()
+      const current = state.batchModernizeState?.files[activeFileIndex]
+      if (current && current.status === 'modernizing') {
+        state.setBatchModernizeFileStatus(activeFileIndex, 'pending')
+      }
+    }
+  }, [batchState?.depName, activeFileIndex]) // Now depends on activeFileIndex
 
   const handleAccept = useCallback(async () => {
     if (!currentFile || !window.electron) return
@@ -137,9 +161,47 @@ export default function BatchModernizeView() {
         </div>
 
         <div className="p-3 border-t border-aeres-border bg-black/10 flex flex-col gap-2">
-           <button onClick={cancelBatch} className="w-full py-1.5 text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded transition">
-             {isAllDone ? 'Done & Close' : 'Cancel Batch'}
-           </button>
+           {isAllDone ? (
+             <>
+               <button 
+                 onClick={async () => {
+                   if (!window.electron) return;
+                   try {
+                     const rootPath = useStore.getState().rootPath;
+                     const pkgPath = `${rootPath}/package.json`;
+                     const pkgStr = await window.electron.fs.readFile(pkgPath);
+                     const pkg = JSON.parse(pkgStr);
+                     let removed = false;
+                     if (pkg.dependencies && pkg.dependencies[batchState.depName]) {
+                       delete pkg.dependencies[batchState.depName];
+                       removed = true;
+                     }
+                     if (pkg.devDependencies && pkg.devDependencies[batchState.depName]) {
+                       delete pkg.devDependencies[batchState.depName];
+                       removed = true;
+                     }
+                     if (removed) {
+                       await window.electron.fs.writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+                     }
+                     cancelBatch();
+                   } catch (e) {
+                     console.error('Failed to remove from package.json', e);
+                     cancelBatch();
+                   }
+                 }} 
+                 className="w-full py-1.5 text-[10px] font-bold text-white bg-red-500/80 hover:bg-red-500 rounded transition flex items-center justify-center gap-1.5"
+               >
+                 Uninstall '{batchState.depName}' & Close
+               </button>
+               <button onClick={cancelBatch} className="w-full py-1.5 text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded transition">
+                 Keep & Close
+               </button>
+             </>
+           ) : (
+             <button onClick={cancelBatch} className="w-full py-1.5 text-[10px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded transition">
+               Cancel Batch
+             </button>
+           )}
         </div>
       </div>
 

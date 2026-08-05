@@ -42,49 +42,49 @@ const PLAYGROUND_SNIPPETS = {
   json: {
     filename: 'settings.json',
     lang: 'JSON',
-    command: 'aeres --config-check',
+    command: 'cat .aeres/settings.json',
     code: `{
-  "aeres.ai.model": "llama-3-70b-speculative",
+  "aeres.ai.model": "groq-llama-3-70b-speculative",
   "aeres.ai.localOnly": true,
   "aeres.terminal.shell": "powershell.exe",
-  "aeres.mutation.survivalThreshold": 0.85,
+  "aeres.catalyst.batchSize": 5,
   "aeres.radar.circularCheck": true
 }`
   },
   python: {
-    filename: 'agent_trigger.py',
+    filename: 'health_trigger.py',
     lang: 'PYTHON',
-    command: 'python agent_trigger.py',
-    code: `from aeres.agents import AgentLoop
+    command: 'python -m app.agents.health_agent',
+    code: `from app.agents.health_agent import ProjectHealthAgent
+import asyncio
  
-# Initialize high-fidelity agent loop
-agent = AgentLoop(
-    workspace_path="./src",
-    sandbox_mode=True,
-    self_healing=True,
-    max_iterations=10
-)
+async def main():
+    agent = ProjectHealthAgent(workspace_path="./src")
+    
+    # Scan for exceptions and traceback loops
+    findings = await agent.scan_and_heal()
+    
+    if findings.is_healthy:
+        print("Project is healthy. Build clean.")
+    else:
+        print(f"Applied {len(findings.patches)} autonomous patches.")
  
-# Start run with custom repair command
-result = agent.execute_run(
-    task="Verify imports and compile broken modules"
-)
- 
-print(f"Build clean. Exit code: {result.exit_code}")`
+if __name__ == "__main__":
+    asyncio.run(main())`
   },
   javascript: {
-    filename: 'mutation.config.js',
+    filename: 'catalyst.config.js',
     lang: 'JAVASCRIPT',
-    command: 'aeres --run-mutations',
+    command: 'npm run catalyst:modernize',
     code: `export default {
-  target: './apps/desktop-client/src',
-  mutators: [
-    'ComparisonOperatorMutator', // Swaps < to <=
-    'BooleanLiteralMutator',      // Flips true to false
-    'ArithmeticBoundsMutator'    // Alters boundary offsets
-  ],
+  target: './apps/web-frontend/src',
+  catalyst: {
+    engine: 'groq-ast-vector',
+    batchRefactor: true,
+    modernizeApis: ['legacy-react-hooks', 'moment->date-fns']
+  },
   exclude: ['**/__tests__/**', '**/node_modules/**'],
-  threshold: 85
+  safetyThreshold: 0.95
 }`
   }
 }
@@ -287,25 +287,6 @@ const DOCUMENTATION_SECTIONS = [
             </ul>
           </div>
         )
-      },
-      {
-        id: 'jupyter-notebooks',
-        title: 'Jupyter Notebooks',
-        icon: Icons.file,
-        header: 'Run .ipynb Notebooks Inside Aeres',
-        content: (
-          <div>
-            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
-              Aeres IDE includes a built-in Jupyter Notebook renderer. When you open a .ipynb file, it is displayed in a notebook-style interface with code cells, markdown cells, and output rendering.
-            </p>
-            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Features</h3>
-            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
-              <li><strong>Cell Execution:</strong> Run individual cells and see output inline.</li>
-              <li><strong>Markdown Preview:</strong> Markdown cells are rendered with proper formatting.</li>
-              <li><strong>Kernel Bridge:</strong> The /api/jupyter endpoint on the Python backend manages kernel lifecycle and cell execution.</li>
-            </ul>
-          </div>
-        )
       }
     ]
   },
@@ -325,7 +306,7 @@ const DOCUMENTATION_SECTIONS = [
 
             <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Agent Tool-Use Loop</h3>
             <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans mb-6 text-left">
-              The AI agent operates in a tool-use loop powered by Groq (Llama-3.3-70B). It can invoke the following tools autonomously:
+              The AI agent operates in a tool-use loop powered by Groq (GPT OSS 120 B). It can invoke the following tools autonomously:
             </p>
             <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
               <li><strong>read_file:</strong> Read any file in your workspace to understand context.</li>
@@ -378,6 +359,24 @@ const DOCUMENTATION_SECTIONS = [
               <li><strong>Vulnerability Detection:</strong> Checks dependencies against known CVE databases and flags insecure versions.</li>
               <li><strong>Outdated Detection:</strong> Highlights packages with available updates and shows latest stable versions.</li>
               <li><strong>AI Notes:</strong> Right-click any dependency to generate AI-powered analysis of what it does and whether safer alternatives exist.</li>
+            </ul>
+          </div>
+        )
+      },      {
+        id: 'catalyst-batch',
+        title: 'Catalyst Batch Modernize',
+        icon: Icons.file,
+        header: 'Automated Large-Scale Refactoring via AST & Embeddings',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              Catalyst Batch Modernize allows you to refactor thousands of lines of legacy API usages in one click. By combining precise Abstract Syntax Tree (AST) parsing with vector embeddings, the agent can understand the context of your codebase and confidently apply sweeping changes without breaking functionality.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How It Works</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>AST Parsing:</strong> Aeres builds a deep structural map of your files, identifying exact API calls, variable scopes, and dependencies.</li>
+              <li><strong>Vector Embeddings:</strong> We utilize local vector search to find similar legacy patterns scattered across your project, ensuring no obsolete code is missed.</li>
+              <li><strong>Batch Execution:</strong> The Groq LLM agent securely orchestrates the rewrites locally via the Python FastAPI sidecar, producing a massive unified diff for you to review and apply.</li>
             </ul>
           </div>
         )
@@ -516,6 +515,25 @@ const DOCUMENTATION_SECTIONS = [
             </ul>
           </div>
         )
+      },
+      {
+        id: 'workspace-sunburst',
+        title: 'Workspace Sunburst',
+        icon: Icons.file,
+        header: 'Visualize File Size and Complexity',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The Workspace Sunburst provides a D3-powered circular visualization of your entire file system. It helps you instantly identify massive directories, dense files, and the overall complexity footprint of your project.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">How to Read It</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Rings:</strong> The inner rings represent top-level directories, branching out to subdirectories and finally files on the outer edge.</li>
+              <li><strong>Arc Size:</strong> The sweep angle of each arc is proportional to the file size (or Lines of Code). Larger files take up a larger slice of the pie.</li>
+              <li><strong>Interaction:</strong> Hover over an arc to see the exact path and size. Click an arc to zoom in on that specific directory.</li>
+            </ul>
+          </div>
+        )
       }
     ]
   },
@@ -619,6 +637,44 @@ const DOCUMENTATION_SECTIONS = [
               <li><strong>From File Tree:</strong> Right-click any .html file in the sidebar and select "Open with Live Server".</li>
               <li><strong>From Command Palette:</strong> Ctrl+Shift+P and type "Live Server".</li>
               <li><strong>Auto-Install:</strong> If live-server is not installed globally, it is automatically installed via npx on first use.</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        id: 'api-sandbox',
+        title: 'API Sandbox',
+        icon: Icons.file,
+        header: 'Integrated REST API Client',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The API Sandbox is a built-in Postman alternative that lets you test HTTP endpoints directly within Aeres. It elegantly handles cross-origin resource sharing (CORS) by proxying requests through the local Python FastAPI backend.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Features</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Full HTTP Support:</strong> Craft GET, POST, PUT, DELETE, and HEAD requests with custom JSON bodies and headers.</li>
+              <li><strong>CORS Bypass:</strong> Requests are sent to `/api/proxy/`, allowing you to hit strict external APIs without browser security errors.</li>
+              <li><strong>Performance Metrics:</strong> Accurately tracks round-trip latency in milliseconds.</li>
+            </ul>
+          </div>
+        )
+      },
+      {
+        id: 'web-preview-sandbox',
+        title: 'Web Preview Sandbox',
+        icon: Icons.file,
+        header: 'Live Side-by-Side Application Preview',
+        content: (
+          <div>
+            <p className="text-white/70 leading-relaxed text-sm font-semibold mb-6">
+              The Web Preview Sandbox injects a live iframe directly into the IDE, allowing you to run and interact with your React, Vue, or vanilla HTML applications without constantly tabbing out to an external browser.
+            </p>
+            <h3 className="text-lg font-black text-white mt-8 mb-4 font-display text-left">Features</h3>
+            <ul className="list-disc pl-6 space-y-2 text-white/60 text-xs font-bold leading-relaxed font-sans mb-8 text-left">
+              <li><strong>Hot Module Replacement:</strong> Seamlessly reflects your code changes in real-time.</li>
+              <li><strong>URL Navigation:</strong> Includes an address bar to navigate local routes (e.g., `http://localhost:5173/dashboard`).</li>
+              <li><strong>Responsive Testing:</strong> Easily resize the panel to test mobile and tablet breakpoints.</li>
             </ul>
           </div>
         )

@@ -45,6 +45,7 @@ const FILE_ICON_MAP = {
 }
 
 export function getFileIcon(filename, theme, iconTheme = 'material-icons') {
+  if (!filename) return null;
   const ext = filename.split('.').pop().toLowerCase()
   const name = filename.toLowerCase()
 

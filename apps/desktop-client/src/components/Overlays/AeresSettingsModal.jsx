@@ -518,8 +518,8 @@ export default function AeresSettingsModal({ onClose, initialCategory, initialTa
                       A: Use the "Initialize Repository" button in the Git panel or run <code className="text-white">git init</code> in the terminal.
                     </div>
                     <div>
-                      <strong className="text-[#cccccc] block mb-0.5">Q: Terminal says "failed to run 'cargo metadata'... program not found"</strong>
-                      A: Aeres runs inside a Tauri wrapper which requires Rust. Install Rust & Cargo from <code className="text-white">rustup.rs</code>, restart your terminal, and try again.
+                      <strong className="text-[#cccccc] block mb-0.5">Q: Terminal says "failed to run 'cargo metadata'" or "linker 'link.exe' not found"</strong>
+                      A: Aeres runs inside a Tauri wrapper which requires Rust. Install Rust from <code className="text-white">rustup.rs</code>. Windows users must also install the <strong>Microsoft C++ Build Tools</strong> from the Visual Studio Installer. Restart your terminal after installing.
                     </div>
                   </div>
                 </section>

@@ -3,13 +3,19 @@
 import logging
 import os
 import json
+import asyncio
 from datetime import datetime, timedelta
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from app.core.config import user_config_dir
 from app.scrapers.doc_crawler import crawl_and_extract, filter_migration_syntax, find_latest_release_url
 from app.scrapers.text_processor import chunk_for_vectorization
 from app.rag_engine.vector_db import store_migration_context
+
+try:
+    from playwright.async_api import async_playwright  # type: ignore
+except ImportError:
+    async_playwright = None
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +98,8 @@ async def monthly_doc_update_job():
     browser = None
     playwright_context = None
     try:
-        from playwright.async_api import async_playwright
+        if async_playwright is None:
+            raise ImportError("Playwright is not installed.")
         playwright_context = await async_playwright().start()
         browser = await playwright_context.chromium.launch(headless=True)
         logger.info("[CronScraper] Successfully launched persistent Playwright browser.")
@@ -140,9 +147,6 @@ async def monthly_doc_update_job():
         logger.info("[CronScraper] Updated last scrape date.")
     except Exception as e:
         logger.error(f"[CronScraper] Failed to save last scrape date: {e}")
-
-from apscheduler.schedulers.background import BackgroundScheduler
-import asyncio
 
 def run_monthly_doc_update_job_sync():
     logger.info("[CronScraper] Spawning isolated event loop for doc update job...")

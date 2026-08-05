@@ -71,6 +71,7 @@ class DeprecationFlag(BaseModel):
 class ModernizeRequest(BaseModel):
     content: str = Field(..., max_length=500_000)
     path: str
+    dep_name: Optional[str] = None
 
 
 class ProjectScanRequest(BaseModel):

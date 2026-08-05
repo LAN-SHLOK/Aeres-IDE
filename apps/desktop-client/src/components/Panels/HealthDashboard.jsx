@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useStore } from '../../store'
-import { CheckCircle, AlertTriangle, XCircle, Shield, Wrench, RefreshCw } from 'lucide-react'
+import { CheckCircle, AlertTriangle, XCircle, Shield, Wrench, RefreshCw, Loader2 } from 'lucide-react'
 
 export function HealthDashboard() {
   const { 
@@ -14,8 +14,12 @@ export function HealthDashboard() {
     setAgentMode,
     setActiveRightTab,
     setRightPanelOpen,
-    openTab
+    openTab,
+    updateTab,
+    tabs
   } = useStore()
+
+  const [fixingIssues, setFixingIssues] = useState({})
 
   const handleScan = async () => {
     if (!rootPath) return
@@ -36,17 +40,61 @@ export function HealthDashboard() {
     }
   }
 
-  const handleFixIssue = (issue) => {
-    // Pipe the issue to the Chat panel
-    setAgentMode('chat')
-    setActiveRightTab('chat')
-    setRightPanelOpen(true)
+  const handleFixIssue = async (issue, index) => {
+    if (!issue.file || issue.file === 'System') return;
     
-    const prompt = `Please fix the following issue in ${issue.file}: ${issue.message}. Suggested fix: ${issue.suggested_fix}`
-    document.dispatchEvent(new CustomEvent('aeres:send-agent-prompt', { detail: prompt }))
+    setFixingIssues(prev => ({ ...prev, [index]: true }))
     
-    if (issue.file && issue.file !== 'System') {
-       openTab({ path: issue.file, title: issue.file.split('/').pop() || issue.file })
+    try {
+      const e = window.electron
+      if (!e?.rag?.agentEdit) throw new Error('Agent Edit not available')
+      
+      let absPath = issue.file;
+      if (!absPath.includes(':') && !absPath.startsWith('/')) {
+        absPath = `${rootPath}/${issue.file}`.replace(/\\/g, '/');
+      }
+      
+      const fileContent = await e.fs.readFile(absPath)
+      
+      const instruction = `Please fix the following issue: ${issue.message}. Suggested fix: ${issue.suggested_fix}`
+      
+      const res = await e.rag.agentEdit({
+        instruction: instruction,
+        file_path: absPath,
+        file_content: fileContent,
+        root_path: rootPath || ''
+      })
+      
+      if (res.action === 'edit' && res.new_content) {
+        await e.fs.writeFile(absPath, res.new_content)
+        
+        // Optimistic UI update: remove issue and bump score instantly
+        const updatedIssues = healthIssues.filter((_, i) => i !== index)
+        const newScore = Math.min(100, (healthScore || 0) + (issue.severity === 'critical' ? 15 : issue.severity === 'warning' ? 10 : 5))
+        setHealthData(newScore, updatedIssues)
+        
+        // Update tab if it is currently open
+        const tab = tabs.find(t => t.path === absPath || t.path === issue.file)
+        if (tab) {
+          updateTab(tab.id, { content: res.new_content })
+        }
+        
+        // Show what changed
+        window.alert(`✅ Fix Applied Successfully!\n\nFile: ${absPath.split('/').pop()}\nWhat Changed:\n${res.explanation}`)
+        
+        // Reveal the fixed file
+        openTab({ path: absPath, name: absPath.split('/').pop() || absPath })
+        
+        // Trigger a real backend rescan in the background to officially verify
+        handleScan()
+      } else {
+        throw new Error(res.explanation || 'Failed to apply fix')
+      }
+    } catch (err) {
+      console.error('Fix Issue Error:', err)
+      window.alert(`Failed to apply fix: ${err.message || 'Unknown error'}`)
+    } finally {
+      setFixingIssues(prev => ({ ...prev, [index]: false }))
     }
   }
 
@@ -66,20 +114,24 @@ export function HealthDashboard() {
   const strokeDashoffset = healthScore !== null ? circumference - (healthScore / 100) * circumference : circumference;
 
   return (
-    <div className="flex flex-col h-full bg-[#0d0d12] text-gray-200 overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col h-full bg-aeres-bg text-white overflow-y-auto custom-scrollbar relative animate-fade-in">
       {/* Header */}
-      <div className="p-4 border-b border-white/5 bg-white/[0.02] sticky top-0 z-10 backdrop-blur-md flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-emerald-400" />
-          <h2 className="font-semibold text-sm uppercase tracking-wider text-white">Project Health</h2>
-        </div>
+      <div className="flex h-9 shrink-0 items-center justify-between border-b border-aeres-border px-3 bg-aeres-surface/40 backdrop-blur-md sticky top-0 z-10">
+        <span className="text-[9px] font-black uppercase tracking-widest text-aeres-muted flex items-center gap-1.5">
+          <Shield size={14} className="text-aeres-violet font-bold" /> Project Health
+        </span>
         <button 
           onClick={handleScan} 
           disabled={isScanningHealth || !rootPath}
-          className={`p-2 rounded-md transition-all ${isScanningHealth ? 'bg-emerald-500/20 text-emerald-400 animate-pulse' : 'bg-white/5 hover:bg-white/10 text-gray-300'}`}
+          className={`rounded-full border-2 border-black px-2.5 py-0.5 text-[8px] font-extrabold uppercase transition shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer flex items-center gap-1 ${
+            isScanningHealth 
+              ? 'bg-aeres-violet/20 text-aeres-violet border-aeres-violet/30'
+              : 'bg-aeres-surface text-white hover:bg-aeres-violet hover:text-black'
+          }`}
           title="Scan Workspace"
         >
-          <RefreshCw className={`w-4 h-4 ${isScanningHealth ? 'animate-spin' : ''}`} />
+          <RefreshCw size={10} className={isScanningHealth ? 'animate-spin' : ''} /> 
+          {isScanningHealth ? 'Scanning...' : 'Scan Workspace'}
         </button>
       </div>
 
@@ -90,7 +142,7 @@ export function HealthDashboard() {
             className="absolute inset-0 rounded-full blur-2xl transition-all duration-1000"
             style={{ backgroundColor: healthScore !== null ? glowColor : 'transparent' }}
           />
-          <svg width="140" height="140" className="transform -rotate-90 relative z-10 drop-shadow-2xl">
+          <svg width="140" height="140" className="transform -rotate-90 relative z-10 drop-shadow-[4px_4px_0px_rgba(0,0,0,0.5)]">
             <circle cx="70" cy="70" r={radius} stroke="rgba(255,255,255,0.05)" strokeWidth="12" fill="none" />
             <circle 
               cx="70" 
@@ -108,21 +160,21 @@ export function HealthDashboard() {
           <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
             {healthScore !== null ? (
               <>
-                <span className="text-3xl font-bold tracking-tighter" style={{ color: scoreColor }}>{healthScore}</span>
-                <span className="text-[10px] text-gray-400 font-medium uppercase">Score</span>
+                <span className="text-3xl font-black tracking-tighter" style={{ color: scoreColor }}>{healthScore}</span>
+                <span className="text-[9px] font-black text-aeres-muted uppercase tracking-widest mt-1">Score</span>
               </>
             ) : (
-              <span className="text-xs text-gray-500 font-medium text-center px-4">Not<br/>Scanned</span>
+              <span className="text-[10px] text-aeres-muted font-bold text-center px-4 uppercase tracking-wider leading-relaxed">Not<br/>Scanned</span>
             )}
           </div>
         </div>
 
         {/* Status Text */}
         <div className="text-center">
-          <h3 className="text-lg font-medium text-white">
+          <h3 className="text-xs font-black uppercase tracking-wider text-white">
             {healthScore === null ? 'Ready to Scan' : healthScore >= 80 ? 'Looking Good!' : healthScore >= 50 ? 'Needs Attention' : 'Critical Issues Found'}
           </h3>
-          <p className="text-xs text-gray-400 mt-1 max-w-[200px]">
+          <p className="text-[10px] text-aeres-muted mt-1.5 max-w-[200px] leading-relaxed mx-auto">
             {healthScore === null ? 'Analyze your workspace for vulnerabilities and code smells.' : 'AI analysis complete.'}
           </p>
         </div>
@@ -130,39 +182,40 @@ export function HealthDashboard() {
 
       {/* Issues List */}
       {healthIssues && healthIssues.length > 0 && (
-        <div className="flex-1 p-4 space-y-3">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Detected Issues</h4>
+        <div className="flex-1 p-4 space-y-4">
+          <h4 className="text-[9px] font-black uppercase tracking-widest text-aeres-muted mb-2">Detected Issues</h4>
           {healthIssues.map((issue, idx) => {
             const isCritical = issue.severity === 'critical'
             const isWarning = issue.severity === 'warning'
             return (
-              <div key={idx} className="bg-white/[0.03] border border-white/5 rounded-xl p-4 transition-all hover:bg-white/[0.05]">
+              <div key={idx} className="bg-aeres-surface border-2 border-black rounded-xl p-4 transition-all hover:border-aeres-violet shadow-[4px_4px_0px_#000]">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5">
-                    {isCritical ? <XCircle className="w-4 h-4 text-red-400" /> : 
-                     isWarning ? <AlertTriangle className="w-4 h-4 text-amber-400" /> : 
-                     <CheckCircle className="w-4 h-4 text-blue-400" />}
+                    {isCritical ? <XCircle className="w-4 h-4 text-red-500" /> : 
+                     isWarning ? <AlertTriangle className="w-4 h-4 text-amber-500" /> : 
+                     <CheckCircle className="w-4 h-4 text-aeres-violet" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-blue-400'}`}>
+                      <span className={`text-[9px] font-black uppercase tracking-widest ${isCritical ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-aeres-violet'}`}>
                         {issue.severity}
                       </span>
-                      <span className="text-[10px] text-gray-500 truncate" title={issue.file}>{issue.file.split('/').pop()}</span>
+                      <span className="text-[9px] font-mono text-aeres-muted truncate" title={issue.file}>{issue.file.split('/').pop()}</span>
                     </div>
-                    <p className="text-sm text-gray-200 mt-1 leading-snug">{issue.message}</p>
+                    <p className="text-xs font-bold text-white mt-1.5 leading-snug">{issue.message}</p>
                     {issue.suggested_fix && (
-                      <div className="mt-3 bg-black/20 rounded-lg p-2.5 border border-white/5">
-                        <p className="text-xs text-gray-400 italic">"{issue.suggested_fix}"</p>
+                      <div className="mt-3 bg-black/40 rounded-md p-2.5 border border-aeres-border">
+                        <p className="text-[10px] text-aeres-muted italic font-mono">"{issue.suggested_fix}"</p>
                       </div>
                     )}
                     <div className="mt-3 flex justify-end">
                       <button 
-                        onClick={() => handleFixIssue(issue)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-md text-xs font-medium transition-colors border border-indigo-500/20"
+                        onClick={() => handleFixIssue(issue, idx)}
+                        disabled={fixingIssues[idx]}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border-2 border-black text-[9px] font-black uppercase transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] ${fixingIssues[idx] ? 'bg-aeres-bg text-aeres-muted cursor-not-allowed' : 'bg-aeres-violet text-black hover:bg-white'}`}
                       >
-                        <Wrench className="w-3 h-3" />
-                        Fix Automatically
+                        {fixingIssues[idx] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wrench className="w-3 h-3" />}
+                        {fixingIssues[idx] ? 'Fixing...' : 'Fix Auto'}
                       </button>
                     </div>
                   </div>
@@ -174,9 +227,17 @@ export function HealthDashboard() {
       )}
       
       {healthScore !== null && healthIssues.length === 0 && (
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center opacity-50">
-          <CheckCircle className="w-12 h-12 text-emerald-500 mb-3" />
-          <p className="text-sm text-gray-300">Perfect score! No issues found in your scanned files.</p>
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-aeres-muted bg-aeres-bg">
+          <div className="relative mb-4 hover:scale-105 transition-transform duration-300">
+            <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full" />
+            <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl border-2 border-black bg-aeres-surface text-emerald-400 shadow-[2px_2px_0px_#000]">
+              <CheckCircle size={28} />
+            </div>
+          </div>
+          <h3 className="text-xs font-bold text-white uppercase tracking-wider mb-1">Perfect Score</h3>
+          <p className="text-[10px] text-aeres-muted max-w-[200px] leading-relaxed">
+            No issues found in your scanned files.
+          </p>
         </div>
       )}
     </div>

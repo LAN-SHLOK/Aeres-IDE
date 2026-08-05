@@ -1,4 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import json
 import asyncio
@@ -6,7 +7,7 @@ import os
 import sys
 
 if os.name == 'nt':
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from app.api.endpoints import (
     ai,
@@ -27,6 +28,7 @@ from app.api.endpoints import (
     dap_ws,
     env,
     proxy,
+    extensions,
 )
 from app.core.file_watcher import file_watcher
 from app.scrapers.cron_scraper import start_cron_scraper
@@ -44,7 +46,7 @@ def create_app() -> FastAPI:
         
     application.add_middleware(
         CORSMiddleware,
-        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^tauri://localhost$",
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$|^tauri://localhost$|^https?://tauri\.localhost$",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -89,7 +91,6 @@ def create_app() -> FastAPI:
     application.include_router(git.router, prefix="/api/git", tags=["git"])
     application.include_router(git_extra.router, prefix="/api/git", tags=["git-extra"])
     application.include_router(ai.router, prefix="/api/ai", tags=["ai"])
-
     application.include_router(perf.router, prefix="/api/perf", tags=["perf"])
     application.include_router(contracts.router, prefix="/api/contracts", tags=["contracts"])
     application.include_router(catalyst.router, prefix="/api/catalyst", tags=["catalyst"])
@@ -105,10 +106,9 @@ def create_app() -> FastAPI:
     application.include_router(dap_ws.router, prefix="/api/debug/dap", tags=["dap-ws"])
     application.include_router(env.router, prefix="/api/env", tags=["env"])
     application.include_router(proxy.router, prefix="/api/proxy", tags=["proxy"])
-    from app.api.endpoints import jupyter_endpoints
-    application.include_router(jupyter_endpoints.router, prefix="/api/jupyter", tags=["jupyter"])
     from app.api.endpoints import db_viewer
     application.include_router(db_viewer.router, prefix="/api/db", tags=["db-viewer"])
+    application.include_router(extensions.router, prefix="/api/extensions", tags=["extensions"])
 
     return application
 

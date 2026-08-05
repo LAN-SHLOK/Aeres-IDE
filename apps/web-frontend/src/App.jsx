@@ -5,6 +5,12 @@ import Dashboard from './pages/Dashboard.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import Pricing from './pages/Pricing.jsx'
 import Docs from './pages/Docs.jsx'
+import Changelog from './pages/Changelog.jsx'
+import Extensions from './pages/Extensions.jsx'
+import Blog from './pages/Blog.jsx'
+import Privacy from './pages/Privacy.jsx'
+import Terms from './pages/Terms.jsx'
+import Security from './pages/Security.jsx'
 import SmoothScroll from './components/SmoothScroll.jsx'
 
 function ProtectedRoute({ children }) {
@@ -42,6 +48,12 @@ export default function App() {
         <Route path="/auth/*" element={<AuthPortal />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/docs" element={<Docs />} />
+        <Route path="/changelog" element={<Changelog />} />
+        <Route path="/extensions" element={<Extensions />} />
+        <Route path="/blog" element={<Blog />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/security" element={<Security />} />
         <Route
           path="/dashboard"
           element={

@@ -55,6 +55,13 @@ export default function WorkflowDiagram({ data }) {
         const m = rawData.match(/```mermaid([\s\S]*?)```/);
         if (m) rawData = m[1].trim();
       }
+      
+      // Sanitize: Wrap unquoted node labels in quotes to prevent parse errors with parentheses
+      // e.g. Node[Label (extra)] -> Node["Label (extra)"]
+      rawData = rawData.replace(/([a-zA-Z0-9_]+)\[([^"\]]+)\]/g, '$1["$2"]');
+      rawData = rawData.replace(/([a-zA-Z0-9_]+)\(([^"\)]+)\)/g, '$1("$2")');
+      rawData = rawData.replace(/([a-zA-Z0-9_]+)\{([^"\}]+)\}/g, '$1{"$2"}');
+
       const { svg } = await mermaid.render(id, rawData);
       containerRef.current.innerHTML = svg;
       

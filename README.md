@@ -51,9 +51,6 @@ Full-featured graphical debugger for Node.js and Python with breakpoints, step-o
 ### Database Viewer
 Open and browse `.db` and `.sqlite` files directly inside the IDE with a rich table viewer—no external tools needed.
 
-### Jupyter Notebooks
-Run `.ipynb` notebooks with an integrated Jupyter kernel, including cell execution, output rendering, and markdown preview.
-
 ### Live Server & Web Preview
 One-click Live Server for HTML files (auto-installs via `npx`), with an embedded browser preview panel. Smart project detection: automatically uses `python manage.py runserver` for Django projects or `npm run dev` for Node.js frameworks when you hit Run.
 
@@ -95,7 +92,7 @@ graph TD
         subgraph Intelligence["Code Intelligence"]
             LSP["LSP WebSocket Bridge"]
             RAG["RAG Engine<br/>(ChromaDB + Embeddings)"]
-            Groq["Groq LLM Gateway<br/>(llama-3.3-70b)"]
+            Groq["Groq LLM Gateway<br/>(GPT OSS 120 B)"]
             TreeSitter["Tree-Sitter AST Parsers"]
         end
 
@@ -103,7 +100,7 @@ graph TD
             GitOps["Git Operations<br/>(clone, push, branch, stash)"]
             Perf["Temporal Profiler"]
             DBViewer["Database Viewer<br/>(SQLite)"]
-            Jupyter["Jupyter Kernel Bridge"]
+
             Proxy["Web Scraper / Proxy"]
         end
     end
@@ -147,7 +144,7 @@ Aeres-IDE/
 │   ├── desktop-client/          # Tauri + React frontend
 │   │   ├── src/
 │   │   │   ├── components/
-│   │   │   │   ├── Editor/      # Monaco editor, tabs, database viewer, jupyter
+│   │   │   │   ├── Editor/      # Monaco editor, tabs, database viewer
 │   │   │   │   ├── Panels/      # Health dashboard, dependency radar, RAG chat, temporal lens
 │   │   │   │   ├── Sidebar/     # File tree, search, debug, testing, extensions
 │   │   │   │   ├── Overlays/    # Command palette, settings, keybindings, onboarding
@@ -183,6 +180,7 @@ Aeres-IDE/
 * **Node.js** v18+ (with npm)
 * **Python** 3.10+
 * **Rust & Cargo** (Required for Tauri desktop wrapper. Install via [rustup.rs](https://rustup.rs/))
+  * *Windows Users:* You must also install the **C++ Build Tools** via the Visual Studio Installer.
 * A **Groq API Key** (free at [console.groq.com](https://console.groq.com))
 
 ### Setup Instructions
@@ -207,12 +205,19 @@ Aeres-IDE/
    uvicorn app.server:app --reload --port 8008
    ```
 
-3. **Start the Tauri Frontend**
+3. **Set up the Web Portal (Clerk Auth)**
    ```bash
-   # Open a new terminal
-   cd apps/desktop-client
+   cd apps/web-frontend
+   
+   # Add your Clerk Publishable Key
+   echo "VITE_CLERK_PUBLISHABLE_KEY=your_pk_test_key_here" > .env.local
+   ```
+
+4. **Start the Entire Environment**
+   ```bash
+   # From the root of the repository
    npm install
-   npm run dev
+   npm run dev:all
    ```
 
 ---
@@ -343,13 +348,15 @@ This is a textbook example of why local-only services still need proper CORS pol
 
 ---
 
-### Tauri Dev Crashing ("cargo metadata" not found)
+### Tauri Dev Crashing ("cargo metadata" or "link.exe" not found)
 
-**Problem:** When running `npm run dev:all`, the backend and frontend start, but the desktop-client crashes with: `failed to run 'cargo metadata' command to get workspace directory: program not found`.
+**Problem 1:** Desktop client crashes with `failed to run 'cargo metadata' command to get workspace directory: program not found`.
+**Root Cause:** Tauri requires the Rust toolchain to be installed.
+**Fix:** Install Rust and Cargo from [rustup.rs](https://rustup.rs/). Restart your terminal completely so the new PATH variables take effect.
 
-**Root Cause:** Aeres relies on Tauri to compile and run the desktop application window. Tauri requires the Rust toolchain (specifically `cargo`) to be installed and available in the system PATH. 
-
-**Fix:** You must install Rust and Cargo from [rustup.rs](https://rustup.rs/). After installation, restart your terminal or IDE completely so the new PATH variables take effect, and try running `npm run dev:all` again.
+**Problem 2:** Desktop client crashes with `error: linker 'link.exe' not found`.
+**Root Cause:** On Windows, Rust requires the Microsoft C++ Build Tools (MSVC) to link the final executable.
+**Fix:** Download the [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/), run the installer, and ensure the "Desktop development with C++" workload is checked. Restart your terminal after installation.
 
 ---
 

@@ -25,11 +25,14 @@ const OnboardingModal = ({ onComplete }) => {
     
     try {
       let currentBackendUrl = backendUrl;
-      if (window.electron && window.electron.sidecar && window.electron.sidecar.getPort) {
-        const port = await window.electron.sidecar.getPort();
+      try {
+        const { invoke } = window.__TAURI__.core;
+        const port = await invoke('get_backend_port');
         if (port) {
           currentBackendUrl = `http://127.0.0.1:${port}`;
         }
+      } catch (e) {
+        console.warn('Could not get backend port from Tauri, using default 8008');
       }
 
       const response = await fetch(`${currentBackendUrl}/api/keys`, {

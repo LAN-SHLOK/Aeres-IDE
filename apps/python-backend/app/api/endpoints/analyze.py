@@ -15,14 +15,13 @@ from app.core.security import get_current_user
 
 router = APIRouter()
 
-
 @router.post("/modernize")
 async def modernize(req: ModernizeRequest, request: Request, user: dict = Depends(get_current_user)):
     """Stream modernization results as Server-Sent Events."""
     api_key = request.headers.get("x-groq-api-key")
 
     async def event_stream():
-        async for line in run_modernize_pipeline(req.content, req.path, api_key=api_key):
+        async for line in run_modernize_pipeline(req.content, req.path, dep_name=req.dep_name, api_key=api_key):
             yield f"data: {line}\n\n"
 
     return StreamingResponse(
@@ -33,7 +32,6 @@ async def modernize(req: ModernizeRequest, request: Request, user: dict = Depend
             "X-Accel-Buffering": "no",
         },
     )
-
 
 @router.post("/scan-project")
 async def scan_project(req: ProjectScanRequest, user: dict = Depends(get_current_user)):

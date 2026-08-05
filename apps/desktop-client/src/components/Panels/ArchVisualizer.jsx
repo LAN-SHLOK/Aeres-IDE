@@ -12,6 +12,7 @@ export default function ArchVisualizer() {
   const diagnostics = useStore((s) => s.diagnostics)
   
   const svgRef = useRef(null)
+  const zoomBehaviorRef = useRef(null)
   const hoverTimeoutRef = useRef(null)
   const [scanning, setScanning] = useState(false)
   const [scanProgress, setScanProgress] = useState(0)
@@ -19,9 +20,10 @@ export default function ArchVisualizer() {
   const [hoveredNode, setHoveredNode] = useState(null)
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
 
-  const handleMouseEnterNode = (node) => {
+  const handleMouseEnterNode = (e, node) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current)
     setHoveredNode(node)
+    setMousePos({ x: e.clientX, y: e.clientY })
   }
 
   const handleMouseLeaveNode = () => {
@@ -58,7 +60,7 @@ export default function ArchVisualizer() {
     return allFiles.filter(f => {
       const ext = f.name.substring(f.name.lastIndexOf('.')).toLowerCase()
       return codeExts.includes(ext)
-    }).slice(0, 45) // limit to 45 nodes for optimal visual density
+    }) // We removed the artificial slice limit here so you can see all your files!
   }, [allFiles])
 
   // Scan simulation triggers on project load or manual trigger
@@ -67,6 +69,41 @@ export default function ArchVisualizer() {
     setScanProgress(0)
     setScanLogs([])
     
+    // Actually fetch the Git Status for the workspace so it populates immediately
+    if (window.electron?.git?.status && rootPath) {
+      window.electron.git.status(rootPath)
+        .then(status => useStore.getState().setGitStatus(status))
+        .catch(() => {})
+    }
+
+    // Actually trigger LSP diagnostic checks for all code files to get real workspace errors/warnings
+    if (window.electron?.lsp?.checkDiagnostics) {
+      const state = useStore.getState()
+      if (state.fileTree) {
+        const files = []
+        function recurse(nodes) {
+          if (!Array.isArray(nodes)) return
+          nodes.forEach(node => {
+            if (node.type === 'file') files.push(node)
+            else if (node.type === 'dir' && node.children) recurse(node.children)
+          })
+        }
+        recurse(state.fileTree)
+        
+        const codeExts = ['.js', '.jsx', '.ts', '.tsx', '.py', '.go', '.rs', '.java', '.cpp', '.c', '.h', '.css', '.html', '.json']
+        const currentCodeFiles = files.filter(f => codeExts.includes(f.name.substring(f.name.lastIndexOf('.')).toLowerCase()))
+        
+        if (currentCodeFiles.length > 0) {
+          // Stagger the LSP requests slightly to avoid overwhelming the IPC bridge
+          currentCodeFiles.forEach((file, index) => {
+            setTimeout(() => {
+              window.electron.lsp.checkDiagnostics(file.path)
+            }, index * 20)
+          })
+        }
+      }
+    }
+
     const logs = [
       '[Aeres Compiler] Spawning semantic workspace scanner...',
       '[Directory Analyzer] Walking codebase file trees...',
@@ -111,26 +148,25 @@ export default function ArchVisualizer() {
       
       // Determine Git change status - normalize both paths to forward slashes and compare
       const nodePath = file.path.replace(/\\/g, '/')
+      const nodePathLower = nodePath.toLowerCase()
       const gitFiles = gitStatus.files || []
       const matchedGitFile = gitFiles.find(gf => {
-        const rel = gf.path.replace(/\\/g, '/')
-        // Check if the absolute node path ends with the relative git path
-        return nodePath.endsWith('/' + rel) || nodePath === rel
+        const rel = gf.path.replace(/["']/g, '').replace(/\\/g, '/').toLowerCase()
+        return nodePathLower.endsWith('/' + rel) || nodePathLower === rel
       })
       const isModified = !!matchedGitFile && (
         matchedGitFile.x === 'M' || matchedGitFile.y === 'M' || 
         matchedGitFile.x === 'A' || matchedGitFile.x === '?'
       )
       
-      // Determine compilation issues from live LSP diagnostics
-      // Check both forward-slash and backslash versions of the path
-      const fileMarkers = diagnostics[file.path] || diagnostics[file.path.replace(/\\/g, '/')] || diagnostics[file.path.replace(/\//g, '\\')] || []
-      const hasErrors = fileMarkers.some(m => m.severity === 1 || m.severity === 'error' || m.message?.toLowerCase().includes('error'))
-      const hasWarnings = fileMarkers.some(m => m.severity === 2 || m.severity === 'warning')
+      // Determine compilation issues from live LSP diagnostics - case insensitive for Windows
+      const fileMarkers = Object.entries(diagnostics).find(([key, _]) => key.replace(/\\/g, '/').toLowerCase() === nodePathLower)?.[1] || []
+      const errorsCount = fileMarkers.filter(m => m.severity === 1 || m.severity === 'error' || m.message?.toLowerCase().includes('error')).length
+      const warningsCount = fileMarkers.filter(m => m.severity === 2 || m.severity === 'warning').length
       
       let status = 'healthy'
-      if (hasErrors) status = 'error'
-      else if (hasWarnings) status = 'warning'
+      if (errorsCount > 0) status = 'error'
+      else if (warningsCount > 0) status = 'warning'
       else if (isModified) status = 'modified'
       
       return {
@@ -139,6 +175,8 @@ export default function ArchVisualizer() {
         y,
         status,
         issuesCount: fileMarkers.length,
+        errorsCount,
+        warningsCount,
         gitIndicator: matchedGitFile ? (matchedGitFile.x || matchedGitFile.y) : null
       }
     })
@@ -151,11 +189,12 @@ export default function ArchVisualizer() {
     const g = svg.select('g.arch-graph')
     
     const zoom = d3.zoom()
-      .scaleExtent([0.3, 5])
+      .scaleExtent([0.1, 5])
       .on('zoom', (event) => {
         g.attr('transform', event.transform)
       })
     
+    zoomBehaviorRef.current = zoom
     svg.call(zoom)
     
     // Start slightly zoomed out to fit content
@@ -164,20 +203,34 @@ export default function ArchVisualizer() {
     return () => svg.on('.zoom', null)
   }, [scanning]) // Re-attach after scan completes
 
+  const handleZoomIn = () => {
+    if (svgRef.current && zoomBehaviorRef.current) {
+      d3.select(svgRef.current).transition().duration(300).call(zoomBehaviorRef.current.scaleBy, 1.4)
+    }
+  }
+
+  const handleZoomOut = () => {
+    if (svgRef.current && zoomBehaviorRef.current) {
+      d3.select(svgRef.current).transition().duration(300).call(zoomBehaviorRef.current.scaleBy, 0.7)
+    }
+  }
+
   // Calculate Health Index percentage
   const healthStats = useMemo(() => {
     if (nodes.length === 0) return { health: 100, errors: 0, warnings: 0, modified: 0 }
     let errors = 0
     let warnings = 0
     let modified = 0
+    let unhealthyNodes = 0
     
     nodes.forEach(n => {
-      if (n.status === 'error') errors++
-      else if (n.status === 'warning') warnings++
-      else if (n.status === 'modified') modified++
+      errors += n.errorsCount || 0
+      warnings += n.warningsCount || 0
+      if (n.status === 'modified' || !!n.gitIndicator) modified++
+      if (n.status === 'error' || n.status === 'warning') unhealthyNodes++
     })
     
-    const healthyCount = nodes.length - errors
+    const healthyCount = nodes.length - unhealthyNodes
     const health = Math.round((healthyCount / nodes.length) * 100)
     
     return { health, errors, warnings, modified }
@@ -199,12 +252,16 @@ export default function ArchVisualizer() {
     // Focus active sidebar tab to AI Chat
     useStore.setState({ rightPanelOpen: true, activeRightTab: 'chat' })
     
-    // Dispatch custom event to auto populate chat input field
-    const ev = new CustomEvent('aeres:add-to-chat', { detail: { name: node.name } })
-    document.dispatchEvent(ev)
-    
-    const focusEv = new CustomEvent('aeres:focus-chat')
-    document.dispatchEvent(focusEv)
+    // We use a short timeout to ensure the RagChat component mounts
+    // and registers its event listeners before we fire the event.
+    setTimeout(() => {
+      // Dispatch custom event to auto populate chat input field
+      const ev = new CustomEvent('aeres:add-to-chat', { detail: { name: node.name } })
+      document.dispatchEvent(ev)
+      
+      const focusEv = new CustomEvent('aeres:focus-chat')
+      document.dispatchEvent(focusEv)
+    }, 150)
   }
 
   if (!rootPath) {
@@ -243,6 +300,16 @@ export default function ArchVisualizer() {
 
       {/* Main Container */}
       <div className="flex-1 flex overflow-hidden relative">
+        {/* Zoom Controls Overlay */}
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+          <button onClick={handleZoomIn} className="w-8 h-8 flex items-center justify-center bg-aeres-surface border-2 border-black rounded-lg text-white hover:bg-aeres-violet hover:text-black transition-colors shadow-[2px_2px_0px_#000] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000]" title="Zoom In">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button onClick={handleZoomOut} className="w-8 h-8 flex items-center justify-center bg-aeres-surface border-2 border-black rounded-lg text-white hover:bg-aeres-violet hover:text-black transition-colors shadow-[2px_2px_0px_#000] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000]" title="Zoom Out">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+
         {/* Scanning progress overlay */}
         {scanning && (
           <div className="absolute inset-0 bg-[#0c0d14]/90 z-50 flex flex-col items-center justify-center p-6 backdrop-blur-sm animate-in fade-in duration-150">
@@ -343,9 +410,7 @@ export default function ArchVisualizer() {
         </div>
 
         {/* CENTER INTERACTIVE WORKSPACE GALAXY MAP */}
-        <div className="flex-1 overflow-hidden relative bg-black/20"
-          onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
-        >
+        <div className="flex-1 overflow-hidden relative bg-black/20">
           <svg ref={svgRef} className="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
             <g className="arch-graph">
               {/* Grid styling background */}
@@ -416,7 +481,7 @@ export default function ArchVisualizer() {
                     key={`node-${i}`} 
                     transform={`translate(${node.x},${node.y})`}
                     onClick={() => handleNodeClick(node)}
-                    onMouseEnter={() => handleMouseEnterNode(node)}
+                    onMouseEnter={(e) => handleMouseEnterNode(e, node)}
                     onMouseLeave={handleMouseLeaveNode}
                     className="cursor-pointer group"
                   >

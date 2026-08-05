@@ -92,7 +92,10 @@ async def db_table(req: DbTableRequest):
         rows = [dict(r) for r in cursor.fetchall()]
 
         # Total row count
-        total = conn.execute(f'SELECT COUNT(*) FROM "{req.table}"').fetchone()[0]
+        try:
+            total = conn.execute(f'SELECT COUNT(*) FROM "{req.table}"').fetchone()[0]
+        except sqlite3.OperationalError:
+            total = -1
 
         return {
             "table": req.table,

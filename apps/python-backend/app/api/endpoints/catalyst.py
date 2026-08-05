@@ -159,6 +159,29 @@ class QueryIssueRequest(BaseModel):
     repo_name: str
     issue_text: str
 
+
+def _truncate_context(tree_context: str, rag_results: list, max_tree_chars: int = 1500, max_snippets: int = 5, max_snippet_chars: int = 400):
+    """Truncate context to stay within Groq free-tier token limits (~8000 TPM)."""
+    # Truncate folder tree
+    if len(tree_context) > max_tree_chars:
+        tree_context = tree_context[:max_tree_chars] + "\n... (truncated)"
+    
+    # Limit number of RAG results and snippet sizes
+    truncated_results = rag_results[:max_snippets]
+    context_blocks = []
+    for r in truncated_results:
+        snippet = r.get('code_snippet', '') or ''
+        if len(snippet) > max_snippet_chars:
+            snippet = snippet[:max_snippet_chars] + "\n# ... (truncated)"
+        context_blocks.append(
+            f"FILE: {r.get('file_path', 'Unknown')}\n"
+            f"TYPE: {r.get('type', 'Unknown')} ({r.get('name', 'Unknown')})\n"
+            f"SNIPPET:\n```\n{snippet}\n```"
+        )
+    
+    context_str = "\n\n".join(context_blocks) if context_blocks else "(No AST nodes found.)"
+    return tree_context, context_str
+
 @router.post("/query-issue")
 async def query_issue(req: QueryIssueRequest, request: dict = Depends(get_current_user)):
     """
@@ -176,39 +199,69 @@ async def query_issue(req: QueryIssueRequest, request: dict = Depends(get_curren
             tree_context = f.read()
 
     # Semantic search over AST nodes
-    rag_results = query_catalyst_nodes(req.issue_text, req.repo_name, n_results=10)
+    rag_results = query_catalyst_nodes(req.issue_text, req.repo_name, n_results=5)
     
-    context_blocks = []
-    for r in rag_results:
-        # Build structured context of the architectural layout
-        context_blocks.append(
-            f"FILE: {r['file_path']}\n"
-            f"TYPE: {r['type'].upper()} ({r['name']})\n"
-            f"SNIPPET:\n```python\n{r['code_snippet']}\n```"
-        )
-    
-    context_str = "\n\n".join(context_blocks)
+    tree_context, context_str = _truncate_context(tree_context, rag_results)
     
     system_prompt = (
-        "You are the Open-Source Codebase Catalyst, an elite architectural guide for developers. "
-        "Your goal is to help a developer implement a fix for the provided GitHub Issue. "
-        "Do NOT write all the code for them. Instead, act as a Staff Engineer guiding a new contributor:\n"
-        "1. Identify the core components or logic files that need modification.\n"
-        "2. Explain *why* those files are relevant based on the AST context provided.\n"
-        "3. Provide a step-by-step architectural plan on where to make changes.\n"
-        "4. Be technical, structured, and extremely precise with file paths and function names.\n"
-        "5. If summarizing the architecture or tech stack (like databases or gateways), INFER details from the [FULL REPOSITORY FOLDER STRUCTURE] (e.g. infer PostgreSQL if 'prisma/' or 'migrations/' is present, or Stripe if 'stripe' files exist), rather than saying 'not specified in provided code'.\n"
-        "6. If generating Mermaid charts, STRICTLY use standard syntax. Example: NodeA -->|Label text| NodeB. NEVER append an extra '>' after the label like `-->|Label|>`. This breaks the parser."
+        "You are the Open-Source Codebase Catalyst, an expert developer and architectural guide. "
+        "Help the developer implement a fix for the provided Issue.\n"
+        "1. Identify the core files that need modification.\n"
+        "2. Explain why those files are relevant.\n"
+        "3. Provide correct code for the necessary changes.\n"
+        "4. Be precise with file paths and function names."
     )
     
-    user_prompt = f"TARGET REPOSITORY: {req.repo_name}\n\n[FULL REPOSITORY FOLDER STRUCTURE]:\n{tree_context}\n\n[ARCHITECTURAL CONTEXT FROM AST PARSER]:\n{context_str}\n\n[GITHUB ISSUE / GOAL]:\n{req.issue_text}"
+    user_prompt = f"REPO: {req.repo_name}\n\n[FOLDER STRUCTURE]:\n{tree_context}\n\n[AST CONTEXT]:\n{context_str}\n\n[ISSUE]:\n{req.issue_text}"
     
     try:
-        # Note: If api_key is passed via headers, we might need to extract it from a Request object.
-        # But groq_complete falls back to env GROQ_API_KEY if not passed.
-        answer = await groq_complete(system_prompt, user_prompt, max_tokens=2500, temperature=0.2)
+        answer = await groq_complete(system_prompt, user_prompt, max_tokens=4096, temperature=0.2)
         return {"answer": answer, "nodes_referenced": len(rag_results)}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/query-issue-stream")
+async def query_issue_stream(req: QueryIssueRequest, request: dict = Depends(get_current_user)):
+    from app.rag_engine.vector_db import query_catalyst_nodes
+    from app.rag_engine.groq_gateway import stream_chat
+    from fastapi.responses import StreamingResponse
+    import logging
+    
+    try:
+        base_dir = os.path.join(user_data_dir, "catalyst_repos")
+        tree_file_path = os.path.join(base_dir, f"{req.repo_name}_tree.txt")
+        tree_context = ""
+        if os.path.exists(tree_file_path):
+            with open(tree_file_path, "r", encoding="utf-8") as f:
+                tree_context = f.read()
+
+        rag_results = query_catalyst_nodes(req.issue_text, req.repo_name, n_results=5)
+        
+        tree_context, context_str = _truncate_context(tree_context, rag_results)
+        
+        system_prompt = (
+            "You are the Open-Source Codebase Catalyst, an expert developer and architectural guide. "
+            "Help the developer implement a fix for the provided Issue.\n"
+            "1. Identify the core files that need modification.\n"
+            "2. Explain why those files are relevant.\n"
+            "3. Provide correct code for the necessary changes.\n"
+            "4. Be precise with file paths and function names."
+        )
+        
+        user_prompt = f"REPO: {req.repo_name}\n\n[FOLDER STRUCTURE]:\n{tree_context}\n\n[AST CONTEXT]:\n{context_str}\n\n[ISSUE]:\n{req.issue_text}"
+        
+        async def event_generator():
+            try:
+                async for chunk in stream_chat(system_prompt, user_prompt, max_tokens=4096):
+                    yield chunk
+            except Exception as e:
+                logging.error(f"[Catalyst Stream] Groq stream error: {e}")
+                yield f"\n\n**⚠️ Streaming Error**: {str(e)}"
+
+        return StreamingResponse(event_generator(), media_type="text/plain")
+    except Exception as e:
+        logging.error(f"[Catalyst Stream] Setup error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -252,7 +305,12 @@ BEHAVIOR & CORRELATION ENGINE
 OUTPUT REQUIREMENTS
 Generate a clean, structured Mermaid flowchart (flowchart TD). Wrap it in a markdown ```mermaid block.
 Use subgraphs to group related modules or frontend/backend boundaries.
-CRITICAL: When labeling an arrow, use STRICT syntax: NodeA -->|Label| NodeB. NEVER append an extra '>' after the label (e.g. `-->|Label|>`).
+CRITICAL SYNTAX RULES TO PREVENT PARSER CRASHES:
+1. When labeling an arrow, use STRICT syntax: NodeID -->|Label| TargetNodeID. NEVER append an extra '>' after the label (e.g. `-->|Label|>`).
+2. Node IDs MUST be purely alphanumeric with NO spaces, NO hyphens, and NO special characters (e.g., `MyService`, `Database1`).
+3. Node labels MUST contain ONLY alphanumeric characters and spaces. Do NOT include slashes `/`, periods `.`, file extensions, parentheses `()`, brackets `[]`, braces `{}`, quotes `"`, or commas `,`. Keep labels purely alphanumeric strings. (e.g., `NodeID[Database Service]`).
+4. NEVER use markdown or HTML tags inside the Mermaid diagram.
+5. ALWAYS declare `flowchart TD` at the very beginning of the mermaid block.
 Example:
 ```mermaid
 flowchart TD
@@ -261,7 +319,7 @@ flowchart TD
     Frontend[React UI]
   end
   subgraph Server
-    Frontend -->|API| Backend[FastAPI]
+    Frontend -->|API| Backend[FastAPI Server]
   end
 ```
 """
@@ -278,7 +336,7 @@ flowchart TD
 """
     try:
         diagram_api_key = os.environ.get("IDE_DIAGRAM_ENGINE") or settings.IDE_DIAGRAM_ENGINE or settings.GROQ_API_KEY
-        answer = await groq_complete(system_prompt, user_prompt, max_tokens=1500, temperature=0.1, api_key=diagram_api_key)
+        answer = await groq_complete(system_prompt, user_prompt, max_tokens=4096, temperature=0.1, api_key=diagram_api_key)
         
         # Extract Mermaid
         diagram_data = ""

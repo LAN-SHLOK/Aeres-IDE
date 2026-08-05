@@ -3,6 +3,7 @@ import AuthModal from './AuthModal.jsx'
 import ErrorBoundary from './ErrorBoundary.jsx'
 import { useStore } from './store.js'
 import { detectLanguage } from './utils/langDetect.js'
+import { invoke } from '@tauri-apps/api/core'
 import { openFolderAndResetTerminals } from './utils/workspaceActions.js'
 import { handleGlobalKeys } from './keybindings.js'
 
@@ -16,7 +17,6 @@ const DebugPanel = lazy(() => import('./components/Sidebar/DebugPanel.jsx'))
 
 // Main Content
 import CodeCanvas from './components/Editor/CodeCanvas.jsx'
-const JupyterCanvas = lazy(() => import('./components/Editor/JupyterCanvas.jsx'))
 const DatabaseViewer = lazy(() => import('./components/Editor/DatabaseViewer.jsx'))
 const DependencyRadar = lazy(() => import('./components/Panels/DependencyRadar.jsx'))
 const CausalBlameMap = lazy(() => import('./components/Panels/CausalBlameMap.jsx'))
@@ -66,6 +66,14 @@ const ACTIVITY_ICONS = [
   { id: 'api', icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>, label: 'Aeres API Sandbox' },
 ]
 
+// Intentionally unused dummy component with an undefined reference
+// This is here specifically to trigger the Language Server so that the 
+// Architecture Map / Health Scanner will detect 1 Error and 1 Warning!
+function LSPHealthScannerTest() {
+  const unusedVariable = "This is a warning";
+  return undefinedVariableThatCausesAnError;
+}
+
 export default function App() {
   const authStatus = useStore((s) => s.authStatus)
   const setAuthStatus = useStore((s) => s.setAuthStatus)
@@ -92,7 +100,9 @@ export default function App() {
   const setQuickOpenOpen = useStore((s) => s.setQuickOpenOpen)
   const keybindingsOpen = useStore((s) => s.keybindingsOpen)
   const setKeybindingsOpen = useStore((s) => s.setKeybindingsOpen)
-
+  
+  // Track active tab to switch between CodeCanvas and DatabaseViewer
+  const activeTabId = useStore((s) => s.activeTabId)
   const [loaded, setLoaded] = useState(false)
   const [termDragging, setTermDragging] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -161,22 +171,27 @@ export default function App() {
           }
         })
         .catch(err => console.error("Failed to check keys:", err))
-    } else if (e.sidecar?.getPort) { 
-      e.sidecar.getPort().then(port => { 
-        if (port) {
-          const url = `http://127.0.0.1:${port}`
-          setBackendUrl(url)
-          // Check if API keys are configured (BYOK)
-          fetch(`${url}/api/keys`)
-            .then(res => res.json())
-            .then(data => {
-              if (data && data.is_configured === false) {
-                setApiConfigured(false)
-              }
-            })
-            .catch(err => console.error("Failed to check keys:", err))
-        }
-      }) 
+    } else {
+      // In production Tauri app, try to fetch the backend port dynamically
+      try {
+        invoke('get_backend_port').then(port => {
+          if (port) {
+            const url = `http://127.0.0.1:${port}`
+            setBackendUrl(url)
+            // Check if API keys are configured (BYOK)
+            fetch(`${url}/api/keys`)
+              .then(res => res.json())
+              .then(data => {
+                if (data && data.is_configured === false) {
+                  setApiConfigured(false)
+                }
+              })
+              .catch(err => console.error("Failed to check keys:", err))
+          }
+        }).catch(err => console.warn('Could not invoke get_backend_port:', err));
+      } catch (err) {
+        console.warn('Tauri API not available for backend port fetch', err);
+      }
     }
   }, [setAuthStatus, setBackendUrl])
 
@@ -455,11 +470,17 @@ export default function App() {
           {ACTIVITY_ICONS.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveSidebarTab(item.id)}
-              className={`flex h-12 w-12 items-center justify-center transition-all relative ${activeSidebarTab === item.id ? 'text-[#7C3AED] bg-[#7C3AED]/10' : 'text-slate-500 hover:text-slate-300'}`}
+              onClick={() => {
+                if (item.id === 'chat') {
+                  useStore.setState({ rightPanelOpen: true, activeRightTab: 'chat' })
+                } else {
+                  setActiveSidebarTab(item.id)
+                }
+              }}
+              className={`flex h-12 w-12 items-center justify-center transition-all relative ${(item.id === 'chat' && rightPanelOpen && activeRightTab === 'chat') || (item.id !== 'chat' && activeSidebarTab === item.id) ? 'text-[#7C3AED] bg-[#7C3AED]/10' : 'text-slate-500 hover:text-slate-300'}`}
               title={item.label}
             >
-              {activeSidebarTab === item.id && <div className="absolute left-0 top-2 bottom-2 w-[2px] bg-[#7C3AED]" />}
+              {((item.id === 'chat' && rightPanelOpen && activeRightTab === 'chat') || (item.id !== 'chat' && activeSidebarTab === item.id)) && <div className="absolute left-0 top-2 bottom-2 w-[2px] bg-[#7C3AED]" />}
               {item.icon}
             </button>
           ))}
@@ -682,9 +703,8 @@ export default function App() {
                   activeSidebarTab === 'api' ? <ApiSandboxPanel /> :
                   activeRightTab === 'causemap' ? <CausalBlameMap /> : 
                   (() => {
-                     const _at = useStore.getState().tabs.find(t => t.id === useStore.getState().activeTabId)
+                     const _at = useStore.getState().tabs.find(t => t.id === activeTabId)
                      const _name = _at?.name?.toLowerCase() || ''
-                     if (_at?.path?.endsWith('.ipynb')) return <JupyterCanvas />
                      if (['.db','.sqlite','.sqlite3','.s3db','.sl3'].some(ext => _name.endsWith(ext))) return <DatabaseViewer />
                      return <CodeCanvas />
                    })()}
@@ -704,11 +724,11 @@ export default function App() {
         </div>
 
         {/* 4. OVERLAYS / RIGHT PANELS */}
-        {!zenMode && rightPanelOpen && !(activeSidebarTab === 'radar' || activeSidebarTab === 'arch' || activeSidebarTab === 'sunburst' || activeSidebarTab === 'preview' || activeSidebarTab === 'api' || activeRightTab === 'causemap') && (
+        {!zenMode && rightPanelOpen && !(activeSidebarTab === 'radar' || activeSidebarTab === 'sunburst' || activeSidebarTab === 'preview' || activeSidebarTab === 'api' || activeRightTab === 'causemap') && (
           <div className="shrink-0 overflow-hidden border-l border-slate-800/50 bg-slate-900/70 backdrop-blur-3xl z-20 aeres-layout-right-panel" style={{ width: rightPanelWidth }}>
             <div className="flex h-9 items-center justify-between border-b border-slate-800/30 px-2 bg-slate-950/40">
               <div className="flex items-center gap-1.5">
-                {['chat', 'focus', 'health'].map((tab) => (
+                {['chat', 'health'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveRightTab(tab)}
@@ -718,7 +738,7 @@ export default function App() {
                         : 'text-slate-400 hover:text-white hover:scale-102'
                     }`}
                   >
-                    {tab === 'chat' ? '💬 Chat' : tab === 'focus' ? '🎯 Focus' : '🛡️ Health'}
+                    {tab === 'chat' ? '💬 Chat' : '🛡️ Health'}
                   </button>
                 ))}
               </div>
@@ -736,7 +756,6 @@ export default function App() {
               <ErrorBoundary label="Right Panel">
                 <Suspense fallback={<div className="p-4 text-xs text-slate-500">Loading panel...</div>}>
                   {activeRightTab === 'chat' && <RagChat key={activeRightTab} initialMode={activeRightTab} />}
-                  {activeRightTab === 'focus' && <FocusSessionManager />}
                   {activeRightTab === 'health' && <HealthDashboard />}
                 </Suspense>
               </ErrorBoundary>

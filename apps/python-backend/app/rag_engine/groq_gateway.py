@@ -15,7 +15,7 @@ async def generate_modernize_rule(prompt: str, api_key: str = None) -> str:
     resp = await client.chat.completions.create(
         model=settings.GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=4000,
+        max_tokens=4096,
         temperature=0.1,
     )
     msg = resp.choices[0].message
@@ -27,7 +27,7 @@ async def stream_modernized_code(prompt: str, api_key: str = None) -> AsyncGener
     stream = await client.chat.completions.create(
         model=settings.GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=2048,
+        max_tokens=8192,
         temperature=0.1,
         stream=True,
     )
@@ -67,18 +67,41 @@ async def stream_modernized_code(prompt: str, api_key: str = None) -> AsyncGener
     if buffer:
         yield buffer
 
+async def stream_chat(system: str, user: str, max_tokens: int = 8192, api_key: str = None) -> AsyncGenerator[str, None]:
+    client = AsyncGroq(api_key=api_key or settings.GROQ_API_KEY)
+    stream = await client.chat.completions.create(
+        model=settings.GROQ_MODEL,
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+        max_tokens=max_tokens,
+        temperature=0.2,
+        stream=True,
+    )
+    async for chunk in stream:
+        delta = chunk.choices[0].delta
+        if delta and delta.content:
+            yield delta.content
+
 
 
 async def groq_complete(
     system: str,
     user: str,
-    max_tokens: int = 500,
+    max_tokens: int = 2048,
     temperature: float = 0.2,
     stop: Optional[Union[str, Sequence[str]]] = None,
     model: Optional[str] = None,
     api_key: str = None,
+    intelligence_level: str = "complex",
 ) -> str:
-    selected_model = model or settings.GROQ_CHAT_MODEL
+    if model is None:
+        if intelligence_level == "fast":
+            selected_model = getattr(settings, "GROQ_FAST_MODEL", settings.GROQ_MODEL)
+        elif intelligence_level == "vision":
+            selected_model = getattr(settings, "GROQ_VISION_MODEL", settings.GROQ_MODEL)
+        else:
+            selected_model = settings.GROQ_CHAT_MODEL
+    else:
+        selected_model = model
     client = AsyncGroq(api_key=api_key or settings.GROQ_API_KEY)
     kwargs = dict(
         model=selected_model,
@@ -99,9 +122,10 @@ async def groq_complete(
 async def groq_tool_complete(
     messages: list,
     tools: list = None,
-    max_tokens: int = 4000,
+    max_tokens: int = 4096,
     temperature: float = 0.1,
     api_key: str = None,
+    intelligence_level: str = "complex",
 ):
     """Groq completion with tool-use (function-calling) support.
     Returns the raw response object so callers can access tool_calls.
@@ -118,7 +142,12 @@ async def groq_tool_complete(
         if has_image:
             break
 
-    model = "llama-3.2-90b-vision-preview" if has_image else settings.GROQ_MODEL
+    if has_image:
+        model = getattr(settings, "GROQ_VISION_MODEL", "llama-3.2-90b-vision-preview")
+    elif intelligence_level == "fast":
+        model = getattr(settings, "GROQ_FAST_MODEL", settings.GROQ_MODEL)
+    else:
+        model = settings.GROQ_MODEL
 
     client = AsyncGroq(api_key=api_key or settings.GROQ_API_KEY)
     kwargs = dict(
@@ -162,12 +191,13 @@ def enforce_syntax_only(raw: str) -> str:
     return "\n".join(cleaned).strip()
 
 
-def assemble_strict_prompt(file_content: str, scraped_docs: str, flagged_function: str, folder_structure: str = "") -> str:
+def assemble_strict_prompt(file_content: str, scraped_docs: str, flagged_function: str, folder_structure: str = "", dep_name: str = None) -> str:
     folder_context = f"\nWORKSPACE FOLDER STRUCTURE:\n```\n{folder_structure}\n```\n(Use this to ensure your imports and relative paths remain correct.)\n" if folder_structure else ""
-    return f"""You are an elite code modernization engine. Your job is to rewrite the provided file to remove the deprecated function and modernize it according to the official documentation.
+    dep_instruction = f"\nCRITICAL INSTRUCTION: The user is specifically asking to remove the '{dep_name}' dependency from this file. You MUST completely rewrite the file to use modern native equivalents (e.g. native fetch API, axios, or native fs) instead of '{dep_name}'." if dep_name else ""
+    return f"""You are an elite Principal Engineer and code modernization engine. Your job is to rewrite the provided file to remove the deprecated function and comprehensively modernize the entire file according to the official documentation and best practices.
 
 DEPRECATED FUNCTION DETECTED: {flagged_function}
-{folder_context}
+{folder_context}{dep_instruction}
 OFFICIAL MIGRATION DOCUMENTATION (Read carefully):
 {scraped_docs}
 
@@ -177,10 +207,11 @@ USER'S FULL FILE CONTENT:
 ```
 
 RULES:
-1. Locate the deprecated function `{flagged_function}` in the user's code.
-2. Read the official migration documentation to determine the new standard.
-3. Completely rewrite the user's code to fix the deprecation. Ensure all imports match the user's provided Folder Structure.
+1. Locate and fix the deprecated function `{flagged_function}` in the user's code using the official migration documentation.
+2. Beyond just fixing the deprecation, perform a comprehensive modernization of the entire file. Look for missing type hints, suboptimal async/await logic, legacy patterns, and performance anti-patterns.
+3. Completely rewrite the user's code to be optimal and modern. Ensure all imports match the user's provided Folder Structure.
 4. Output ONLY the raw, completely modernized source code. Do NOT output markdown, do NOT output explanations, do NOT wrap it in ```. Just the raw text of the file.
+5. CRITICAL: You MUST output the ENTIRE file from the very first line to the very last line. Do NOT use comments like "// ... rest of the code". Do NOT truncate the file. If you truncate the file, the user's application will break.
 """
 
 

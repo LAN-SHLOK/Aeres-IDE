@@ -8,8 +8,8 @@ import WorkflowDiagram from './WorkflowDiagram.jsx'
 function renderMarkdown(text) {
   if (!text) return ''
   const html = text
-    // Scratchpad (Internal Monologue)
-    .replace(/<scratchpad>([\s\S]*?)<\/scratchpad>/g, '<details class="my-2 border border-slate-700/50 rounded-lg bg-slate-900/40 overflow-hidden"><summary class="cursor-pointer px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-800/30 hover:bg-slate-800/50 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Aeres is thinking...</summary><div class="p-3 text-[10px] font-mono text-slate-500 whitespace-pre-wrap">$1</div></details>')
+    // Think / Scratchpad (Internal Monologue) - handles unclosed tags during streaming
+    .replace(/<(?:think|scratchpad)>([\s\S]*?)(?:<\/(?:think|scratchpad)>|$)/g, '<details open class="my-2 border border-slate-700/50 rounded-lg bg-slate-900/40 overflow-hidden"><summary class="cursor-pointer px-3 py-1.5 text-[10px] font-semibold text-slate-400 bg-slate-800/30 hover:bg-slate-800/50 flex items-center gap-1.5"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>AI is thinking...</summary><div class="p-3 text-[10px] font-mono text-slate-500 whitespace-pre-wrap">$1</div></details>')
     // Code blocks
     .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="bg-slate-900/80 border border-slate-700/40 rounded-md p-3 my-2 overflow-x-auto"><code class="text-[11px] leading-relaxed font-mono text-slate-300">$2</code></pre>')
     // Inline code
@@ -297,6 +297,7 @@ function ConfirmDialog({ confirm, onAccept, onReject }) {
       </div>
     </div>
   )
+
 }
 
 // Main Chat Component
@@ -306,7 +307,7 @@ export default function RagChat() {
   const appendChatMessage = useStore((s) => s.appendChatMessage)
   const clearChat = useStore((s) => s.clearChat)
   
-  const mode = useStore((s) => s.agentMode)
+  const mode = 'chat'
   const setMode = useStore((s) => s.setAgentMode)
   const agentRunning = useStore((s) => s.agentRunning)
   const setAgentRunning = useStore((s) => s.setAgentRunning)
@@ -323,6 +324,7 @@ export default function RagChat() {
   const rootPath = useStore((s) => s.rootPath)
   
   const backendUrl = useStore((s) => s.backendUrl)
+  const openTab = useStore((s) => s.openTab)
 
   const [input, setInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
@@ -342,6 +344,7 @@ export default function RagChat() {
   const [showCatalystModal, setShowCatalystModal] = useState(false)
   const [catalystUrl, setCatalystUrl] = useState('')
   const [catalystQuery, setCatalystQuery] = useState('')
+  const [streamedCatalystAnswer, setStreamedCatalystAnswer] = useState('')
 
   const WORKFLOWS = [
     {
@@ -656,6 +659,7 @@ export default function RagChat() {
     else appendChatMessage(targetMsg)
 
     setChatLoading(true)
+    setStreamedCatalystAnswer('**Ingesting repository...**\n*Downloading codebase, parsing Abstract Syntax Trees, and generating vector embeddings. This may take up to a minute for large repositories.*')
     try {
       // 1. Ingest
       const res = await fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/ingest-repo`, {
@@ -673,25 +677,58 @@ export default function RagChat() {
       else appendChatMessage(statusMsg)
 
       // 2. Query Text and Diagram concurrently
-      const [qRes, dRes] = await Promise.all([
-        fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/query-issue`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
-        }),
-        fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/diagram-blueprint`, {
+      setStreamedCatalystAnswer('*Analyzing architectural patterns... (Waiting for AI)*') 
+      
+      const dPromise = fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/diagram-blueprint`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
+      }).then(res => res.json()).catch(err => ({ diagram_data: null }))
+
+      let fullAnswer = ""
+      
+      // Try streaming first, fall back to non-streaming
+      try {
+        const qRes = await fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/query-issue-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
         })
-      ])
-      
-      const textData = await qRes.json()
-      const diagramResult = await dRes.json()
+
+        if (!qRes.ok) throw new Error('Stream endpoint returned ' + qRes.status)
+
+        const reader = qRes.body.getReader()
+        const decoder = new TextDecoder("utf-8")
+        let firstChunkReceived = false
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          const chunk = decoder.decode(value, { stream: true })
+          if (!firstChunkReceived) {
+            fullAnswer = "" // Clear the placeholder
+            firstChunkReceived = true
+          }
+          fullAnswer += chunk
+          setStreamedCatalystAnswer(fullAnswer)
+        }
+      } catch (streamErr) {
+        console.warn('[Catalyst] Stream failed, falling back to non-stream:', streamErr.message)
+        setStreamedCatalystAnswer('*Stream unavailable — using standard query...*')
+        const fallbackRes = await fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/query-issue`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ repo_name: repoName, issue_text: catalystQuery })
+        })
+        const fallbackData = await fallbackRes.json()
+        fullAnswer = fallbackData.answer || 'No architecture plan generated.'
+      }
+
+      const diagramResult = await dPromise
       
       const resultMsg = { 
         role: 'assistant', 
-        content: textData.answer || 'No architecture plan generated.',
+        content: fullAnswer || 'No architecture plan generated.',
         diagramData: diagramResult.diagram_data
       }
       
@@ -704,6 +741,7 @@ export default function RagChat() {
       else appendChatMessage(errMsg)
     } finally {
       setChatLoading(false)
+      setStreamedCatalystAnswer('')
       setCatalystUrl('')
       setCatalystQuery('')
     }
@@ -789,17 +827,60 @@ export default function RagChat() {
         const repoName = parts[0]
         const issueText = parts.slice(1).join(' ')
         setChatLoading(true)
-        const res = await fetch(`${backendUrl || 'http://localhost:8000'}/api/catalyst/query-issue`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ repo_name: repoName, issue_text: issueText })
-        })
-        const data = await res.json()
-        setChatLoading(false)
-        if (mode === 'agent') {
-          appendAgentMessage({ role: 'assistant', content: data.answer || data.detail || 'Query failed.' })
-        } else {
-          appendChatMessage({ role: 'assistant', content: data.answer || data.detail || 'Query failed.' })
+        setStreamedCatalystAnswer('*Analyzing architectural patterns... (Waiting for AI)*') 
+        
+        try {
+          const dPromise = fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/diagram-blueprint`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ repo_name: repoName, issue_text: issueText })
+          }).then(res => res.json()).catch(err => ({ diagram_data: null }))
+          
+          const qRes = await fetch(`${backendUrl || 'http://localhost:8008'}/api/catalyst/query-issue-stream`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ repo_name: repoName, issue_text: issueText })
+          })
+
+          if (!qRes.ok) throw new Error('Failed to query architecture')
+
+          const reader = qRes.body.getReader()
+          const decoder = new TextDecoder("utf-8")
+          let fullAnswer = ""
+          let firstChunkReceived = false
+
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            const chunk = decoder.decode(value, { stream: true })
+            if (!firstChunkReceived) {
+              fullAnswer = ""
+              firstChunkReceived = true
+            }
+            fullAnswer += chunk
+            setStreamedCatalystAnswer(fullAnswer)
+          }
+
+          const diagramResult = await dPromise
+          const resultMsg = { 
+            role: 'assistant', 
+            content: fullAnswer || 'No architecture plan generated.',
+            diagramData: diagramResult.diagram_data
+          }
+
+          setChatLoading(false)
+          setStreamedCatalystAnswer('')
+          
+          if (mode === 'agent') {
+            appendAgentMessage(resultMsg)
+          } else {
+            appendChatMessage(resultMsg)
+          }
+        } catch (err) {
+          setChatLoading(false)
+          setStreamedCatalystAnswer('')
+          if (mode === 'agent') appendAgentMessage({ role: 'assistant', content: err.message })
+          else appendChatMessage({ role: 'assistant', content: err.message })
         }
         return
       }
@@ -891,6 +972,13 @@ export default function RagChat() {
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
+      {/* Mode Header */}
+      <div className="flex p-2 gap-1.5 bg-slate-950/40 border-b border-aeres-border shrink-0">
+        <div className="flex-1 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition flex items-center justify-center gap-1.5 bg-[#7C3AED] text-black shadow-[2px_2px_0px_#000]">
+          <MessageSquare size={12} /> Aeres AI Assistant
+        </div>
+      </div>
+
       {/* Active file indicator */}
       {activeTab && (
         <div className="flex items-center gap-2.5 px-3.5 py-2 border-b border-aeres-border bg-aeres-surface/20 shrink-0">
@@ -919,50 +1007,16 @@ export default function RagChat() {
           <div className="flex flex-col items-center justify-center mt-6 gap-3 select-none">
             <div className="w-full max-w-[290px] border-2 border-black bg-aeres-surface/30 p-4 rounded-3xl shadow-[2px_2px_0px_#000] text-center rotate-[-1deg] hover:rotate-0 transition-transform duration-300">
               <div className="mx-auto w-11 h-11 mb-3 flex items-center justify-center bg-aeres-violet/20 border-2 border-black rounded-2xl shadow-[2px_2px_0px_#000] text-lg text-aeres-violet">
-                {mode === 'agent' ? <Zap size={24} /> : <MessageSquare size={24} />}
+                <MessageSquare size={24} />
               </div>
               <h3 className="text-[11px] font-black uppercase tracking-widest text-white mb-1.5">
-                {mode === 'agent' ? 'Aeres Agent OS v1.0' : 'Aeres AI Assistant'}
+                Aeres AI Assistant
               </h3>
               <p className="text-[10px] text-slate-400 leading-relaxed font-semibold">
-                {mode === 'agent' 
-                  ? 'Deploy our autonomous agent to plan, execute, and verify code edits across your workspace.'
-                  : 'Chat with our context-aware assistant to explain code, design mock data, or refactor layouts.'
-                }
+                Chat with our context-aware assistant to explain code, design mock data, or refactor layouts.
               </p>
             </div>
 
-            {mode === 'agent' ? (
-              <div className="w-full max-w-[290px] space-y-2.5 mt-4">
-                <p className="text-slate-500 font-extrabold uppercase tracking-widest text-[8px] text-center mb-0.5 flex items-center justify-center gap-1"><Zap size={10} /> Workspace Quick Commands</p>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <button onClick={() => handleSend("Explain current git changes")}
-                    className="p-2.5 text-[9px] bg-aeres-surface/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-aeres-text font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                    <span>Explain Diff</span>
-                  </button>
-                  <button onClick={() => handleSend("Draft a git commit message for all current staged or unstaged changes")}
-                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Z"/><path d="m9 12 2 2 4-4"/></svg>
-                    <span>Draft Commit</span>
-                  </button>
-                  <button onClick={() => handleSend("Create a new branch, stage all changes, and commit them")}
-                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
-                    <span>Auto Commit</span>
-                  </button>
-                  <button onClick={() => handleSend("Identify any bugs or quality issues in the active file")}
-                    className="p-2.5 text-[9px] bg-slate-950/20 hover:bg-[#7C3AED]/15 border-2 border-black rounded-2xl text-slate-200 font-extrabold text-center flex flex-col items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] hover:scale-102 active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] cursor-pointer"
-                  >
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--aeres-violet)" strokeWidth="2.5"><path d="m21 16-4-4 4-4"/><path d="M11 7 7 11l4 4"/><path d="m5 16-4-4 4-4"/></svg>
-                    <span>Analyze Quality</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
               <div className="text-left w-full max-w-[290px] text-[10px] text-aeres-muted mt-2 p-3.5 bg-aeres-surface/30 border-2 border-black rounded-2xl shadow-[2px_2px_0px_#000] space-y-2.5">
                 <p className="text-slate-500 font-extrabold uppercase tracking-widest text-[8px] mb-1">Aeres Chat Features:</p>
                 <div className="flex items-center gap-2">
@@ -974,7 +1028,6 @@ export default function RagChat() {
                   <span className="font-semibold">Explain codebase architecture & code stubs</span>
                 </div>
               </div>
-            )}
           </div>
         )}
         
@@ -1007,23 +1060,33 @@ export default function RagChat() {
         {chatLoading && (
           <div className="flex flex-col items-start space-y-1 animate-pulse relative group">
             <span className="text-[9px] font-black uppercase tracking-widest mb-0.5 text-slate-400 flex items-center gap-1.5"><Sparkles size={10} /> Aeres Assistant</span>
-            <div className="rounded-2xl bg-slate-950/50 border-2 border-black px-4 py-3 shadow-[2px_2px_0px_#000] flex items-center gap-3">
-              <div className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="rounded-2xl bg-slate-950/50 border-2 border-black px-4 py-3 shadow-[2px_2px_0px_#000] flex flex-col gap-3 max-w-full">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-1.5 h-1.5 rounded-full bg-aeres-violet animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest font-mono">
+                  {streamedCatalystAnswer ? "Catalyst Thinking..." : "Synthesizing..."}
+                </span>
+                
+                <button
+                  onClick={() => {
+                    setChatLoading(false)
+                    window.electron?.rag?.interrupt();
+                  }}
+                  className="ml-2 px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/40 rounded-full text-[8px] font-black uppercase hover:bg-red-500 hover:text-black transition-all cursor-pointer shadow-[2px_2px_0px_#000]"
+                >
+                  Interrupt
+                </button>
               </div>
-              <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-widest font-mono">Synthesizing...</span>
-              
-              <button
-                onClick={() => {
-                  setChatLoading(false)
-                  window.electron?.rag?.interrupt();
-                }}
-                className="ml-2 px-2 py-0.5 bg-red-500/20 text-red-500 border border-red-500/40 rounded-full text-[8px] font-black uppercase hover:bg-red-500 hover:text-black transition-all cursor-pointer shadow-[2px_2px_0px_#000]"
-              >
-                Interrupt
-              </button>
+
+              {streamedCatalystAnswer && (
+                <div className="text-sm text-slate-300 w-full overflow-hidden markdown-body" style={{ minWidth: 300 }}>
+                  <MarkdownContent content={streamedCatalystAnswer} />
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1173,9 +1236,11 @@ export default function RagChat() {
                 if (wf.name === 'Catalyst') {
                   setShowCatalystModal(true)
                 } else {
+                  setMode('agent')
                   setInput(wf.prompt)
                   if (!wf.prompt.endsWith(' ')) {
-                    handleSend(wf.prompt)
+                    // Wait for state to update before sending
+                    setTimeout(() => handleSend(wf.prompt), 50)
                   } else {
                     setTimeout(() => {
                       document.querySelector('input[type="text"]')?.focus()

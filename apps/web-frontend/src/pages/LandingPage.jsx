@@ -2,6 +2,7 @@ import { useUser } from '@clerk/clerk-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { motion, useScroll, useSpring, AnimatePresence } from 'framer-motion'
+import Editor from '@monaco-editor/react'
 import Footer from '../components/Footer.jsx'
 import Navbar from '../components/Navbar.jsx'
 import SmartDownload from '../components/SmartDownload.jsx'
@@ -11,21 +12,21 @@ import Mermaid from '../components/Mermaid.jsx'
 const OS_SCRIPTS = {
   macos: {
     name: 'macOS',
-    command: 'curl -fsSL https://aeres.dev/install.sh | sh',
-    daemon: 'aeres daemon start --port 8008',
+    command: 'git clone https://github.com/LAN-SHLOK/Aeres-IDE.git && cd Aeres-IDE',
+    daemon: 'npm install && npm run tauri dev',
     shell: 'bash'
   },
   windows: {
     name: 'Windows',
-    command: 'iwr -useb https://aeres.dev/install.ps1 | iex',
-    daemon: 'aeres.exe daemon start --port 8008',
+    command: 'git clone https://github.com/LAN-SHLOK/Aeres-IDE.git && cd Aeres-IDE',
+    daemon: 'npm install && npm run tauri dev',
     shell: 'powershell'
   },
   linux: {
     name: 'Linux',
-    command: 'wget -qO- https://aeres.dev/install.sh | bash',
-    daemon: 'aeres daemon start --port 8008',
-    shell: 'sh'
+    command: 'git clone https://github.com/LAN-SHLOK/Aeres-IDE.git && cd Aeres-IDE',
+    daemon: 'npm install && npm run tauri dev',
+    shell: 'bash'
   }
 }
 
@@ -75,16 +76,7 @@ export default function LandingPage() {
   
   // Visualizer states removed for actual feature rewrite
 
-  // Interactive AST Playground States
-  const [astLang, setAstLang] = useState('python')
-  const [selectedAstNode, setSelectedAstNode] = useState({
-    type: 'FunctionDef',
-    name: 'run_pipeline',
-    range: 'lines 2-5',
-    mutations: 'DecoratorSwaps, ComparisonFlips',
-    children: '5 child nodes',
-    status: 'Stable AST scope verified'
-  })
+  // Interactive AST Playground States (Removed for RAG Chat Replacement)
   
   // FAQ accordion state
   const [activeFaq, setActiveFaq] = useState(null)
@@ -190,14 +182,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Zero-Config CLI Terminal Dashboard */}
+      {/* Local-First CLI Terminal Dashboard */}
       <section className="relative px-6 py-12 max-w-[1400px] mx-auto z-10">
         <div className="text-center mb-12">
           <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-[3px] border-black shadow-[4px_4px_0px_#000000] mb-4 font-mono">
             terminal_daemon
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
-            Zero-Config Provisioning
+            Local-First Architecture
           </h2>
         </div>
 
@@ -230,10 +222,10 @@ export default function LandingPage() {
 
           <div className="p-6 font-mono text-xs overflow-x-auto bg-[#13141f]">
             <pre className="text-white font-extrabold leading-relaxed select-all">
-{`# 1. Fetch system binaries & scripts
+{`# 1. Clone the open-source repository locally
 $ ${OS_SCRIPTS[activeOs].command}
 
-# 2. Spin up low-overhead background daemon
+# 2. Launch Tauri desktop app & Python FastAPI sidecar
 $ ${OS_SCRIPTS[activeOs].daemon}`}
             </pre>
           </div>
@@ -282,7 +274,7 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
           {/* Left Column: Interactive Scrolling Steps */}
           <div className="w-full lg:w-1/2 space-y-8">
             
-            {/* Step 1: Universal LSP */}
+            {/* Step 1: Project Health AI */}
             <div 
               onClick={() => setScrollyStep(0)}
               onMouseEnter={() => setScrollyStep(0)}
@@ -290,15 +282,15 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#ff8ba7]">
                 <span className="px-3 py-1 bg-[#ff8ba7] text-black border border-white/10 rounded-full">STAGE 01</span>
-                <span>UNIVERSAL LSP INTEGRATION</span>
+                <span>AI SELF-HEALING</span>
               </div>
-              <h3 className="text-2xl font-black text-white mb-3">Language Server Bridge</h3>
+              <h3 className="text-2xl font-black text-white mb-3">Project Health Agent</h3>
               <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-                Aeres bridges the Monaco Editor directly to local background daemons (gopls, clangd, rust-analyzer) via our FastAPI Python sidecar using raw JSON-RPC streams for zero-latency IntelliSense.
+                Aeres constantly monitors your workspace health. When an anomaly is detected, our integrated Groq LLM agent can automatically trace the issue and apply self-healing patches directly to your local files.
               </p>
             </div>
 
-            {/* Step 2: Self-Healing Terminal */}
+            {/* Step 2: Dependency Radar */}
             <div 
               onClick={() => setScrollyStep(1)}
               onMouseEnter={() => setScrollyStep(1)}
@@ -306,15 +298,15 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#eab308]">
                 <span className="px-3 py-1 bg-[#fef08a] text-black border border-white/10 rounded-full">STAGE 02</span>
-                <span>PTY STREAM PIPELINES</span>
+                <span>DEPENDENCY RADAR</span>
               </div>
-              <h3 className="text-2xl font-black text-white mb-3">Self-Healing Terminal</h3>
+              <h3 className="text-2xl font-black text-white mb-3">Catalyst Batch Modernize</h3>
               <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-                Our embedded xterm.js canvas streams raw PTY outputs from the background manager, allowing you to compile, debug, and trace execution stacks directly within a secure sandboxed memory space.
+                Identify deprecated or abandoned packages instantly. Our Catalyst orchestrator uses AST parsing and vector-based rule generation to batch modernize all usages of a legacy dependency across your entire codebase in seconds.
               </p>
             </div>
 
-            {/* Step 3: Deep-Linked Auth */}
+            {/* Step 3: Causal Blame Maps */}
             <div 
               onClick={() => setScrollyStep(2)}
               onMouseEnter={() => setScrollyStep(2)}
@@ -322,11 +314,11 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
             >
               <div className="flex items-center gap-3 mb-4 font-mono text-[10px] font-black text-[#2dd4bf]">
                 <span className="px-3 py-1 bg-[#2dd4bf] text-black border border-white/10 rounded-full">STAGE 03</span>
-                <span>TAURI AUTHENTICATION HANDLERS</span>
+                <span>GIT TELEMETRY</span>
               </div>
-              <h3 className="text-2xl font-black text-white mb-3">Deep-Linked Authentication</h3>
+              <h3 className="text-2xl font-black text-white mb-3">Causal Blame Maps</h3>
               <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-                We handle OAuth securely by funneling Clerk tokens back through native aeres:// deep links. This bridges web identity tightly into local Zustand state for persistent workspace configurations.
+                Move beyond standard git blame. Aeres visualizes regressions by mapping the causal chain of file modifications across your repository history, allowing you to trace exactly when and where a bug was introduced.
               </p>
             </div>
 
@@ -349,119 +341,130 @@ $ ${OS_SCRIPTS[activeOs].daemon}`}
               {/* IDE Content Canvas */}
               <div className="p-6 bg-[#13141f] min-h-[420px] flex flex-col justify-between font-mono text-xs relative">
                 
-                {/* Visualizer 0: Universal LSP */}
+                {/* Visualizer 0: Project Health AI */}
                 {scrollyStep === 0 && (
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
-                    <span className="text-[10px] font-black text-[#ff8ba7] block mb-4 uppercase">Monaco JSON-RPC Sync</span>
+                    <span className="text-[10px] font-black text-[#ff8ba7] block mb-4 uppercase">Groq AI Self-Healing Loop</span>
                     
                     <div className="w-full h-56 border border-white/10 rounded-3xl bg-[#09090e] p-5 font-mono text-[10px] text-white/80 overflow-y-auto leading-relaxed relative">
                       <div className="flex items-center gap-2 mb-2 pb-2 border-b-2 border-white/10 text-white/50">
                         <span>1</span>
-                        <span className="text-[#c084fc]">function</span> <span className="text-[#2dd4bf]">initializeLSP</span>() {'{'}
+                        <span className="text-[#c084fc]">const</span> <span className="text-[#2dd4bf]">handleFixIssue</span> = <span className="text-[#ff8ba7]">async</span> () {'=>'} {'{'}
                       </div>
                       <div className="flex gap-2">
                         <span className="text-white/50">2</span>
-                        <span className="pl-4">const connection = <span className="text-[#ff8ba7]">await</span> <span className="text-[#2dd4bf]">connectToFastAPI</span>();</span>
-                      </div>
-                      <div className="flex gap-2">
-                        <span className="text-white/50">3</span>
-                        <span className="pl-4">connection.<span className="text-[#fef08a]">sendRequest</span>('initialize', payload);</span>
+                        <span className="pl-4"><span className="text-[#fef08a]">setResolving</span>(<span className="text-[#ff8ba7]">true</span>);</span>
                       </div>
                       <div className="flex gap-2 text-white/30 italic">
+                        <span className="text-white/50">3</span>
+                        <span className="pl-4">// Requesting AST edit from local Groq Python Sidecar</span>
+                      </div>
+                      <div className="flex gap-2">
                         <span className="text-white/50">4</span>
-                        <span className="pl-4">// Receiving real-time AST diagnostics</span>
+                        <span className="pl-4"><span className="text-[#c084fc]">const</span> res = <span className="text-[#ff8ba7]">await</span> <span className="text-[#2dd4bf]">rag.agentEdit</span>(issue.file, issue.code);</span>
                       </div>
                       <div className="flex gap-2">
                         <span className="text-white/50">5</span>
-                        <span className="pl-4 text-[#ff8ba7]">return</span> <span className="text-[#2dd4bf]">MonacoLanguageClient</span>.create(connection);
+                        <span className="pl-4"><span className="text-[#ff8ba7]">if</span> (res.action === <span className="text-[#fef08a]">'edit'</span>) {'{'}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="text-white/50">6</span>
+                        <span className="pl-8"><span className="text-[#2dd4bf]">applyPatch</span>(res.new_content);</span>
+                      </div>
+                      <div className="flex gap-2 text-white/50">
+                        <span>7</span>
+                        <span className="pl-4">{'}'}</span>
                       </div>
                       <div className="flex gap-2 mt-2 pt-2 border-t-2 border-white/10 text-white/50">
-                        <span>6</span>
+                        <span>8</span>
                         <span>{'}'}</span>
                       </div>
 
-                      {/* Mock Diagnostic Popup */}
-                      <div className="absolute top-16 left-12 bg-[#1b1c2b] border border-white/10 rounded-xl p-3 shadow-2xl w-[70%] animate-pulse">
-                        <div className="text-[9px] text-[#ff8ba7] font-black uppercase mb-1">TypeScript Diagnostics</div>
-                        <div className="text-white/80 text-[10px]">Property 'sendRequest' implicitly has an 'any' type.</div>
+                      {/* Live Diagnostic Visualizer */}
+                      <div className="absolute top-16 left-12 bg-[#1b1c2b] border border-[#ff8ba7]/30 rounded-xl p-3 shadow-[0_0_20px_rgba(255,139,167,0.2)] w-[70%] animate-pulse">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                          <span className="text-[9px] text-white font-black uppercase tracking-wider">Issue Fixed</span>
+                        </div>
+                        <div className="text-emerald-400/80 text-[10px] font-semibold">"Resolved memory leak in loop block"</div>
                       </div>
                     </div>
 
                     <span className="text-[9px] font-bold text-white/50 block mt-4 font-sans leading-relaxed">
-                      LSP responses are streamed flawlessly over WebSockets directly to the Monaco editor, keeping typing latency under 5ms.
+                      Our Python sidecar streams secure JSON-RPC requests to Groq models, utilizing regex to isolate JSON actions for precise local file replacement.
                     </span>
                   </div>
                 )}
 
-                {/* Visualizer 1: Self-Healing Terminal */}
+                {/* Visualizer 1: Dependency Radar */}
                 {scrollyStep === 1 && (
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
-                    <span className="text-[10px] font-black text-[#eab308] block mb-4 uppercase">Background Daemon PTY</span>
+                    <span className="text-[10px] font-black text-[#eab308] block mb-4 uppercase">Batch Modernize Orchestrator</span>
                     
-                    <div className="w-full h-56 flex flex-col justify-end border border-white/10 rounded-3xl bg-black p-5 font-mono text-[10px] overflow-y-auto leading-relaxed text-[#2dd4bf]">
-                      <div className="space-y-1">
-                        <div className="text-white/50">âžœ  workspace git:(main) aeres build</div>
-                        <div className="text-white/70">[Core] Initializing Rust Tauri bundler...</div>
-                        <div className="text-white/70">[Deps] Fetching crates.io registry...</div>
-                        <div className="text-white">Compiling aeres-core v1.0.4</div>
-                        <div className="text-red-400">error[E0425]: cannot find value `config` in this scope</div>
-                        <div className="text-white/50"> &nbsp;--&gt; src/main.rs:42:15</div>
-                        <div className="text-[#eab308] italic animate-pulse">Waiting for diagnostic repair payload...</div>
-                        <div className="text-emerald-400 font-extrabold mt-2">Build finished in 4.2s. Output: target/release/aeres</div>
-                        <div className="text-white/50 flex">âžœ  workspace git:(main) <span className="w-2 h-4 bg-[#2dd4bf] ml-1 animate-ping inline-block" /></div>
+                    <div className="w-full h-56 flex flex-col border border-white/10 rounded-3xl bg-black p-5 font-mono text-[10px] overflow-y-auto leading-relaxed text-[#2dd4bf]">
+                      <div className="space-y-1 mt-auto">
+                        <div className="text-white/50">❯ scanning node_modules/...</div>
+                        <div className="text-white/70">[Radar] Found abandoned dependency: 'request'</div>
+                        <div className="text-[#fef08a] mt-2">Triggering Catalyst Engine...</div>
+                        <div className="text-white/70">Scraping migration docs to native 'fetch'...</div>
+                        <div className="text-white/70">Building vector database embeddings...</div>
+                        <div className="text-white">Generating AST rules via LLM...</div>
+                        <div className="text-white/50 italic pl-4">→ App.jsx: Replaced request() with fetch()</div>
+                        <div className="text-white/50 italic pl-4">→ utils/api.js: Replaced request() with fetch()</div>
+                        <div className="text-emerald-400 font-extrabold mt-2 text-[11px]">â 2 files modernized successfully.</div>
                       </div>
                     </div>
 
                     <span className="text-[9px] font-bold text-white/50 block mt-4 font-sans leading-relaxed">
-                      xterm.js embeds natively into the React tree, streaming subprocess buffers straight from the underlying Rust architecture.
+                      Aeres automates tech-debt removal by downloading migration docs, constructing local vector databases, and streaming multi-file refactors via Server-Sent Events.
                     </span>
                   </div>
                 )}
 
-                {/* Visualizer 2: Deep-Linked Auth */}
+                {/* Visualizer 2: Causal Blame Maps */}
                 {scrollyStep === 2 && (
                   <div className="flex-1 flex flex-col justify-between animate-in fade-in duration-300">
-                    <span className="text-[10px] font-black text-[#2dd4bf] block mb-4 uppercase">OAuth Protocol Handler</span>
+                    <span className="text-[10px] font-black text-[#2dd4bf] block mb-4 uppercase">Git Regression Visualizer</span>
                     
-                    <div className="w-full h-56 border border-white/10 rounded-3xl bg-[#1b1c2b] p-5 font-mono text-[9px] overflow-y-auto leading-relaxed relative flex flex-col justify-center gap-3">
+                    <div className="w-full h-56 border border-white/10 rounded-3xl bg-[#1b1c2b] p-5 font-mono text-[9px] overflow-y-auto leading-relaxed relative flex flex-col gap-3">
                       
                       {/* Flow Step 1 */}
-                      <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50">
-                        <div className="w-6 h-6 rounded-full bg-[#ff8ba7] border border-white/10 flex items-center justify-center shrink-0">1</div>
-                        <div>
-                          <div className="text-white font-bold">Clerk Identity Provider</div>
-                          <div className="text-white/50">Browser resolves OAuth handshake securely.</div>
+                      <div className="flex items-center gap-3 bg-[#13141f] p-3 rounded-lg border-2 border-red-400/50 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-red-400"></div>
+                        <div className="flex flex-col">
+                          <div className="text-white font-bold font-sans text-[11px] mb-0.5">Crash on render (Bug)</div>
+                          <div className="text-white/40">App.jsx • f7a3b12</div>
                         </div>
                       </div>
 
                       {/* Arrow */}
-                      <div className="w-1 h-4 bg-white/20 mx-auto" />
+                      <div className="w-0.5 h-3 bg-white/20 mx-auto" />
 
                       {/* Flow Step 2 */}
-                      <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50 ring-2 ring-[#2dd4bf]">
-                        <div className="w-6 h-6 rounded-full bg-[#2dd4bf] border border-white/10 flex items-center justify-center shrink-0 text-black">2</div>
-                        <div>
-                          <div className="text-[#2dd4bf] font-bold">aeres:// Deep Link Execution</div>
-                          <div className="text-white/50 truncate w-40">aeres://auth?token=eyJhbG...</div>
+                      <div className="flex items-center gap-3 bg-[#13141f] p-3 rounded-lg border border-white/10 relative overflow-hidden ring-1 ring-[#2dd4bf] shadow-[0_0_15px_rgba(45,212,191,0.2)]">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-[#2dd4bf]"></div>
+                        <div className="flex flex-col">
+                          <div className="text-white font-bold font-sans text-[11px] mb-0.5">Updated data schema</div>
+                          <div className="text-[#2dd4bf]/70">types.ts • c4e9f8a</div>
                         </div>
                       </div>
 
                       {/* Arrow */}
-                      <div className="w-1 h-4 bg-white/20 mx-auto" />
+                      <div className="w-0.5 h-3 bg-white/20 mx-auto" />
 
                       {/* Flow Step 3 */}
-                      <div className="flex items-center gap-3 bg-black/40 p-2 rounded-lg border border-black/50">
-                        <div className="w-6 h-6 rounded-full bg-[#c084fc] border border-white/10 flex items-center justify-center shrink-0 text-black">3</div>
-                        <div>
-                          <div className="text-white font-bold">Tauri IPC Hydration</div>
-                          <div className="text-white/50">Zustand global store receives JWT payload.</div>
+                      <div className="flex items-center gap-3 bg-[#13141f] p-3 rounded-lg border border-white/10 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-1 h-full bg-white/20"></div>
+                        <div className="flex flex-col">
+                          <div className="text-white font-bold font-sans text-[11px] mb-0.5">Initial commit</div>
+                          <div className="text-white/40">multiple files • a1b2c3d</div>
                         </div>
                       </div>
 
                     </div>
 
                     <span className="text-[9px] font-bold text-white/50 block mt-4 font-sans leading-relaxed">
-                      We bypass traditional electron auth hurdles by mapping custom OS protocol handlers directly into the local React state via Tauri hooks.
+                      Our custom React Flow integration traverses Git histories to build visual trees, instantly revealing how a change in a deeply nested utility breaks your UI.
                     </span>
                   </div>
                 )}
@@ -612,292 +615,229 @@ graph TD
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 md:auto-rows-[280px]">
           
-          {/* Card 1: AST Parsing */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.1 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border border-white/10 flex items-center justify-center mb-6 text-[#ff8ba7] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          {/* Card 1: Project Health AI (Large - 2x2) */}
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.1 }} className="md:col-span-2 md:row-span-2 bg-[#18181b] border border-[#ff8ba7] rounded-[2rem] p-8 md:p-12 relative overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(255,139,167,0.4)] transition-all duration-300 hover:scale-[1.01]">
+            <div className="w-14 h-14 rounded-2xl bg-[#ff8ba7] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center mb-8 text-black transition-transform group-hover:-translate-y-1 relative z-10">
+              <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">AST Parsing Engine</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Parses source codes at 240,000 lines/second to render abstract syntax trees locally. Resolves types and scopes under 5ms.
+            <h3 className="font-display text-3xl md:text-4xl font-black text-white mb-4 group-hover:text-[#ff8ba7] transition-colors relative z-10">Project Health AI</h3>
+            <p className="text-white/60 text-sm md:text-base font-semibold leading-relaxed font-sans max-w-md relative z-10">
+              Continuous monitoring and self-healing. When syntax exceptions or logical anomalies occur, our integrated Groq LLM agent traces the traceback stack and applies patches directly into your local sandbox until the build passes.
             </p>
+            {/* Decorative Ambient Bubble */}
+            <div className="absolute -bottom-16 -right-16 w-80 h-80 bg-[#ff8ba7] rounded-full blur-[100px] opacity-30 group-hover:opacity-60 transition-opacity duration-700 pointer-events-none" />
           </motion.div>
 
-          {/* Card 2: Offline-First LSP */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.2 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#2dd4bf]/20 border border-white/10 flex items-center justify-center mb-6 text-[#2dd4bf] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          {/* Card 2: Dependency Radar (Wide - 2x1) */}
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.2 }} className="md:col-span-2 md:row-span-1 bg-[#18181b] border border-[#fef08a] rounded-[2rem] p-8 relative overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(254,240,138,0.3)] transition-all duration-300 hover:scale-[1.01]">
+            <div className="w-12 h-12 rounded-2xl bg-[#fef08a] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center mb-6 text-black transition-transform group-hover:-translate-y-1 relative z-10">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Local-First LSP Server</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Keeps syntax analysis, code logic, and local context safe on your system. Completely independent of internet requirements.
+            <h3 className="font-display text-2xl font-black text-white mb-2 group-hover:text-[#fef08a] transition-colors relative z-10">Dependency Radar</h3>
+            <p className="text-white/60 text-sm font-semibold leading-relaxed font-sans max-w-lg relative z-10">
+              Scans your package.json instantly to identify deprecated or abandoned npm dependencies that pose technical debt risks.
             </p>
+            {/* Decorative Ambient Bubble */}
+            <div className="absolute -bottom-16 -right-16 w-60 h-60 bg-[#fef08a] rounded-full blur-[80px] opacity-10 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
           </motion.div>
 
-          {/* Card 3: Zero-Overhead Tracing */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.3 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#c084fc]/20 border border-white/10 flex items-center justify-center mb-6 text-[#c084fc] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          {/* Card 3: Web Preview Sandbox (Small - 1x1) */}
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.3 }} className="md:col-span-1 md:row-span-1 bg-[#18181b] border border-[#2dd4bf] rounded-[2rem] p-6 lg:p-8 relative overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(45,212,191,0.3)] transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
+            <div className="relative z-10">
+              <div className="w-10 h-10 rounded-xl bg-[#2dd4bf] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center mb-4 text-black transition-transform group-hover:-translate-y-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+              </div>
+              <h3 className="font-display text-xl font-black text-white mb-2 group-hover:text-[#2dd4bf] transition-colors">Web Sandbox</h3>
+              <p className="text-white/60 text-[11px] lg:text-xs font-semibold leading-relaxed font-sans">
+                Live iframe injection to render React/Vue instantly.
+              </p>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Zero-Overhead Tracing</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Measures compiler branches and memory heaps with microsecond granularity. Generates detailed local Flamegraphs inside the buffer.
-            </p>
+            {/* Decorative Ambient Bubble */}
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#2dd4bf] rounded-full blur-[60px] opacity-10 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
           </motion.div>
 
-          {/* Card 4: Clerk Desktop Sync */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.4 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#fef08a]/20 border border-white/10 flex items-center justify-center mb-6 text-[#fef08a] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          {/* Card 4: Python Sidecar (Small - 1x1) */}
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.4 }} className="md:col-span-1 md:row-span-1 bg-[#18181b] border border-[#c084fc] rounded-[2rem] p-6 lg:p-8 relative overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(192,132,252,0.3)] transition-all duration-300 hover:scale-[1.02] flex flex-col justify-between">
+            <div className="relative z-10">
+              <div className="w-10 h-10 rounded-xl bg-[#c084fc] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center mb-4 text-black transition-transform group-hover:-translate-y-1">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              </div>
+              <h3 className="font-display text-xl font-black text-white mb-2 group-hover:text-[#c084fc] transition-colors">FastAPI Sidecar</h3>
+              <p className="text-white/60 text-[11px] lg:text-xs font-semibold leading-relaxed font-sans">
+                Robust local Python daemon powering LLM context routing.
+              </p>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Workspace Account Sync</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Syncs profile parameters, keybindings, and extensions across web frameworks and Electron wrappers securely using Clerk.
-            </p>
+            {/* Decorative Ambient Bubble */}
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#c084fc] rounded-full blur-[60px] opacity-10 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
           </motion.div>
 
-          {/* Card 5: Mutation testing */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.5 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border border-white/10 flex items-center justify-center mb-6 text-[#ff8ba7] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          {/* Card 5: Causal Blame Maps (Wide - 2x1) */}
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.5 }} className="md:col-span-2 md:row-span-1 bg-[#18181b] border border-white/80 rounded-[2rem] p-8 relative overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(255,255,255,0.2)] transition-all duration-300 hover:scale-[1.01]">
+            <div className="w-12 h-12 rounded-2xl bg-white shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center mb-6 text-black transition-transform group-hover:-translate-y-1 relative z-10">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><line x1="6" y1="9" x2="6" y2="21"/></svg>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Mutation Synthesizer</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Programmatically alters comparison bounds and statement variables in sandbox caches to verify that tests fail when they should.
+            <h3 className="font-display text-2xl font-black text-white mb-2 group-hover:text-white transition-colors relative z-10">Causal Blame Maps</h3>
+            <p className="text-white/60 text-sm font-semibold leading-relaxed font-sans max-w-lg relative z-10">
+              Visualize Git telemetry via React Flow. Trace regression chains back to the exact commit that introduced the bug across multiple files.
             </p>
+            {/* Decorative Ambient Bubble */}
+            <div className="absolute -bottom-16 -right-16 w-60 h-60 bg-white rounded-full blur-[80px] opacity-5 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none" />
           </motion.div>
 
-          {/* Card 6: Pseudoterminal sidecar */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.6 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#2dd4bf]/20 border border-white/10 flex items-center justify-center mb-6 text-[#2dd4bf] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          {/* Card 6: Catalyst Batch Modernize (Wide - 2x1) */}
+          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.6 }} className="md:col-span-2 md:row-span-1 bg-[#18181b] border border-[#eab308] rounded-[2rem] p-8 relative overflow-hidden group hover:shadow-[0_0_30px_-5px_rgba(234,179,8,0.3)] transition-all duration-300 hover:scale-[1.01]">
+            <div className="w-12 h-12 rounded-2xl bg-[#eab308] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center mb-6 text-black transition-transform group-hover:-translate-y-1 relative z-10">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Self-Healing Terminal</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Integrated background runners intercept traceback exceptions, surgically rewriting syntax mistakes in real-time until targets build.
+            <h3 className="font-display text-2xl font-black text-white mb-2 group-hover:text-[#eab308] transition-colors relative z-10">Catalyst Batch Modernize</h3>
+            <p className="text-white/60 text-sm font-semibold leading-relaxed font-sans max-w-lg relative z-10">
+              Uses AST parsing and vector embeddings to batch refactor and modernize thousands of lines of legacy API usages in one click.
             </p>
-          </motion.div>
-
-          {/* Card 7: Temporal Lens */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.7 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#c084fc]/20 border border-white/10 flex items-center justify-center mb-6 text-[#c084fc] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Temporal Lens</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Low-overhead active profiling maps function latency, P95 timing spikes, and trend sparklines dynamically during run session updates.
-            </p>
-          </motion.div>
-
-          {/* Card 8: Universal LSP */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.8 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#ff8ba7]/20 border border-white/10 flex items-center justify-center mb-6 text-[#ff8ba7] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>
-            </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Universal LSP Engine</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Auto-detects and spawns dedicated Language Servers (gopls, clangd, rust-analyzer, jedi) based on file extensions out of the box.
-            </p>
-          </motion.div>
-
-          {/* Card 9: Universal DAP Debugging */}
-          <motion.div initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-50px" }} transition={{ duration: 0.5, delay: 0.9 }} className="bg-[#18181b] border-[3px] border-transparent hover:border-white/10 transition-all rounded-[2rem] p-8">
-            <div className="w-10 h-10 rounded-2xl bg-[#fef08a]/20 border border-white/10 flex items-center justify-center mb-6 text-[#fef08a] shadow-2xl">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 20c-3.31 0-6-2.69-6-6v-1h4v1c0 1.1.9 2 2 2s2-.9 2-2v-1h4v1c0 3.31-2.69 6-6 6Z"/><path d="M12 15V8"/></svg>
-            </div>
-            <h3 className="font-display text-lg font-black text-white mb-3">Universal Debugging (DAP)</h3>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Natively parses `.aeres/launch.json` or `.vscode/launch.json` to attach high-speed breakpoints across Go, Node, Python, and Rust.
-            </p>
+            {/* Decorative Ambient Bubble */}
+            <div className="absolute -bottom-16 -right-16 w-60 h-60 bg-[#eab308] rounded-full blur-[80px] opacity-10 group-hover:opacity-40 transition-opacity duration-700 pointer-events-none" />
           </motion.div>
 
         </div>
       </section>
 
-      {/* Creators Showcase Section (New Content) */}
+    
+      {/* Team / Creators Section */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-[3px] border-black shadow-[4px_4px_0px_#000000] mb-4 font-mono">
-            engineering_team.log
+          <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] mb-4 font-mono">
+            ENGINEERING_TEAM.LOG
           </span>
-          <h2 className="font-display text-3xl md:text-5xl font-black text-white">
+          <h2 className="font-display text-4xl md:text-[3.5rem] font-black text-white leading-tight">
             Created By Developers, For Developers
           </h2>
-          <p className="max-w-[580px] mx-auto text-white/60 text-xs font-semibold leading-relaxed mt-4 font-sans">
+          <p className="max-w-[700px] mx-auto text-white/60 text-xs font-semibold leading-relaxed mt-4 font-sans">
             Meet the primary system architects and core software engineers orchestrating Aeres IDE's unique compilation features and real-time visualizers.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
-          {/* Creator 1: Shlok Patel */}
-          <div className="bg-[#18181b] border border-white/10 rounded-[2rem] p-6 text-center">
-            <div className="w-20 h-20 rounded-full bg-[#ff8ba7] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black">
-              SP
-            </div>
-            <h3 className="text-xl font-black text-white mb-1">Shlok Patel</h3>
-            <span className="text-[10px] font-black text-[#ff8ba7] uppercase tracking-wider block mb-4 font-mono">Core AST Mutators Architect</span>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Orchestrated the abstract syntax tree mutation sandboxes, circular dependency checkers, and high-performance React component render cycles.
-            </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          {/* Shlok Patel */}
+          <div className="bg-[#18181b] border border-[#ff8ba7]/20 hover:border-[#ff8ba7]/60 rounded-[2rem] p-10 text-center transform relative overflow-hidden group hover:shadow-[0_0_40px_-5px_rgba(255,139,167,0.2)] transition-all duration-300 hover:scale-[1.02]">
+             <div className="w-24 h-24 mx-auto rounded-full bg-[#ff8ba7] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center text-black font-black text-2xl mb-6 relative z-10 transition-transform group-hover:-translate-y-1">
+               SP
+             </div>
+             <h3 className="text-2xl font-black text-white mb-2 relative z-10 group-hover:text-[#ff8ba7] transition-colors">Shlok Patel</h3>
+             <div className="text-[10px] font-mono font-black text-[#ff8ba7] uppercase tracking-wider mb-6 relative z-10">CORE AST MUTATORS ARCHITECT</div>
+             <p className="text-white/60 text-[11px] font-sans font-semibold leading-relaxed relative z-10">
+               Orchestrated the abstract syntax tree mutation sandboxes, circular dependency checkers, and high-performance React component render cycles.
+             </p>
+             {/* Decorative Ambient Bubble */}
+             <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-[#ff8ba7] rounded-full blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none" />
           </div>
 
-          {/* Creator 2: Rutvik Gudaliya */}
-          <div className="bg-[#18181b] border border-white/10 rounded-[2rem] p-6 text-center">
-            <div className="w-20 h-20 rounded-full bg-[#2dd4bf] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black">
-              RG
-            </div>
-            <h3 className="text-xl font-black text-white mb-1">Rutvik Gudaliya</h3>
-            <span className="text-[10px] font-black text-[#2dd4bf] uppercase tracking-wider block mb-4 font-mono">Sidecar Daemon & Git Telemetry</span>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Developed the local FastAPI Python background daemon, Websocket event routers, and directed causal blame regression mapping systems.
-            </p>
+          {/* Rutvik Gudaliya */}
+          <div className="bg-[#18181b] border border-[#2dd4bf]/20 hover:border-[#2dd4bf]/60 rounded-[2rem] p-10 text-center transform relative overflow-hidden group hover:shadow-[0_0_40px_-5px_rgba(45,212,191,0.2)] transition-all duration-300 hover:scale-[1.02]">
+             <div className="w-24 h-24 mx-auto rounded-full bg-[#2dd4bf] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center text-black font-black text-2xl mb-6 relative z-10 transition-transform group-hover:-translate-y-1">
+               RG
+             </div>
+             <h3 className="text-2xl font-black text-white mb-2 relative z-10 group-hover:text-[#2dd4bf] transition-colors">Rutvik Gudaliya</h3>
+             <div className="text-[10px] font-mono font-black text-[#2dd4bf] uppercase tracking-wider mb-6 relative z-10">SIDECAR DAEMON & GIT TELEMETRY</div>
+             <p className="text-white/60 text-[11px] font-sans font-semibold leading-relaxed relative z-10">
+               Developed the local FastAPI Python background daemon, Websocket event routers, and directed causal blame regression mapping systems.
+             </p>
+             {/* Decorative Ambient Bubble */}
+             <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-[#2dd4bf] rounded-full blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none" />
           </div>
 
-          {/* Creator 3: Vinit Panchal */}
-          <div className="bg-[#18181b] border border-white/10 rounded-[2rem] p-6 text-center">
-            <div className="w-20 h-20 rounded-full bg-[#c084fc] mx-auto mb-6 flex items-center justify-center font-display text-2xl font-black text-black">
-              VP
-            </div>
-            <h3 className="text-xl font-black text-white mb-1">Vinit Panchal</h3>
-            <span className="text-[10px] font-black text-[#c084fc] uppercase tracking-wider block mb-4 font-mono">Electron & Systems Integration</span>
-            <p className="text-white/60 text-xs font-semibold leading-relaxed font-sans">
-              Integrated Electron application wrappers, OS-level deep-link protocol handlers (`aeres://`), and zero-overhead pseudoterminal daemons.
-            </p>
+          {/* Vinit Panchal */}
+          <div className="bg-[#18181b] border border-[#c084fc]/20 hover:border-[#c084fc]/60 rounded-[2rem] p-10 text-center transform relative overflow-hidden group hover:shadow-[0_0_40px_-5px_rgba(192,132,252,0.2)] transition-all duration-300 hover:scale-[1.02]">
+             <div className="w-24 h-24 mx-auto rounded-full bg-[#c084fc] shadow-[0_8px_16px_rgba(0,0,0,0.4)] flex items-center justify-center text-black font-black text-2xl mb-6 relative z-10 transition-transform group-hover:-translate-y-1">
+               VP
+             </div>
+             <h3 className="text-2xl font-black text-white mb-2 relative z-10 group-hover:text-[#c084fc] transition-colors">Vinit Panchal</h3>
+             <div className="text-[10px] font-mono font-black text-[#c084fc] uppercase tracking-wider mb-6 relative z-10">ELECTRON & SYSTEMS INTEGRATION</div>
+             <p className="text-white/60 text-[11px] font-sans font-semibold leading-relaxed relative z-10">
+               Integrated Electron application wrappers, OS-level deep-link protocol handlers (`aeres://`), and zero-overhead pseudoterminal daemons.
+             </p>
+             {/* Decorative Ambient Bubble */}
+             <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-[#c084fc] rounded-full blur-[100px] opacity-10 group-hover:opacity-30 transition-opacity duration-700 pointer-events-none" />
           </div>
-
         </div>
       </section>
 
-      {/* Interactive AST Playground Section */}
+
+      {/* RAG Codebase Chat Engine Section */}
       <section className="relative px-6 py-20 max-w-[1200px] mx-auto z-10 font-display">
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full text-[10px] font-black tracking-widest uppercase text-black bg-[#fae3d9] border-[3px] border-black shadow-[4px_4px_0px_#000000] mb-4 font-mono">
-            ast_synthesizer.run
+            rag_chat.sys
           </span>
           <h2 className="font-display text-3xl md:text-5xl font-black text-white">
-            Interactive AST Playground
+            RAG Codebase Chat Engine
           </h2>
           <p className="max-w-[580px] mx-auto text-white/60 text-xs font-semibold leading-relaxed mt-4 font-sans">
-            Aeres uses a robust syntax mutation synthesizer. Click nodes below to see how our engine parses, tracks scopes, and synthesizes local bug-prevention mutations instantly.
+            Aeres uses a robust vector database and Groq LLMs. Ask questions about your entire codebase and get instant, context-aware answers with precise file references routed through our local Python sidecar.
           </p>
         </div>
 
-        <div className="bg-[#18181b] border border-white/10 rounded-[2rem] p-6 md:p-10 flex flex-col lg:flex-row gap-8 items-stretch">
-          {/* Left panel: Snippet Select & Code Canvas */}
-          <div className="w-full lg:w-1/2 flex flex-col justify-between">
-            <div>
-              <div className="flex gap-2.5 mb-6">
-                <button
-                  onClick={() => {
-                    setAstLang('python')
-                    setSelectedAstNode({
-                      type: 'FunctionDef',
-                      name: 'run_pipeline',
-                      range: 'lines 2-5',
-                      mutations: 'DecoratorSwaps, ComparisonFlips',
-                      children: '5 child nodes',
-                      status: 'Stable AST scope verified'
-                    })
-                  }}
-                  className={`px-4 py-2 border border-white/10 rounded-xl text-xs font-mono font-black transition-all ${astLang === 'python' ? 'bg-[#ff8ba7] text-black shadow-2xl' : 'bg-[#1b1c2b] text-white/60 shadow-2xl'}`}
-                >
-                  pipeline_agent.py
-                </button>
-                <button
-                  onClick={() => {
-                    setAstLang('javascript')
-                    setSelectedAstNode({
-                      type: 'FunctionDeclaration',
-                      name: 'compileAST',
-                      range: 'lines 1-8',
-                      mutations: 'BoundaryInversions, OperatorSwaps',
-                      children: '6 child nodes',
-                      status: 'Dynamic AST scope verified'
-                    })
-                  }}
-                  className={`px-4 py-2 border border-white/10 rounded-xl text-xs font-mono font-black transition-all ${astLang === 'javascript' ? 'bg-[#2dd4bf] text-black shadow-2xl' : 'bg-[#1b1c2b] text-white/60 shadow-2xl'}`}
-                >
-                  parser_core.js
-                </button>
-              </div>
-
-              {/* Code Editor Mock */}
-              <div className="bg-black border border-white/10 p-5 rounded-2xl font-mono text-[11px] leading-relaxed text-[#2dd4bf] min-h-[190px]">
-                {astLang === 'python' ? (
-                  <pre className="select-none text-left">
-                    <span className="text-purple-400">@aeres.agent</span>(self_healing=<span className="text-amber-400">True</span>)<br />
-                    <span className="text-blue-400">def</span> <span className="text-emerald-400 font-bold hover:underline cursor-pointer" onClick={() => setSelectedAstNode({ type: 'FunctionDef', name: 'run_pipeline', range: 'lines 2-5', mutations: 'DecoratorSwaps, ComparisonFlips', children: '5 child nodes', status: 'Stable AST scope verified' })}>run_pipeline</span>(source_path):<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">if not</span> <span className="text-emerald-400 hover:underline cursor-pointer" onClick={() => setSelectedAstNode({ type: 'Call', name: 'verify_imports', range: 'line 3', mutations: 'ReturnSwaps', children: '1 argument', status: 'Function invocation scanned' })}>verify_imports</span>(source_path):<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-red-400">raise</span> <span className="text-emerald-400 hover:underline cursor-pointer" onClick={() => setSelectedAstNode({ type: 'Raise', name: 'CompileError', range: 'line 4', mutations: 'ExceptionSwaps', children: '1 arg', status: 'Compiler exception branch' })}>CompileError</span>(<span className="text-white">"Target corrupt"</span>)<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-blue-400">return</span> <span className="text-emerald-400 hover:underline cursor-pointer" onClick={() => setSelectedAstNode({ type: 'Return', name: 'compile_ast', range: 'line 5', mutations: 'None', children: '1 arg', status: 'Return pipeline output' })}>compile_ast</span>(source_path)
-                  </pre>
-                ) : (
-                  <pre className="select-none text-left">
-                    <span className="text-purple-400">export default</span> <span className="text-blue-400">function</span> <span className="text-emerald-400 font-bold hover:underline cursor-pointer" onClick={() => setSelectedAstNode({ type: 'FunctionDeclaration', name: 'compileAST', range: 'lines 1-8', mutations: 'BoundaryInversions', children: '6 child nodes', status: 'Dynamic AST scope verified' })}>compileAST</span>(code) &#123;<br />
-                    &nbsp;&nbsp;<span className="text-blue-400">const</span> ast = <span className="text-emerald-400 hover:underline cursor-pointer" onClick={() => setSelectedAstNode({ type: 'VariableDeclarator', name: 'parse_call', range: 'line 2', mutations: 'InitAltered', children: '1 argument', status: 'Variable binding' })}>parse</span>(code);<br />
-                    &nbsp;&nbsp;<span className="text-blue-400">if</span> (ast.errors.length &gt; <span className="text-amber-400">0</span>) &#123;<br />
-                    &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-red-400">throw new</span> <span className="text-emerald-400 hover:underline cursor-pointer" onClick={() => setSelectedAstNode({ type: 'ThrowStatement', name: 'SyntaxError', range: 'line 4', mutations: 'None', children: '1 arg', status: 'Syntax exception branch' })}>SyntaxError</span>(<span className="text-white">"Parse fail"</span>);<br />
-                    &nbsp;&nbsp;&#125;<br />
-                    &nbsp;&nbsp;<span className="text-blue-400">return</span> ast;<br />
-                    &#125;
-                  </pre>
-                )}
+        <div className="bg-[#18181b] border-[3px] border-[#2dd4bf]/30 hover:border-[#2dd4bf]/80 transition-colors duration-500 rounded-[2rem] p-6 md:p-10 max-w-4xl mx-auto shadow-[0_0_40px_-10px_rgba(45,212,191,0.15)] flex flex-col items-center">
+          
+          <div className="w-full bg-[#13141f] border-[3px] border-[#2dd4bf] rounded-2xl overflow-hidden flex flex-col font-sans shadow-[8px_8px_0px_#000000]">
+            <div className="bg-[#1b1c2b] border-b-[3px] border-[#2dd4bf] px-4 py-3 flex items-center justify-between">
+              <div className="flex gap-2 items-center">
+                <div className="w-3 h-3 rounded-full bg-[#ff8ba7] border-2 border-black"></div>
+                <div className="w-3 h-3 rounded-full bg-[#fef08a] border-2 border-black"></div>
+                <div className="w-3 h-3 rounded-full bg-[#2dd4bf] border-2 border-black"></div>
+                <span className="ml-3 text-[10px] font-mono text-white/50 font-black tracking-widest uppercase">Groq Chat Agent</span>
               </div>
             </div>
-            <span className="text-[10px] text-white/40 block mt-4 font-mono text-left">Tip: Click green underlined tokens in the editor to inspect their live AST nodes!</span>
-          </div>
+            
+            <div className="p-6 space-y-6">
+              {/* User Message */}
+              <div className="flex gap-4 items-start">
+                <div className="w-8 h-8 rounded-full bg-[#ff8ba7] flex-shrink-0 flex items-center justify-center font-bold text-black text-xs border-2 border-black shadow-[2px_2px_0px_#000000]">U</div>
+                <div className="bg-[#1b1c2b] border-[2px] border-white/10 rounded-2xl rounded-tl-none px-5 py-4 text-sm text-white/90">
+                  Where is the authentication logic handled in our app?
+                </div>
+              </div>
 
-          {/* Right panel: Live AST Tree & Metadata Details */}
-          <div className="w-full lg:w-1/2 flex flex-col justify-between border border-white/10 bg-[#1b1c2b] p-5 rounded-2xl shadow-2xl">
-            <div>
-              <span className="text-[10px] font-black text-white/50 block mb-4 uppercase tracking-wider font-mono text-left">Abstract Syntax Tree (LibCST Representation)</span>
-              <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1 text-[11px] font-mono">
-                {astLang === 'python' ? (
-                  <>
-                    <button onClick={() => setSelectedAstNode({ type: 'FunctionDef', name: 'run_pipeline', range: 'lines 2-5', mutations: 'DecoratorSwaps, ComparisonFlips', children: '5 child nodes', status: 'Stable AST scope verified' })} className={`w-full text-left p-1.5 rounded transition ${selectedAstNode.type === 'FunctionDef' ? 'bg-[#ff8ba7]/20 text-[#ff8ba7]' : 'hover:bg-white/5 text-white/80'}`}>
-                      &nbsp;&bull;&nbsp;FunctionDef: <span className="text-white font-bold">run_pipeline()</span>
-                    </button>
-                    <button onClick={() => setSelectedAstNode({ type: 'Call', name: 'verify_imports', range: 'line 3', mutations: 'ReturnSwaps', children: '1 argument', status: 'Function invocation scanned' })} className={`w-full text-left p-1.5 rounded transition pl-6 ${selectedAstNode.type === 'Call' ? 'bg-[#ff8ba7]/20 text-[#ff8ba7]' : 'hover:bg-white/5 text-white/70'}`}>
-                      &bull;&nbsp;CallExpression: <span className="text-white font-semibold">verify_imports()</span>
-                    </button>
-                    <button onClick={() => setSelectedAstNode({ type: 'Raise', name: 'CompileError', range: 'line 4', mutations: 'ExceptionSwaps', children: '1 arg', status: 'Compiler exception branch' })} className={`w-full text-left p-1.5 rounded transition pl-6 ${selectedAstNode.type === 'Raise' ? 'bg-[#ff8ba7]/20 text-[#ff8ba7]' : 'hover:bg-white/5 text-white/70'}`}>
-                      &bull;&nbsp;RaiseStatement: <span className="text-white font-semibold">CompileError</span>
-                    </button>
-                    <button onClick={() => setSelectedAstNode({ type: 'Return', name: 'compile_ast', range: 'line 5', mutations: 'None', children: '1 arg', status: 'Return pipeline output' })} className={`w-full text-left p-1.5 rounded transition pl-6 ${selectedAstNode.type === 'Return' ? 'bg-[#ff8ba7]/20 text-[#ff8ba7]' : 'hover:bg-white/5 text-white/70'}`}>
-                      &bull;&nbsp;ReturnStatement: <span className="text-white font-semibold">compile_ast()</span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button onClick={() => setSelectedAstNode({ type: 'FunctionDeclaration', name: 'compileAST', range: 'lines 1-8', mutations: 'BoundaryInversions', children: '6 child nodes', status: 'Dynamic AST scope verified' })} className={`w-full text-left p-1.5 rounded transition ${selectedAstNode.type === 'FunctionDeclaration' ? 'bg-[#2dd4bf]/20 text-[#2dd4bf]' : 'hover:bg-white/5 text-white/80'}`}>
-                      &nbsp;&bull;&nbsp;FunctionDeclaration: <span className="text-white font-bold">compileAST()</span>
-                    </button>
-                    <button onClick={() => setSelectedAstNode({ type: 'VariableDeclarator', name: 'parse_call', range: 'line 2', mutations: 'InitAltered', children: '1 argument', status: 'Variable binding' })} className={`w-full text-left p-1.5 rounded transition pl-6 ${selectedAstNode.type === 'VariableDeclarator' ? 'bg-[#2dd4bf]/20 text-[#2dd4bf]' : 'hover:bg-white/5 text-white/70'}`}>
-                      &bull;&nbsp;VariableDeclarator: <span className="text-white font-semibold">ast = parse()</span>
-                    </button>
-                    <button onClick={() => setSelectedAstNode({ type: 'ThrowStatement', name: 'SyntaxError', range: 'line 4', mutations: 'None', children: '1 arg', status: 'Syntax exception branch' })} className={`w-full text-left p-1.5 rounded transition pl-6 ${selectedAstNode.type === 'ThrowStatement' ? 'bg-[#2dd4bf]/20 text-[#2dd4bf]' : 'hover:bg-white/5 text-white/70'}`}>
-                      &bull;&nbsp;ThrowStatement: <span className="text-white font-semibold">SyntaxError</span>
-                    </button>
-                  </>
-                )}
+              {/* Agent Message */}
+              <div className="flex gap-4 items-start">
+                <div className="w-8 h-8 rounded-full bg-[#2dd4bf] flex-shrink-0 flex items-center justify-center font-bold text-black text-xs border-2 border-black shadow-[2px_2px_0px_#000000]">
+                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                </div>
+                <div className="bg-[#1b1c2b] border-[2px] border-[#2dd4bf]/40 rounded-2xl rounded-tl-none px-5 py-4 text-sm text-white/90 flex flex-col gap-3 w-full">
+                  <p>Authentication is primarily handled via Clerk in your frontend and verified in the FastAPI sidecar. Here are the core files:</p>
+                  
+                  {/* File Ref 1 */}
+                  <div className="bg-[#09090e] border-[2px] border-white/10 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:border-[#2dd4bf] transition-colors">
+                    <svg className="w-5 h-5 text-[#fef08a]" fill="currentColor" viewBox="0 0 24 24"><path d="M4 4h16v16H4V4zm2 2v12h12V6H6zm2 2h8v2H8V8zm0 4h8v2H8v-2z"/></svg>
+                    <div>
+                      <div className="text-xs font-bold text-[#2dd4bf] hover:underline">authRedirect.js</div>
+                      <div className="text-[10px] text-white/40 font-mono mt-0.5">apps/web-frontend/src/utils/</div>
+                    </div>
+                  </div>
+
+                  {/* File Ref 2 */}
+                  <div className="bg-[#09090e] border-[2px] border-white/10 rounded-lg p-3 flex items-center gap-3 cursor-pointer hover:border-[#c084fc] transition-colors">
+                    <svg className="w-5 h-5 text-[#c084fc]" fill="currentColor" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    <div>
+                      <div className="text-xs font-bold text-[#c084fc] hover:underline">dependencies.py</div>
+                      <div className="text-[10px] text-white/40 font-mono mt-0.5">apps/python-backend/app/api/</div>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-white/50 mt-1 italic font-mono tracking-tight">Found 2 references in 142ms via local vector search.</p>
+                </div>
               </div>
             </div>
-
-            {/* Node Metadata Detail Block */}
-            <div className="mt-4 p-3 bg-black/40 border border-black rounded-xl text-[10px] leading-relaxed text-white/70 text-left">
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="font-extrabold text-white text-[11px] font-mono">{selectedAstNode.type}</span>
-                <span className="px-2 py-0.5 bg-[#1b1c2b] border border-black rounded-full text-[8px] font-mono uppercase font-black tracking-wide text-white/60">{selectedAstNode.range}</span>
-              </div>
-              <div>Identifier Target: <strong className="text-white font-mono">{selectedAstNode.name}</strong></div>
-              <div>Structural Scope: <span className="text-[#c084fc] font-bold">{selectedAstNode.status}</span></div>
-              <div>Available Mutations: <span className="text-amber-400 font-bold">{selectedAstNode.mutations}</span></div>
-              <div className="text-[9px] text-white/40 mt-1 font-mono">{selectedAstNode.children} associated in sub-tree.</div>
+            
+            {/* Input Mock */}
+            <div className="bg-[#09090e] p-4 border-t-[3px] border-[#2dd4bf]">
+               <div className="bg-[#1b1c2b] border-[2px] border-white/10 rounded-full px-5 py-3 flex justify-between items-center text-xs text-white/40 font-mono">
+                 <span>Ask a follow-up question...</span>
+                 <svg className="w-4 h-4 text-[#2dd4bf]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+               </div>
             </div>
           </div>
+
         </div>
       </section>
 
@@ -927,39 +867,39 @@ graph TD
               </thead>
               <tbody className="divide-y divide-black/10 font-sans font-semibold text-white/85">
                 <tr className="hover:bg-white/2 transition">
-                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Compiler Exception Repairs</td>
+                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Project Health Self-Healing</td>
                   <td className="p-4 border-r border-black/10 text-center text-emerald-400 font-extrabold bg-emerald-500/5">
-                    Autonomous self-healing via pty capture
+                    Autonomous syntax repair via Groq LLM & pty tracebacks
                   </td>
                   <td className="p-4 text-center text-white/50">
-                    Manual code pasting & query attempts
+                    Manual traceback pasting & query attempts
                   </td>
                 </tr>
                 <tr className="hover:bg-white/2 transition">
-                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Dependency Vulnerabilities</td>
+                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Technical Debt Management</td>
                   <td className="p-4 border-r border-black/10 text-center text-emerald-400 font-extrabold bg-emerald-500/5">
-                    Real-time AST-import scanning & one-click fixes
+                    Catalyst batch modernization using AST & Embeddings
                   </td>
                   <td className="p-4 text-center text-white/50">
-                    Requires manual list commands & audits
+                    Tedious manual file-by-file refactoring
                   </td>
                 </tr>
                 <tr className="hover:bg-white/2 transition">
-                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Local Code Safety Sandbox</td>
+                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Git Regression Tracking</td>
                   <td className="p-4 border-r border-black/10 text-center text-emerald-400 font-extrabold bg-emerald-500/5">
-                    100% offline-first execution via sidecar binary
+                    Visual Causal Blame Maps rendered via React Flow
                   </td>
                   <td className="p-4 text-center text-white/50">
-                    Sends code blocks to third-party endpoints
+                    Endless scrolling through terminal git log output
                   </td>
                 </tr>
                 <tr className="hover:bg-white/2 transition">
-                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Design-by-Contract Checking</td>
+                  <td className="p-4 border-r border-black/10 font-mono text-white text-left">Execution & Privacy</td>
                   <td className="p-4 border-r border-black/10 text-center text-emerald-400 font-extrabold bg-emerald-500/5">
-                    Dynamic capture & automated snapshot suite creation
+                    100% offline-first logic via local FastAPI sidecar
                   </td>
                   <td className="p-4 text-center text-white/50">
-                    Hypothetical guesses without runtime telemetry
+                    Proprietary code sent to third-party endpoints
                   </td>
                 </tr>
               </tbody>

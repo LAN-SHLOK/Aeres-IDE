@@ -434,3 +434,8 @@ body,
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
 }
+
+/* Force hide Monaco context menu completely */
+.monaco-menu-container {
+  display: none !important;
+}
