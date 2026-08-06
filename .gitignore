@@ -88,3 +88,17 @@ coverage/
 .nyc_output/
 *.log
 .gemini/
+
+# =========================
+# One-off Test & Garbage Files
+# =========================
+CUsersshlokMusicaeres-test-project/
+.ruff_cache/
+bad.py
+repos.json
+sizes.txt
+test_syntax.py
+test.html
+test_live.html
+test_*.py
+test_*.html
