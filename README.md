@@ -13,6 +13,13 @@
     <img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
     <img src="https://img.shields.io/badge/Monaco-0078D4?style=for-the-badge&logo=visualstudiocode&logoColor=white" alt="Monaco" />
   </p>
+
+  <h3>
+    <a href="https://github.com/LAN-SHLOK/Aeres-IDE/releases/download/v0.1.0/Aeres-IDE-Setup-win-x64.exe.msi" style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;">
+      <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/download.svg" width="24" height="24" alt="Download" />
+      Download Aeres IDE for Windows (v0.1.0)
+    </a>
+  </h3>
 </div>
 
 ---
@@ -33,8 +40,8 @@ A blazing-fast, language-agnostic profiling engine that automatically tracks exe
 ### Causal Maps & Architecture Visualizer
 Visually trace dependency trees, logic flows, and architecture across your entire project using interactive node-based graphs (D3 + dagre). The **Architecture Visualizer** generates full project blueprints, while **Causal Blame Maps** trace the git blame chain of any function to understand *who changed what and why*.
 
-### Autonomous Mutations (Agentic AI)
-Streaming AI agents that can read your codebase, plan architectural changes, and autonomously write/refactor code directly into your files using high-speed unified diffs. Powered by a full **agentic loop** with tool-use: the agent can `read_file`, `edit_file`, `run_command`, `search_codebase`, and even `create_file` on its own.
+### Autonomous Modernization (Agentic AI)
+The **Modernize** engine is the only agent in Aeres with write-access to your codebase. While other agents strictly read and analyze code, the Modernize engine can autonomously write and refactor code directly into your files using high-speed unified diffs. Powered by a full agentic loop, it executes your refactoring plans safely and autonomously.
 
 ### Native LSP Integration
 Rich autocomplete, hover docs, signature help, and instant syntax diagnostics for JavaScript, TypeScript, Python, Rust, Go, C++, and more—all proxied through a local LSP WebSocket bridge with proper lifecycle management.
@@ -74,6 +81,7 @@ graph TD
         FSWatcher["File System Watcher<br/>(notify crate)"]
         Diagnostics["Syntax Diagnostics<br/>(py_compile / ruff)"]
         FS["File System Bridge<br/>(read / write / glob)"]
+        Sandbox["Web Preview & API Sandbox"]
     end
 
     subgraph Backend["Python FastAPI Backend"]
@@ -81,12 +89,12 @@ graph TD
         API["REST API Layer<br/>(22 endpoint modules)"]
         
         subgraph Agents["AI Agent System"]
-            AgentLoop["Agentic Loop<br/>(tool-use, planning)"]
+            AgentLoop["Modernize<br/>(Write-Access Agent)"]
             HealthAgent["Health Scanner Agent"]
-            CodebaseAgent["Codebase Q&A Agent"]
+            CodebaseAgent["RAG Codebase Agent"]
+            CatalystMap["Catalyst Diagram Engine"]
             DepScanner["Dependency Scanner"]
             CausalTracer["Causal Blame Tracer"]
-            ContractObs["Contract Observer"]
         end
 
         subgraph Intelligence["Code Intelligence"]
@@ -97,10 +105,9 @@ graph TD
         end
 
         subgraph Services["Services"]
-            GitOps["Git Operations<br/>(clone, push, branch, stash)"]
+            GitOps["Git Operations & Smart Gitignore"]
             Perf["Temporal Profiler"]
             DBViewer["Database Viewer<br/>(SQLite)"]
-
             Proxy["Web Scraper / Proxy"]
         end
     end
@@ -234,129 +241,193 @@ This script uses PyInstaller to compile the backend into a Tauri sidecar and aut
 
 ---
 
+## Key Workflows & New Features
+
+Aeres IDE is designed around several core developer workflows that leverage our new feature set:
+
+### 1. Catalyst (Repository Intelligence)
+Aeres includes a powerful **Catalyst** feature designed for rapid project onboarding and understanding:
+* **Ingestion:** Simply provide a GitHub Repository URL along with your natural language query.
+* **Architecture Generation:** Catalyst instantly analyzes the repo and generates a visual architecture diagram of the codebase.
+* **Targeted Code Discovery:** Along with the diagram, Catalyst intelligently surfaces only the specific code files you need to review based on your query, cutting out all the noise.
+
+### 2. Autonomous Agent Workflow
+Aeres separates intelligent analysis from autonomous execution to keep you safely in control:
+* **Health Scanner (Read-Only):** The scanner analyzes your entire workspace for deprecated APIs, security flaws, and code smells, giving you a comprehensive report of issues. It does *not* modify your code.
+* **Modernize (Write-Access):** This is the only engine with permission to edit files. Once a refactoring plan is approved, the Modernize engine autonomously streams multi-file code edits directly into your editor using our custom unified diff applicator.
+
+### 3. Smart Gitignore & Extensions
+Aeres features a rich extension ecosystem right out of the box:
+* **Smart Gitignore:** Automatically scans your project's technology stack and instantly generates or updates the perfect `.gitignore` file, stripping out binary blobs, test caches, and OS junk to keep your repo pristine.
+* **Built-in Support:** Deep integrations for Docker, Tailwind CSS, and Vim bindings are natively available as extensions.
+
+### 4. Context-Aware Codebase Q&A (RAG)
+When working in a massive, unfamiliar codebase:
+* The Python backend automatically chunks and embeds your project files using **Tree-Sitter ASTs**.
+* It stores these embeddings locally in **ChromaDB**.
+* You can ask questions like *"Where is the auth middleware defined?"* and the Groq LLM will answer with exact file references and code snippets, fully aware of your local context.
+
+### 5. Visual Architecture Mapping
+Understanding project structure is no longer just reading folders:
+* We integrated **D3.js** to generate interactive Workspace Sunburst charts.
+* You can visually explore the dependency tree of your project, zooming into specific modules to see how they interlock, making onboarding onto new codebases instantly intuitive.
+
+### 6. Seamless Web Development
+* **Live Server:** Right-click any HTML file to instantly spin up a local server.
+* **Web Preview Panel:** Aeres features a built-in browser preview panel, allowing you to see your React or HTML changes update in real-time alongside your code, without ever switching windows.
+
+### 7. Standalone Desktop Experience
+* Despite heavy AI and Python backend requirements, Aeres compiles down to a single, easily distributable `.exe` via Tauri and PyInstaller. No Docker containers, no complex setup scripts for end-users—just download, click, and code.
+
+---
+
+## Project Structure
+
+```text
+Aeres-IDE/
+├── apps/
+│   ├── desktop-client/          # Tauri + React frontend
+│   │   ├── src/
+│   │   │   ├── components/
+│   │   │   │   ├── Editor/      # Monaco editor, tabs, database viewer
+│   │   │   │   ├── Panels/      # Health dashboard, dependency radar, RAG chat, temporal lens
+│   │   │   │   ├── Sidebar/     # File tree, search, debug, testing, extensions
+│   │   │   │   ├── Overlays/    # Command palette, settings, keybindings, onboarding
+│   │   │   │   ├── Terminal/    # Terminal tabs with xterm.js
+│   │   │   │   ├── Debugger/    # DAP-based debugger UI
+│   │   │   │   └── Git/         # Git integration UI
+│   │   │   ├── store.js         # Zustand global state
+│   │   │   ├── App.jsx          # Main application shell
+│   │   │   └── utils/           # Project runner, language detection
+│   │   └── src-tauri/
+│   │       └── src/lib.rs       # Rust backend: PTY, file ops, diagnostics
+│   │
+│   ├── python-backend/          # FastAPI AI engine
+│   │   ├── app/
+│   │   │   ├── agents/          # Agentic loop, health agent, dep scanner, etc.
+│   │   │   ├── api/endpoints/   # 22 REST/WebSocket endpoint modules
+│   │   │   ├── core/            # Config, security (JWT), file watcher
+│   │   │   ├── rag_engine/      # ChromaDB vector store, Groq gateway
+│   │   │   └── scrapers/        # Documentation scraper with cron
+│   │   └── main.py              # Uvicorn entry point
+│   │
+│   └── web-frontend/            # Public web portal (auth + landing)
+│
+├── build_aeres.ps1              # One-click production build script
+└── README.md
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+* **Node.js** v18+ (with npm)
+* **Python** 3.10+
+* **Rust & Cargo** (Required for Tauri desktop wrapper. Install via [rustup.rs](https://rustup.rs/))
+  * *Windows Users:* You must also install the **C++ Build Tools** via the Visual Studio Installer.
+* A **Groq API Key** (free at [console.groq.com](https://console.groq.com))
+
+### Setup Instructions
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/LAN-SHLOK/Aeres-IDE.git
+   cd Aeres-IDE
+   ```
+
+2. **Start the AI Backend**
+   ```bash
+   cd apps/python-backend
+   python -m venv venv
+   source venv/Scripts/activate  # On Windows
+   pip install -r requirements.txt
+   
+   # Add your API Keys
+   echo "GROQ_API_KEY=your_key_here" > .env
+   
+   # Start the backend server
+   uvicorn app.server:app --reload --port 8008
+   ```
+
+3. **Set up the Web Portal (Clerk Auth)**
+   ```bash
+   cd apps/web-frontend
+   
+   # Add your Clerk Publishable Key
+   echo "VITE_CLERK_PUBLISHABLE_KEY=your_pk_test_key_here" > .env.local
+   ```
+
+4. **Start the Entire Environment**
+   ```bash
+   # From the root of the repository
+   npm install
+   npm run dev:all
+   ```
+
+---
+
 ## Engineering Challenges & Solutions
 
 Building a full IDE from scratch surfaces brutal, real-world bugs that no tutorial prepares you for. This section documents the critical issues we encountered during development and the engineering decisions made to solve them—written from a human debugging perspective.
 
-### The Memory Leak That Ate the Browser
+### 1. D3.js vs React DOM Collisions
 
-**Problem:** After switching between 10-15 files, the IDE would become visibly sluggish. Opening the browser DevTools revealed hundreds of zombie WebSocket connections and duplicated Monaco language providers piling up in memory.
+**Problem:** We heavily utilize `d3` for complex architecture visualizations (like the Workspace Sunburst). However, both React and D3 are designed to have absolute control over the DOM, leading to severe rendering conflicts and duplicated SVG elements when state changed.
 
-**Root Cause:** Every time the Monaco editor component re-mounted (which happens on every tab switch), the `onDidMount` lifecycle was opening a *brand new* WebSocket to the LSP backend and registering new `CompletionItemProvider`, `HoverProvider`, and `SignatureHelpProvider` instances—without ever disposing the old ones.
+**Root Cause:** React's Virtual DOM diffing algorithm overwrites D3's direct DOM manipulations whenever the parent component re-renders.
 
-**Fix:** We implemented a proper disposal architecture:
-- All `monaco.languages.register*()` calls now capture their `IDisposable` return values into an array.
-- On editor destruction, every provider is explicitly `.dispose()`d.
-- The LSP WebSocket is closed on unmount.
-- Pending AI autocomplete debounce timers are cleared to prevent state updates on dead components.
-
-**Lesson:** In React + Monaco, the `onDidMount` callback is *not* the same as a constructor. You must treat it like `useEffect` with a cleanup return.
+**Fix:** We implemented a strict "handoff" architecture. React renders a single, empty `<svg>` container and attaches a `useRef`. Inside a `useEffect` hook, we hand that reference over to D3, allowing D3 to take full control of rendering the visualization *inside* that specific container, while React is instructed to ignore it.
 
 ---
 
-### HTML Tags Refusing to Auto-Close
+### 2. Web Preview Component Lifecycle Leaks
 
-**Problem:** When typing `<div>` in an HTML file, the editor wouldn't automatically insert `</div>`. This is table-stakes UX for any code editor.
+**Problem:** Users reported memory spikes and sluggish performance after toggling the Web Preview sandbox panel open and closed multiple times. 
 
-**Root Cause:** Monaco's built-in `autoClosingTags` option is limited and doesn't reliably trigger for HTML. Unlike VS Code (which has a dedicated extension for this), raw Monaco requires custom logic.
+**Root Cause:** The Web Preview component attaches `window.addEventListener('message')` to communicate with the injected iframe. When the panel was unmounted, the event listeners were never removed, creating thousands of zombie listeners piling up in memory.
 
-**Fix:** We added a `editor.onKeyUp` listener that detects when the user types `>` at the end of an opening tag. It then:
-1. Parses the tag name from the line content using regex.
-2. Filters out void elements (`br`, `hr`, `img`, `input`, etc.) and self-closing tags.
-3. Automatically inserts `</tagName>` and positions the cursor between the tags.
-
-This works for both HTML and JSX files.
+**Fix:** We strictly enforced cleanup functions in all `useEffect` hooks across the UI. Now, whenever the Web Preview unmounts, the cleanup function fires `window.removeEventListener()`, instantly garbage collecting the old listeners.
 
 ---
 
-### Python Errors Showing Yellow Instead of Red
+### 3. Massive File Tree Performance Bottlenecks
 
-**Problem:** When you write `x = {` (a clear syntax error) in a Python file, the IDE would show a *yellow* warning squiggly line instead of a *red* error squiggly.
+**Problem:** Opening a large project like a `node_modules` folder would freeze the React frontend completely. The entire DOM tree was trying to render thousands of file nodes simultaneously.
 
-**Root Cause:** The Rust backend (`lib.rs`) uses `py_compile` to check Python syntax. The error message parsing was doing a **case-sensitive** string match: `if line.contains("Error")`. But Python's `SyntaxError` message format varies—sometimes the word appears as `error` (lowercase) in the traceback context lines, causing the severity classifier to fall through to the default "Warning" bucket.
+**Root Cause:** The `FileTree.jsx` component was mapping over the entire directory array and rendering every single node to the DOM, even if they were off-screen. Furthermore, typing in the editor caused the global state to update, triggering a full re-render of the massive tree.
 
-**Fix:** Changed the Rust severity detection to use `.to_lowercase()` before matching, ensuring `SyntaxError`, `IndentationError`, and `TabError` are always classified as `Error` severity (red squiggly), not `Warning` (yellow).
-
-**Lesson:** String matching for error classification must always be case-insensitive. Error message formats are never consistent across language runtimes.
-
----
-
-### Event Listeners Silently Dying
-
-**Problem:** Several command palette actions (like "Go to Bracket", "Next Problem", "Open Live Server") would appear in the palette but do absolutely nothing when clicked.
-
-**Root Cause:** A previous refactoring session had accidentally removed the event handler registrations from the `events` array inside `CodeCanvas.jsx`. The command palette was dispatching events like `aeres:editor-goto-bracket`, but no listener existed to catch them. No error was thrown—the events just vanished silently.
-
-**Fix:** We carefully restored all missing event handler registrations, including `handleNextProblem`, `handlePrevProblem`, `handleFindReferences`, `handleRenameSymbol`, `handleDebugStart/Stop/StepOver/StepInto/StepOut`, and the Live Server handler.
-
-**Lesson:** Always audit your event dispatch-to-handler chain after refactoring. Silent failures in event systems are the hardest bugs to notice because the UI *looks* correct.
+**Fix:** 
+1. We wrapped individual file and folder components in `React.memo` so they only re-render if their specific props (like expansion state) change.
+2. We implemented virtualization (via `react-window`) so only the 30-40 file nodes currently visible on the screen are actually rendered to the DOM.
 
 ---
 
-### Database Files Crashing the Editor
+### 4. FastAPI AST Parsing Memory Leaks
 
-**Problem:** Clicking on a `.db` or `.sqlite` file in the file tree would cause the editor to either show garbled binary garbage or silently crash.
+**Problem:** The Python backend would slowly consume gigs of RAM over time when the `Codebase RAG Agent` parsed thousands of ASTs (Abstract Syntax Trees) for embedding generation.
 
-**Root Cause:** The file-open handler in `FileTree.jsx` was reading every file as UTF-8 text and shoving it into a Monaco editor tab—including binary database files. Monaco chokes on binary content.
+**Root Cause:** AST objects in Python can be massive. We were storing them in global dictionaries acting as unbounded caches without eviction policies, and circular references were preventing Python's Garbage Collector from freeing the memory.
 
-**Fix:** We added a file extension check in the file-open pipeline. When a `.db`, `.sqlite`, or `.sqlite3` file is detected, it now routes to the dedicated `DatabaseViewer` component (which uses a backend SQLite API) instead of trying to open it as text.
-
----
-
-### Live Server Crashing on Django Templates
-
-**Problem:** Right-clicking an HTML file inside a Django project's `templates/` folder and selecting "Open with Live Server" would throw a PowerShell error in the terminal.
-
-**Root Cause:** Two issues compounded:
-1. The Windows fallback command used `start ""` syntax (cmd.exe style), which is invalid in PowerShell and throws `ParameterBindingValidationException`.
-2. The global "Run" button didn't distinguish between a standalone HTML file and a Django template.
-
-**Fix:**
-- Changed all Windows fallback commands from `start ""` to `Invoke-Item` (PowerShell-native) across `CodeCanvas.jsx` and `FileTree.jsx`.
-- Updated `projectRunner.js` so the Run button checks for project context first—if it detects a Django project, it starts `runserver`; if it's a standalone HTML file, it uses Live Server.
-- The explicit "Open with Live Server" context menu always uses `npx live-server` regardless of project type (as the user expects).
+**Fix:** We used Python's built-in `tracemalloc` to trace memory allocations and identify the zombie objects. We replaced the unbounded dictionaries with `lru_cache` (Least Recently Used) and explicitly broke circular references using `weakref`.
 
 ---
 
-### CORS Wildcard: The Silent Security Hole
+### 5. Algorithmic Circular Dependency Detection
 
-**Problem:** The backend was configured with `allow_origins=["*"]`, meaning *any website on the internet* could make requests to the local IDE backend.
+**Problem:** We needed a way for the IDE to warn developers if they accidentally created circular imports in their Python code without actually executing the user's code.
 
-**Risk:** If a developer had the IDE running locally and visited a malicious website, that site's JavaScript could silently:
-- Read the developer's source code via `/api/search`
-- Execute git commands via `/api/git/commit`
-- Write files via the agent's `edit_file` tool
-- Exfiltrate API keys via `/api/keys`
-
-All without any authentication (since local dev mode bypasses JWT checks).
-
-**Fix:** Replaced `allow_origins=["*"]` with a strict `allow_origin_regex` that only permits:
-- `http://localhost:*` and `http://127.0.0.1:*` (local development)
-- `tauri://localhost` (the Tauri desktop app's secure origin)
-
-This is a textbook example of why local-only services still need proper CORS policies.
+**Solution:** We built a static analysis engine using Graph Theory. The AST parser extracts all import statements to build an adjacency list (File A -> File B). We then run a Depth-First Search (DFS) on the graph. By keeping track of a "currently in recursion stack" set, if the DFS encounters a node already in the stack, we flag it as a circular dependency and surface it to the UI.
 
 ---
 
-### Health Scanner "Fix Automatically" Button Doing Nothing
+### 6. CORS Wildcard: The Silent Security Hole
 
-**Problem:** The Health Dashboard's "Fix Automatically" button would render but clicking it had zero effect.
+**Problem:** During local testing, the backend was configured with `allow_origins=["*"]`, meaning *any website on the internet* could make requests to the local IDE backend.
 
-**Root Cause:** The `onClick` handler was bound to a function that dispatched an event, but the event listener for that event had been accidentally removed during a previous cleanup pass (same class of bug as the command palette issue above).
+**Risk:** If a developer had the IDE running locally and visited a malicious website in their browser, that site's JavaScript could silently read the developer's source code or exfiltrate API keys via local endpoints.
 
-**Fix:** Restored the event handler registration and ensured the AI agent pipeline correctly receives the fix request, generates a diff, and applies it to the file.
-
----
-
-### Tauri Dev Crashing ("cargo metadata" or "link.exe" not found)
-
-**Problem 1:** Desktop client crashes with `failed to run 'cargo metadata' command to get workspace directory: program not found`.
-**Root Cause:** Tauri requires the Rust toolchain to be installed.
-**Fix:** Install Rust and Cargo from [rustup.rs](https://rustup.rs/). Restart your terminal completely so the new PATH variables take effect.
-
-**Problem 2:** Desktop client crashes with `error: linker 'link.exe' not found`.
-**Root Cause:** On Windows, Rust requires the Microsoft C++ Build Tools (MSVC) to link the final executable.
-**Fix:** Download the [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/), run the installer, and ensure the "Desktop development with C++" workload is checked. Restart your terminal after installation.
+**Fix:** Replaced `allow_origins=["*"]` with a strict `allow_origin_regex` that only permits `http://localhost:*`, `http://127.0.0.1:*`, and `tauri://localhost` (the Tauri desktop app's secure origin).
 
 ---
 
